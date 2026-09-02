@@ -119,7 +119,7 @@ If upstream research or brainstorming already answers an item clearly, reuse it 
 
 ### Step 3: Generate PRD Using the 14-Chapter Structure
 
-When to read `references/14-chapters-detailed.md`: read it when starting to generate PRD chapters; consult that chapter's "template snippet + anti-patterns" before writing each chapter.
+When to read `references/14-chapters-detailed.md`: read it when starting to generate PRD chapters; consult that chapter's "template snippet + anti-patterns" before writing each chapter. Chapters 1-7 are in that file; **chapters 8-14 are in `references/14-chapters-detailed-part2.md`**.
 
 **Quick reference**:
 
@@ -190,7 +190,7 @@ When to read `references/workflow-integration.md`: when the user asks "how does 
 
 ## Complete PRD Examples (Cross-Domain)
 
-When to read `references/examples.md`: when the user needs a reference example / is unsure how to fill in a certain chapter. It contains PRD excerpt examples from three different domains — SaaS tools, consumer apps, and B2B internal tools — showing how the same 14-chapter framework is filled in for different product types.
+When to read `references/examples.md`: when the user needs a reference example / is unsure how to fill in a certain chapter. It contains PRD excerpt examples from three different domains — SaaS tools, consumer apps, and B2B internal tools — showing how the same 14-chapter framework is filled in for different product types. **Example C (B2B internal tool) and the three-way comparison are in `references/examples-b2b.md`.**
 
 ---
 

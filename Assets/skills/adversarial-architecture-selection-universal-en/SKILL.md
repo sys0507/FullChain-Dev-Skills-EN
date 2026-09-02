@@ -171,7 +171,7 @@ use the same templates for independent tasks or isolated role passes.
 
 ## Complete Examples
 
-📖 **When to read [references/examples.md](references/examples.md)**: contains 3 end-to-end examples from different domains (async task framework fork selection, AI/LLM library selection, SaaS monitoring platform selection), demonstrating the consistent applicability of the methodology across different scenarios. Read when:
+📖 **When to read [references/examples.md](references/examples.md)**: contains 3 end-to-end examples from different domains (async task framework fork selection, AI/LLM library selection, SaaS monitoring platform selection), demonstrating the consistent applicability of the methodology across different scenarios. Read when: **The third (SaaS monitoring platform) and the cross-scenario comparison table are in [references/examples-saas.md](references/examples-saas.md).**
 - User is doing open-source fork selection → refer to Example A
 - User is doing pure library selection (no source code to read, purely documentation/community research comparison) → refer to Example B
 - User is doing SaaS/cloud vendor selection → refer to Example C
