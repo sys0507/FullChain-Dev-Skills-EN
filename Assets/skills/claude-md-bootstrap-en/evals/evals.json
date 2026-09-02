@@ -1,0 +1,210 @@
+{
+  "skill_name": "claude-md-bootstrap-en",
+  "description": "Test cases for the claude-md-bootstrap-en Skill - verifying source inventory, section mapping, fabrication prevention, line budget compliance, and Karpathy verbatim embedding. English execution version: prompts and expectations are in English.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "rich-spec-kit-project-generation",
+      "prompt": "My project root has specs/prd.md, specs/research/06-architecture-baseline-decision.md, .specify/memory/constitution.md, DESIGN.md, and package.json. Help me generate the project CLAUDE.md.",
+      "expected_output": "Skill should: (1) inventory all 5 source files in Step 1, (2) propose a 10-section mapping in Step 2 with each section traced to a source file, (3) generate CLAUDE.md < 200 lines, (4) use @path imports for constitution/PRD/DESIGN.md instead of copying content, (5) extract commands verbatim from package.json scripts, (6) embed Karpathy 4 principles verbatim in English, (7) include Anti-Patterns section with source citations.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "step1-inventory-all-sources",
+          "description": "Step 1 reports content summary for each of the 5 source files"
+        },
+        {
+          "id": "step2-mapping-table-traceable",
+          "description": "Step 2 mapping table cites specific files and sections for each CLAUDE.md section"
+        },
+        {
+          "id": "line-count-under-200",
+          "description": "Generated CLAUDE.md has < 200 lines"
+        },
+        {
+          "id": "uses-@-path-imports",
+          "description": "References to PRD/constitution/DESIGN.md use @path syntax, not markdown links or copied content"
+        },
+        {
+          "id": "commands-verbatim-from-package-json",
+          "description": "Every command listed in §5 exists in package.json scripts with matching name"
+        },
+        {
+          "id": "karpathy-verbatim-english",
+          "description": "Karpathy 4 principles appear in English without translation"
+        },
+        {
+          "id": "you-must-used-at-most-twice",
+          "description": "Total occurrences of YOU MUST + IMPORTANT ≤ 2 in the file"
+        },
+        {
+          "id": "anti-patterns-have-source-citations",
+          "description": "Each anti-pattern bullet has a (source: ...) citation"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "fabrication-prevention-missing-source",
+      "prompt": "[Simulated scenario] The project has no architecture baseline decision document, but the user asks to generate CLAUDE.md.",
+      "expected_output": "Skill must NOT fabricate architecture decisions. Should surface 'tech stack rationale source missing' as an Open Question in Step 2, and either skip the rationale citation in §4 or ask the user to provide the source.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "detects-missing-source",
+          "description": "Step 1 inventory explicitly reports the architecture baseline decision file as missing"
+        },
+        {
+          "id": "surfaces-open-question",
+          "description": "Step 2 mapping lists the missing source under Open Questions"
+        },
+        {
+          "id": "does-not-fabricate-rationale",
+          "description": "Generated §4 tech stack does NOT invent architecture decision content"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "merge-mode-existing-claude-md",
+      "prompt": "My project root already has a CLAUDE.md with some rules I added by hand. Please refresh it, but do not overwrite my content.",
+      "expected_output": "Skill must read existing CLAUDE.md, identify user-authored sections (those not in the standard 10-section template), preserve them, and only merge/update the standard sections. Should show diff before applying.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "reads-existing-claude-md-first",
+          "description": "Step 1 includes reading current CLAUDE.md before generation"
+        },
+        {
+          "id": "identifies-non-template-sections",
+          "description": "Skill identifies which existing sections are user-authored (not in the 10-section template)"
+        },
+        {
+          "id": "shows-diff-before-applying",
+          "description": "Skill outputs a diff and asks for user confirmation before writing"
+        },
+        {
+          "id": "preserves-user-content",
+          "description": "Final CLAUDE.md still contains the user-authored sections verbatim"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "non-spec-kit-project",
+      "prompt": "My project uses vanilla Claude Code — no Spec-Kit, no constitution.md. But it has a README, package.json, and a simple docs/architecture.md. Help me write CLAUDE.md.",
+      "expected_output": "Skill should adapt: §6 Constitution section should be skipped (no constitution exists). §3 Workflow should not assume Spec-Kit + Superpowers; should describe the actual workflow inferred from README. §10 File navigation should only list files that exist.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "skips-constitution-section",
+          "description": "Section 6 is omitted, not stubbed with placeholder text"
+        },
+        {
+          "id": "workflow-not-hardcoded-spec-kit",
+          "description": "Section 3 reflects the actual workflow from README, not the Spec-Kit + Superpowers template constant"
+        },
+        {
+          "id": "file-navigation-only-real-files",
+          "description": "Every file in §10 exists in the project"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "empty-project-rejection",
+      "prompt": "I just ran git init on a new project that contains only README.md, and I want to start writing CLAUDE.md.",
+      "expected_output": "Skill should detect that there's not enough source material (no PRD, no architecture, no package.json) and refuse to generate. Should suggest: write specs/PRD first, OR write a minimal CLAUDE.md by hand (the skill is for projects with rich docs).",
+      "files": [],
+      "assertions": [
+        {
+          "id": "detects-insufficient-sources",
+          "description": "Skill recognizes README alone is not enough source material"
+        },
+        {
+          "id": "does-not-generate",
+          "description": "Skill does NOT proceed to Step 3"
+        },
+        {
+          "id": "suggests-alternative",
+          "description": "Skill explicitly suggests writing PRD/specs first or hand-writing minimal CLAUDE.md"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "karpathy-verbatim-enforcement",
+      "prompt": "[Simulated scenario] The user asks to translate Karpathy's 4 principles into another language before adding them to CLAUDE.md.",
+      "expected_output": "Skill must refuse translation. Should explain that verbatim English is intentional (precision, LLM behavior alignment, community recognition). Should offer to add a Chinese intro line above the English principles instead.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "refuses-translation",
+          "description": "Skill explicitly states the 4 principles must remain in English"
+        },
+        {
+          "id": "explains-why-verbatim",
+          "description": "Skill cites reasons (precision/LLM behavior/community alignment) from references/karpathy-guidelines.md"
+        },
+        {
+          "id": "offers-chinese-intro-line",
+          "description": "Skill offers the Chinese intro line as a compromise"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "workflow-section-must-be-action-oriented",
+      "prompt": "The project has completed specs/research/01-05, the architecture baseline decision, constitution.md v1.0.0, and spec/plan/tasks for 8 features. Help me write CLAUDE.md.",
+      "expected_output": "§3 Workflow MUST be action-oriented (concrete blocks: start feature / load context / TDD discipline / completion / pacing). MUST NOT list past-tense chronology like '1. Idea + research -> done / 2. Adversarial debate -> locked / 3. PRD -> written'. The section must tell a future session what to DO, not recap what already happened.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "no-past-tense-chronology",
+          "description": "§3 does NOT contain a numbered list of past-completed steps (e.g., '1. Research -> done')"
+        },
+        {
+          "id": "contains-start-feature-block",
+          "description": "§3 contains a concrete 'Start a feature' subsection with a runnable command"
+        },
+        {
+          "id": "contains-pacing-rule",
+          "description": "§3 ends with a pacing rule like 'finish one feature, then stop and wait for review'"
+        },
+        {
+          "id": "no-completed-markers",
+          "description": "§3 does NOT contain '(completed)' / '(locked)' / '(established)' style historical markers"
+        },
+        {
+          "id": "future-tense-imperatives",
+          "description": "§3 uses imperative / future-tense voice ('When starting a feature...', 'For each task, run...') not past-tense recap"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "line-budget-overflow-handling",
+      "prompt": "[Simulated scenario] The project documentation is extremely rich (30 feature specs, a long PRD, a detailed constitution) and the generated result is 280 lines.",
+      "expected_output": "Skill must catch the line-count violation in Step 4 verify, then compress: move detailed content to @path imports, trim file navigation to top 10 most important files, reduce per-section verbosity. Final output must be < 200 lines without losing source traceability.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "step4-catches-overflow",
+          "description": "Step 4 verification explicitly flags line count > 200"
+        },
+        {
+          "id": "compresses-via-imports",
+          "description": "Skill compresses by moving inline content to @path imports, not by deleting required sections"
+        },
+        {
+          "id": "final-output-under-200",
+          "description": "After compression, CLAUDE.md is < 200 lines"
+        },
+        {
+          "id": "no-source-traceability-loss",
+          "description": "All anti-patterns and tech stack still cite their sources after compression"
+        }
+      ]
+    }
+  ]
+}
