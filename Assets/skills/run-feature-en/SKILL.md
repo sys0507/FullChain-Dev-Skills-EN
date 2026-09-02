@@ -1,6 +1,34 @@
 ---
 name: run-feature-en
 description: Implement one ready Spec-Kit feature directory containing spec.md, plan.md, and tasks.md through worktree isolation, project-rule loading, task-by-task TDD, label-aware execution, structured review, and merge/tag handoff. Use when starting or continuing a single prepared feature. Project-specific stack, design, naming, and constitution rules are read at runtime. Do not use for project bootstrap, writing specs, or concurrent multi-feature execution.
+license: MIT
+metadata:
+  version: "1.0"
+  lang: en
+  kind: process-executor
+  stage: "8"
+  standalone: true
+  produces:
+    - "source code"
+    - "specs/<id>-<feature>/state.md"
+    - "specs/<id>-<feature>/session.md"
+    - "git tag"
+  requires:
+    - name: "specs/<id>-<feature>/ containing spec.md, plan.md and tasks.md"
+      level: required
+      fallback: "Stop. No documents means no implementation - ask the user for them rather than inventing a spec"
+    - name: "project constitution file"
+      level: optional
+      fallback: "Execute against the output verification in tasks.md and label the result 'constitution not loaded'"
+    - name: "external TDD capability"
+      level: optional
+      fallback: "Run the built-in red-green-refactor loop"
+    - name: "external code review capability"
+      level: optional
+      fallback: "Run the built-in structured review checklist"
+    - name: "DESIGN.md and design references"
+      level: optional
+      fallback: "Execute against the interaction contract and label visual constraints as not covered"
 ---
 
 # run-feature-en · Single Feature Implementation Standard Process (General)
@@ -76,3 +104,41 @@ Use `superpowers:receiving-code-review` to process, output table: `| # | Categor
 
 - After one feature completes, **stop and wait for review**, then the next.
 - **Strictly prohibit multi-agent concurrent** runs across multiple features (features often have dependency topology).
+
+## Upstream Artifacts
+
+| Artifact | Level | When missing |
+|---|:---:|---|
+| `specs/<id>-<feature>/` containing spec, plan and tasks | **required** | Stop - no documents means no implementation |
+| Project constitution file | optional | Execute against the output verification in tasks.md, labelled "constitution not loaded" |
+| External TDD capability | optional | Run the built-in red-green-refactor loop |
+| External code review capability | optional | Run the built-in structured review checklist |
+| `DESIGN.md` and design references | optional | Execute against the interaction contract, labelled "visual constraints not covered" |
+
+## Downstream Consumers
+
+| Consumer | What it reads |
+|---|---|
+| The test routing skill | This feature's complete output |
+| The retrospective skill | Progress and handoff records, plus the commit history |
+
+## Standalone Use
+
+**What you provide**: one feature directory that already has spec, plan and tasks.
+Everything else is an enhancement.
+
+**What you get**: task-by-task TDD implementation, a structured code review, and close-out
+(commit, merge, tag, updated progress and handoff records). **All of it completes even with
+no external workflow tooling installed**, via the built-in equivalents.
+
+**What you don't get**:
+
+- **It does not write spec, plan or tasks** - that belongs to the feature pipeline skill.
+- When a built-in fallback is used, the output **states "external tool X not used, therefore
+  Y is not covered"**. The built-in path completes the work, but it does not trigger that
+  toolchain's other integrations.
+- With no constitution file, project-level rules are never loaded, and the implementation
+  follows only the output verification in tasks.md.
+
+**Gate**: one feature completes, then **stop and wait for review** before the next.
+Running several features concurrently is forbidden.

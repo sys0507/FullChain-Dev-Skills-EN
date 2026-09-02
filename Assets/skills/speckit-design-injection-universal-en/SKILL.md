@@ -1,6 +1,30 @@
 ---
 name: speckit-design-injection-universal-en
 description: Inject DESIGN.md and visual reference artifacts into an existing Spec-Kit project without redoing specify or clarify. Use when plan.md and tasks.md already exist and a Stitch, Figma, Claude Design, HTML, or hand-written design system must be added through constitution rules, impact scanning, and selective plan/tasks re-runs. Do not use for fresh projects, projects without design artifacts, backend-only projects, or tiny token-only design edits.
+license: MIT
+metadata:
+  version: "1.0"
+  lang: en
+  kind: process-executor
+  stage: "5.2"
+  standalone: true
+  produces:
+    - ".specify/memory/constitution.md"
+    - "specs/00X-*/plan.md"
+    - "specs/00X-*/tasks.md"
+  requires:
+    - name: "DESIGN.md or an equivalent design source of truth"
+      level: required
+      fallback: "Stop - without design material this skill has no input; ask the user for it rather than inventing a design system"
+    - name: "visual and interaction reference sample directory"
+      level: orchestration
+      fallback: "Inject from DESIGN.md alone, and label the sample-dependent constraints as not covered"
+    - name: "feature directories that have completed specify and clarify"
+      level: orchestration
+      fallback: "Ask the user which ones; with none, do the constitution injection only"
+    - name: "spec toolchain"
+      level: optional
+      fallback: "Use the equivalent rewrite flow"
 ---
 
 # Spec-Kit Design Injection
@@ -240,3 +264,36 @@ This skill is used by people who have **already invested significant effort** in
 > "No, you don't need to redo your spec/clarify work. We only update the frontend-touching plan/tasks, and we use Spec-Kit's constitution mechanism to enforce the design system project-wide. Total effort: usually 30-60 minutes regardless of how many features you have."
 
 Then proceed through the 4 steps interactively, pausing at each step for confirmation.
+
+## Upstream Artifacts
+
+| Artifact | Level | When missing |
+|---|:---:|---|
+| `DESIGN.md` or an equivalent design source of truth | **required** | Stop - without design material this skill has no input |
+| Visual and interaction reference sample directory | orchestration | Inject from `DESIGN.md` alone; label the sample-dependent constraints as not covered |
+| Feature directories that completed specify and clarify | orchestration | Ask the user which ones; with none, do the constitution injection only |
+| Spec toolchain | optional | Use the equivalent rewrite flow |
+
+## Downstream Consumers
+
+| Consumer | What it reads |
+|---|---|
+| The implementation executor | The design principles in the constitution, and the reran plan and tasks |
+
+## Standalone Use
+
+**What you provide**: a `DESIGN.md` (or an equivalent design source of truth). A reference
+sample directory helps.
+
+**What you get**: a new design-principles section in the constitution, plus a targeted rerun
+of the plan and tasks for the affected features.
+
+**What you don't get**:
+
+- **Design material is mandatory** - it is the one required dependency, and without it this
+  skill has no input.
+- **It does not modify spec or clarify outputs**, only plan and tasks.
+- It does not produce the design itself; `DESIGN.md` comes from the design stage.
+
+**Gate**: emit the list of affected features and wait for confirmation, then rerun them one
+at a time, stopping after each for review.

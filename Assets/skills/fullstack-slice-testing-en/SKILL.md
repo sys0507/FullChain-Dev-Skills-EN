@@ -1,6 +1,29 @@
 ---
 name: fullstack-slice-testing-en
-description: Validate one real consumer-provider seam within a single feature after frontend and backend work are ready. Bring up both sides and required dependencies, reconcile mocked consumer assumptions with provider behavior, test contract authenticity, identity and serialization glue, error mapping, and applicable async timing, then tear down cleanly. Deliver isolated test changes for human review. Use directly or when routed by test-routing-advisor-en; cross-feature journeys belong to full-chain-testing-en.
+description: Validate one real consumer-provider seam within a single feature after frontend and backend work are ready. Bring up both sides and required dependencies, reconcile mocked consumer assumptions with provider behavior, test contract authenticity, identity and serialization glue, error mapping, and applicable async timing, then tear down cleanly. Deliver isolated test changes for human review. Use directly or when routed by test-routing-advisor-en. Do not use for cross-feature journeys (those belong to full-chain-testing-en), for single-side work with no frontend-backend seam, or when only one side is finished - mocking the other side destroys the point of the reconciliation.
+license: MIT
+metadata:
+  version: "1.0"
+  lang: en
+  kind: process-executor
+  stage: "9.2"
+  standalone: true
+  produces:
+    - "test code (project test directory)"
+    - "evidence archive"
+  requires:
+    - name: "both frontend and backend closed out within the same feature"
+      level: required
+      fallback: "Stop - with one side missing there is nothing to reconcile"
+    - name: "project manifest files for both sides"
+      level: required
+      fallback: "Stop - the real environment cannot be orchestrated without them"
+    - name: "routing decision report"
+      level: orchestration
+      fallback: "Ask the user which slice to take"
+    - name: "browser testing tool"
+      level: optional
+      fallback: "Verify at the interface layer instead, and label the UI layer as not covered"
 ---
 
 # fullstack-slice-testing-en · Partial Frontend-Backend Seam Test Executor
@@ -154,3 +177,36 @@ The purpose of these guardrails: allow seam reconciliation to run automatically,
 - Siblings: `backend-testing-en` (backend-only) / `frontend-testing-en` (frontend-only) — this quadrant is the **reconciliation** of those two: they each mock out the other side and independently validate their own reality, this quadrant brings both sides up to validate the seam, exposing the well-intentioned lies that the single-frontend mock told.
 - Boundary: **multi-feature end-to-end journeys** belong to the fourth quadrant "**complete functional chain**," not here; this quadrant only handles single slices within a single feature.
 - Methodology reuse: Fix and debug of discovered real seam defects reuses `superpowers:test-driven-development` and `superpowers:systematic-debugging` (this skill HALTs and returns to them).
+
+## Upstream Artifacts
+
+| Artifact | Level | When missing |
+|---|:---:|---|
+| Both sides closed out within the same feature | **required** | Stop - with one side missing there is nothing to reconcile |
+| Project manifest files for both sides | **required** | Stop - the real environment cannot be orchestrated |
+| Routing decision report | orchestration | Ask the user which slice to take |
+| Browser testing tool | optional | Verify at the interface layer instead; label the UI layer as not covered |
+
+## Downstream Consumers
+
+| Consumer | What it reads |
+|---|---|
+| The full chain skill | A reconciled slice, as trustworthy ground |
+| Branch close-out | The seam risks |
+
+## Standalone Use
+
+**What you provide**: a feature with both frontend and backend closed out, plus both sides'
+dependency manifests.
+
+**What you get**: one slice verified with the mocks removed and the real shapes joined -
+environment orchestration, contract reality, seam glue, real-time ordering.
+
+**What you don't get**:
+
+- **One slice within one feature only** - journeys spanning several features belong to the
+  full chain skill.
+- **It does not work with only one side present**: this is the one prerequisite that cannot
+  be degraded, because mocking either side destroys the point of the reconciliation.
+- The new difficulty is standing the real stack up rather than writing assertions; where
+  environment orchestration is unavailable, this skill does not apply.

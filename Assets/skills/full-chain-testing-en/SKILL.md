@@ -1,6 +1,30 @@
 ---
 name: full-chain-testing-en
 description: Excavate and protect a newly reachable P0 cross-feature journey using static structure, runtime traces, and spec contracts. Bring up the real system, stub only external boundaries, validate multi-feature and asynchronous paths without fixed sleeps, archive journey-level evidence, and backfill lower layers when a defect first appears here. Deliver isolated changes for human review. Use directly or when routed by test-routing-advisor-en; do not use for a single-feature seam.
+license: MIT
+metadata:
+  version: "1.0"
+  lang: en
+  kind: process-executor
+  stage: "9.2"
+  standalone: true
+  produces:
+    - "end-to-end test code"
+    - "path-inventory.json"
+    - "evidence archive"
+  requires:
+    - name: "several closed-out features"
+      level: required
+      fallback: "Stop - a cross-feature journey needs several features to exist first"
+    - name: "project manifest files"
+      level: required
+      fallback: "Stop - the stack cannot be identified and the system cannot be orchestrated"
+    - name: "routing decision report"
+      level: orchestration
+      fallback: "Ask the user which journey to take"
+    - name: "runtime tracing capability"
+      level: optional
+      fallback: "Excavate from the static graph and spec contracts only, and label which paths went un-excavated"
 ---
 
 # full-chain-testing-en · Complete Functional Chain Test Executor
@@ -227,3 +251,32 @@ features / nodes / edges (each with source+status+provenance) / journeys.
 3. **One-click view** — `bash scripts/view.sh demo` (or `alpha` / any inventory path) → automatically starts local server + opens browser + **data is already loaded**, goes directly to the cool "user journey list" page, **no drag-and-drop needed**. (Double-clicking `knife6_viewer.html` and dragging the json into the page drop zone is the `file://` fallback method; `view.sh` is recommended.)
 
 Single-tool usage: run `knife1_spec.py <specs/>` against the spec tree, run `knife2_static.py <repo/>` against real code, then `knife4_merge.py` to merge, `knife4b_narrate.py` to add narration — this sequence is essentially the breakdown of step 2.
+
+## Upstream Artifacts
+
+| Artifact | Level | When missing |
+|---|:---:|---|
+| Several closed-out features | **required** | Stop - a cross-feature journey needs several features first |
+| Project manifest files | **required** | Stop - the stack cannot be identified |
+| Routing decision report | orchestration | Ask the user which journey to take |
+| Runtime tracing capability | optional | Excavate from the static graph and spec contracts only; label which paths went un-excavated |
+
+## Downstream Consumers
+
+| Consumer | What it reads |
+|---|---|
+| Branch close-out | The end-to-end safety net's result |
+| The retrospective skill | Which defects surfaced first at this layer, and therefore which lower layer under-tested |
+
+## Standalone Use
+
+**What you provide**: several closed-out features and the project's dependency manifests;
+use whichever of the three excavation sources you have.
+
+**What you get**: an excavated inventory of cross-feature paths, a P0 journey selection, and
+an end-to-end safety net.
+
+**What you don't get**: it does not cover slices within a single feature (those belong to
+the local seam skill); with fewer than three sources it labels which paths went
+un-excavated; and **when a defect surfaces here first, that means a lower layer
+under-tested it, so backfill that layer** rather than adding tests here.
