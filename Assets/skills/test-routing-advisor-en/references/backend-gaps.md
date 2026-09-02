@@ -1,81 +1,111 @@
-# 单后端结构性缺口清单（栈无关能力 → 路由给 `backend-testing-en`）
+# Backend-only structural gap list (stack-agnostic capabilities -> routed to `backend-testing-en`)
 
-这张清单专门服务「单后端」类别：一个 feature 的后端 task 全绿、进入收尾时，TDD 循环只覆盖了
-单元，而真正高风险的缺口在 TDD 通常碰不到的地方。下面把这些**结构性缺口**逐项列出（都是
-**栈无关的能力**），并给出每项是「✅ 现成（按栈选工具即可）」还是「🔧 需自建（任何栈都没有即用
-方案）」的判定。**本 skill 不写死任何单栈工具**——判出命中哪些缺口后，连同命中理由一并**路由给
-`backend-testing-en` skill**，由它读项目的 `package.json` / `pyproject.toml` / `go.mod` /
-`Cargo.toml` 等判栈后选该栈对应工具来闭环补测。
+This list serves the "backend only" category: when a feature's backend tasks are all green
+and it enters close-out, the TDD loop has covered only the units, while the genuinely
+high-risk gaps sit where TDD does not usually reach. Below, those **structural gaps** are
+listed one by one (all of them **stack-agnostic capabilities**), each judged either
+"available (just pick the tool for the stack)" or "**must be built** (no stack has an
+off-the-shelf answer)". **This skill hardcodes no single-stack tool** — once you have judged
+which gaps are hit, **route them, with the reason each was hit, to the `backend-testing-en`
+skill**, which reads the project's `package.json` / `pyproject.toml` / `go.mod` /
+`Cargo.toml` to identify the stack and picks that stack's tools to close the gap.
 
-> 方法论以 `testing-system-blueprint-en` skill 为蓝本；缺陷固化复用其指向的 TDD / systematic-debugging
-> （"bug 先写一个能复现它的失败测试，再去修"）。下文出现的工具名仅为**多栈示例**，非写死答案。
+> Methodology follows the `testing-system-blueprint-en` skill as its blueprint; defect
+> hardening reuses the TDD / systematic-debugging practice it points at ("for a bug, first
+> write a failing test that reproduces it, then fix it"). Tool names below are
+> **multi-stack examples**, not fixed answers.
 
-## 关键洞：code-review ≠ test
+## The key insight: code review is not a test
 
-很多收尾流程对这些缺口的处理只是「code-review 看一眼」。但 **code review 只阅读、发现问题，
-不生成回归测试**——缺陷即便当场修了，没有固化成一个会变红的测试，它就会复发。所以下表把
-"流程目前怎么对待这个缺口"和"应该补什么能力的测试"分开列：阅读发现 ≠ 回归保护。
+Many close-out processes handle these gaps with "a look during code review". But **code
+review only reads and finds problems; it produces no regression test** — even if a defect
+is fixed on the spot, without being hardened into a test that will go red, it comes back.
+So the table below separates "how the process treats this gap today" from "what capability
+the test should cover": finding by reading is not regression protection.
 
-## 缺口清单（栈无关）
+## Gap list (stack-agnostic)
 
-| 结构性缺口（能力） | 流程目前怎么对待 | 判定 | 路由去向 / 做法 |
+| Structural gap (capability) | How the process treats it today | Judgement | Routes to / approach |
 |---|---|---|---|
-| 真库数据层 / 迁移 / 事务 / 约束 | 流程只 code-review 看（读代码，不跑真库） | ✅ 现成 | → `backend-testing-en` 按栈选真库 / 容器化测试工具 |
-| 鉴权 / 越权（BOLA·BFLA） | 流程**完全没碰**（P0） | 🔧 **需自建** | → `backend-testing-en` 自建双用户断言（任何栈都无即用方案，见下） |
-| 并发 / 竞态 / 限频原子性 | 零覆盖 | ✅ 现成 | → `backend-testing-en` 按栈选并发压测手段 |
-| 韧性 / 重试 / 超时 / 降级 | 流程只 review 看 | ✅ 现成 | → `backend-testing-en` 按栈选 HTTP / 依赖 mock 库 |
+| Real-database data layer / migrations / transactions / constraints | Only reviewed (reading code, not running a real database) | Available | `backend-testing-en` picks a real-database or containerised testing tool for the stack |
+| Authorisation / privilege escalation (BOLA, BFLA) | **Not touched at all** (P0) | **Must be built** | `backend-testing-en` builds two-user assertions (no stack has an off-the-shelf answer, see below) |
+| Concurrency / races / rate-limit atomicity | Zero coverage | Available | `backend-testing-en` picks a concurrency load approach for the stack |
+| Resilience / retry / timeout / degradation | Only reviewed | Available | `backend-testing-en` picks an HTTP or dependency mocking library for the stack |
 
-## 各缺口展开（能力定义 + 多栈示例）
+## Each gap in detail (capability definition + multi-stack examples)
 
-### 1. 真库数据层 / 迁移 / 事务 / 约束 — ✅ 现成（按栈选工具）
+### 1. Real-database data layer / migrations / transactions / constraints — available
 
-**能力定义：** 对真实数据库跑迁移 up/down 往返，并在真库上验证约束 / 序列化。mock 掉数据层的
-单元测试会掩盖 schema 漂移、约束失效、迁移不可逆等问题——真库才抓得到。
+**Capability definition:** run migrations up and down against a real database as a
+round trip, and verify constraints and serialisation on that real database. Unit tests
+that mock out the data layer conceal schema drift, dead constraints and irreversible
+migrations — only a real database catches those.
 
-- **多栈示例（由 `backend-testing-en` 按栈选）：** Python 栈常见 `pytest-alembic`（迁移往返）+
-  `pytest-postgresql`（免 Docker 拉真库）；任意栈可用 `testcontainers` 起真容器；其它栈用各自
-  生态的真库 / 容器测试工具。**这些是示例，不是写死答案。**
+- **Multi-stack examples (chosen by `backend-testing-en` per stack):** Python stacks often
+  use `pytest-alembic` (migration round trip) plus `pytest-postgresql` (a real database
+  without Docker); any stack can use `testcontainers` to start a real container; other
+  stacks use their own ecosystem's real-database or container testing tools. **These are
+  examples, not fixed answers.**
 
-### 2. 鉴权 / 越权（BOLA·BFLA） — 🔧 需自建（P0，栈无关判定）
+### 2. Authorisation / privilege escalation (BOLA, BFLA) — must be built (P0, stack-agnostic judgement)
 
-这是流程**完全没碰**的缺口，风险最高，且**任何栈都没有即插即用方案**——这是业务语义。
+This is the gap the process **does not touch at all**. It carries the highest risk, and
+**no stack has a plug-and-play answer** — it is business semantics.
 
-- **BOLA（对象级越权）**：用户 A 能不能拿到 / 改到本属于用户 B 的对象（`/resource/{id}`）。
-- **BFLA（功能级越权）**：普通用户能不能调到只该管理员调的特权接口。
+- **BOLA (broken object level authorisation):** can user A read or modify an object that
+  belongs to user B (`/resource/{id}`)?
+- **BFLA (broken function level authorisation):** can an ordinary user reach a privileged
+  endpoint meant only for administrators?
 
-**为什么必须自建（与栈无关）：** 通用的"是否强制鉴权"扫描工具只能查"接口是否放行无 token 请求"，
-**测不了对象级越权**——接口要了 token、但没校验这个 token 的主体是否有权访问那个具体对象，工具
-无从判断"哪个对象该属于谁"。这是业务语义，没有任何栈的现成工具能即插即用。
+**Why it must be built, in any stack:** generic "is authorisation enforced" scanners can
+only check whether an endpoint lets through a request with no token. They **cannot test
+object-level escalation** — an endpoint that demands a token but never verifies that the
+token's subject may access that particular object looks fine to a scanner, because the
+scanner has no way to know which object should belong to whom. That is business semantics,
+and no stack has an off-the-shelf tool for it.
 
-**自建做法（由 `backend-testing-en` 按栈落地，逻辑栈无关）：**
+**How to build it (landed by `backend-testing-en` per stack; the logic is stack-agnostic):**
 
-1. 准备**双用户凭证 fixture**（user_A、user_B 各一套合法凭证）。
-2. 用 user_A 创建 / 拿到一个对象，记下它的 id。
-3. **参数化遍历**按 id 寻址的接口，用 user_B 的凭证去访问 user_A 的对象。
-4. **断言跨用户访问返回 403**（或 404，按项目约定），绝不返回 200 + 他人数据。
-5. 特权接口同理：用普通用户凭证调管理员接口，断言被拒。
+1. Prepare a **two-user credential fixture** (a valid credential set each for user_A and user_B).
+2. As user_A, create or obtain an object and record its id.
+3. **Parameterise across the id-addressed endpoints**, accessing user_A's object with
+   user_B's credentials.
+4. **Assert that cross-user access returns 403** (or 404, per the project's convention) and
+   never 200 with someone else's data.
+5. Do the same for privileged endpoints: call an admin endpoint with ordinary user
+   credentials and assert it is refused.
 
-### 3. 并发 / 竞态 / 限频原子性 — ✅ 现成（按栈选工具）
+### 3. Concurrency / races / rate-limit atomicity — available
 
-**能力定义：** 在一个测试内并发打 N 个请求，断言限频 / 配额 / 唯一约束在并发下不被击穿。
-限频、配额、唯一约束在串行测试里永远是绿的，缺陷只在并发下暴露。
+**Capability definition:** fire N concurrent requests inside one test and assert that rate
+limits, quotas and unique constraints are not broken under concurrency. Rate limits, quotas
+and unique constraints are always green in serial tests; the defects appear only under
+concurrency.
 
-- **多栈示例（由 `backend-testing-en` 按栈选）：** Python 栈 `pytest-run-parallel` + `asyncio.gather`；
-  Go 栈用 goroutine + 竞态检测（`-race`）；JS/TS 栈用 `Promise.all` 并发打请求；其它栈用各自的
-  并发压测手段。
+- **Multi-stack examples (chosen by `backend-testing-en` per stack):** Python stacks use
+  `pytest-run-parallel` with `asyncio.gather`; Go stacks use goroutines with the race
+  detector (`-race`); JS/TS stacks fire concurrent requests via `Promise.all`; other stacks
+  use their own concurrency load approach.
 
-### 4. 韧性 / 重试 / 超时 / 降级 — ✅ 现成（按栈选工具）
+### 4. Resilience / retry / timeout / degradation — available
 
-**能力定义：** 对外部依赖注入超时 / 异常序列，模拟"前两次失败、第三次成功"验证重试逻辑，或
-"持续失败"验证降级 / fallback 是否真的发生。外部依赖的这些路径单元测试很少覆盖。
+**Capability definition:** inject timeouts and error sequences into external dependencies —
+simulate "fails twice, succeeds on the third" to verify retry logic, or "keeps failing" to
+verify that degradation or fallback actually happens. Unit tests rarely cover these paths
+through external dependencies.
 
-- **多栈示例（由 `backend-testing-en` 按栈选）：** Python httpx 栈 `respx` / `pytest-httpx`；
-  Node 栈 `nock` / `msw`；其它栈用各自生态的 HTTP / 依赖 mock 库。
+- **Multi-stack examples (chosen by `backend-testing-en` per stack):** Python httpx stacks
+  use `respx` or `pytest-httpx`; Node stacks use `nock` or `msw`; other stacks use their
+  ecosystem's HTTP or dependency mocking library.
 
-## 与条件命中配合
+## Working with conditional hits
 
-不是每个 feature 都命中全部缺口——按 feature 实际触及的东西筛子集（命中规则见
-`tool-mapping.md` 的「条件命中」表）：碰了 DB 写入才标真库缺口，有多用户 / 特权接口才标越权缺口，
-有限频 / 配额才标并发缺口，调了外部依赖才标韧性缺口。纯逻辑 / 纯读的简单后端可能一项都不命中，
-TDD + 契约即够，不要为了凑齐而过度测。本 skill 只标命中的能力缺口；**具体工具一律由
-`backend-testing-en` 按栈实例化，本 skill 不替它决定。**
+Not every feature hits every gap — take the subset the feature actually touches (the hit
+rules are in the "conditional hits" table in `tool-mapping.md`): mark the real-database gap
+only when it writes to a database, the authorisation gap only when there are multiple users
+or privileged endpoints, the concurrency gap only when there are rate limits or quotas, the
+resilience gap only when it calls an external dependency. A simple backend that is pure
+logic or read-only may hit none of them, where TDD plus contracts is enough — do not
+over-test to fill the table. This skill marks only the capability gaps that are hit;
+**the concrete tools are always instantiated by `backend-testing-en` for the stack, and
+this skill does not decide them on its behalf.**

@@ -1,89 +1,128 @@
-# 局部前后端结构性缺口清单（栈无关能力 → 路由给 `fullstack-slice-testing-en`）
+# Local full-stack slice structural gap list (stack-agnostic capabilities -> routed to `fullstack-slice-testing-en`)
 
-这张清单专门服务「局部前后端」类别：一个 feature 的前后端 task 全绿、进入收尾时，单后端测试在
-mock 掉前端、单前端测试在 mock 掉后端的情况下各自全绿——但**这条接缝本身从没被两侧真实地拼起来
-跑过**。下面把这些**结构性缺口**逐项列出（都是**栈无关的能力**），并给出每项的做法。**本 skill
-不写死任何单栈工具**——判出命中哪些缺口后，连同命中理由一并**路由给 `fullstack-slice-testing-en`
-skill**，由它读项目栈（`package.json` / `pyproject.toml` / `docker-compose.yml` / `go.mod` 等）
-判栈后接该栈对应工具来闭环补测。
+This list serves the "local full-stack slice" category: when a feature's frontend and
+backend tasks are all green and it enters close-out, the backend tests are green with the
+frontend mocked out and the frontend tests are green with the backend mocked out — but
+**the seam itself has never been run with both real sides joined together**. Below, those
+**structural gaps** are listed one by one (all of them **stack-agnostic capabilities**) with
+the approach for each. **This skill hardcodes no single-stack tool** — once you have judged
+which gaps are hit, **route them, with the reason each was hit, to the
+`fullstack-slice-testing-en` skill**, which reads the project's stack (`package.json`,
+`pyproject.toml`, `docker-compose.yml`, `go.mod` and so on) and wires that stack's tools to
+close the gap.
 
-> 方法论以 `testing-system-blueprint-en` skill 为蓝本。下文出现的工具名（docker-compose / Playwright /
-> gstack `/qa` / Pact / MSW…）仅为**多栈示例**，非写死答案。
+> Methodology follows the `testing-system-blueprint-en` skill as its blueprint. The tool
+> names below (docker-compose, Playwright, Pact, MSW and the rest) are **multi-stack
+> examples**, not fixed answers.
 
-## 判类条件（什么时候归「局部前后端」）
+## Classification condition (when this is a "local full-stack slice")
 
-改动**同时落在前端和后端**、且这条接缝**不跨出本 feature 边界**——跨多 feature 的用户旅程归
-「完整功能链路」。本质 = 单 feature 内 *真前端 ↔ 真后端* 的单切片对账。纯单侧改动归单后端 /
-单前端，不进本格。
+Changes land in **both frontend and backend**, and the seam **does not cross the feature
+boundary** — user journeys spanning several features belong to "full functional chain".
+In essence this is a single-slice reconciliation of *real frontend to real backend* within
+one feature. Pure single-side changes belong to backend-only or frontend-only, not here.
 
-## 形态差异：本格新难点在"起真栈"，不在写断言
+## A difference in shape: the new difficulty is standing the real stack up, not writing assertions
 
-这是局部前后端区别于单后端、单前端的根本点：
+This is what fundamentally separates the local full-stack slice from backend-only and
+frontend-only work:
 
-- **单后端执行器（`backend-testing-en`）"自己写测试代码"** —— 越权双用户断言、并发不变量等多半要手写。
-- **单前端执行器（`frontend-testing-en`）"接成熟工具 + 配置 + 翻译视觉契约"** —— 工具现成，活儿在配置。
-- **局部前后端执行器（`fullstack-slice-testing-en`）"先把真栈起起来，再对账"** —— 断言本身不难写，
-  **真正的难点是环境编排**：让前端 + 后端 + 真依赖（数据存储 / 缓存 / 外部服务）真实同时可复现地
-  起起来。它本质是**单前端 mock 与单后端真实的对账**：单前端阶段为了跑绿用了消费者 mock，这一格
-  要把 mock 换成真提供者，验证两者形状 / 时序 / 错误态是否真的对得上。
+- **The backend executor (`backend-testing-en`) writes test code itself** — two-user
+  escalation assertions, concurrency invariants and the like are mostly hand-written.
+- **The frontend executor (`frontend-testing-en`) wires mature tools, configures them and
+  translates visual contracts** — the tools exist; the work is configuration.
+- **The full-stack slice executor (`fullstack-slice-testing-en`) stands the real stack up
+  first, then reconciles** — the assertions themselves are not hard to write; **the real
+  difficulty is environment orchestration**: getting the frontend, the backend and the real
+  dependencies (data store, cache, external services) up simultaneously and reproducibly.
+  It is fundamentally **a reconciliation between the frontend's mocks and the backend's
+  reality**: the frontend-only stage used a consumer mock to get green, and this stage
+  swaps that mock for the real provider to verify the shapes, the timing and the error
+  states genuinely line up.
 
-**分层做法：** 第一层用 **diff-aware E2E** 跑一层黑盒冒烟（对真实组装栈走一遍主路径，看整条接缝
-通不通）；第二层再补**结构化接缝断言**（精确断言身份透传 / 序列化口径 / 错误→UI 映射 / 实时时序）。
-diff-aware E2E 的候选样例是 gstack `/qa`——**非硬依赖，有则优先、无则回退** Playwright 等。
+**A layered approach:** first run a **diff-aware E2E** black-box smoke (walk the main path
+against the real assembled stack and see whether the seam is connected at all); then add
+**structured seam assertions** (precisely assert identity propagation, serialisation
+conventions, error-to-UI mapping, real-time ordering). A diff-aware E2E tool is
+**optional — prefer one where it exists, fall back to Playwright and similar where it does
+not**.
 
-## 缺口清单（栈无关）
+## Gap list (stack-agnostic)
 
-| 结构性缺口（能力） | 流程目前怎么对待 | 做法 | 路由去向 / 工具示例 |
+| Structural gap (capability) | How the process treats it today | Approach | Routes to / example tools |
 |---|---|---|---|
-| ① 环境编排（两侧 + 依赖真实同起） | 流程**完全没碰**——两侧各自 mock 跑绿，真栈从没拼起来 | 🔧 第一动作：起真栈 | → `fullstack-slice-testing-en` 按栈起（docker-compose / 进程内组装 + testcontainers / gstack） |
-| ② 契约真实性（mock vs 真提供者对账） | 单前端用消费者 mock 跑绿，没对过真后端形状 | 把 mock 换真提供者对账 | → `fullstack-slice-testing-en` 回放真响应校验 mock / 双向 diff（Pact / OpenAPI diff） |
-| ③ 接缝粘合（身份透传 / 序列化 / 错误→UI） | 单侧测试都看不到的粘合点 | 带真鉴权头打通 + 断言 UI 错误态 | → `fullstack-slice-testing-en` 跨进程驱动 + UI 状态断言 |
-| ④ 真实时序 / 实时（条件命中） | 流式 / 异步路径零覆盖 | 接工具断言增量到达时序 | → `fullstack-slice-testing-en` 接 SSE / WebSocket / 轮询断言（**仅流式 / 异步才标**） |
+| 1. Environment orchestration (both sides + dependencies up for real) | **Not touched at all** — each side is green against its own mocks, and the real stack has never been assembled | Must be built: the first action is to stand the real stack up | `fullstack-slice-testing-en` stands it up per stack (docker-compose, in-process assembly + testcontainers) |
+| 2. Contract reality (mock versus real provider) | The frontend is green against a consumer mock, never checked against the real backend shape | Swap the mock for the real provider and reconcile | `fullstack-slice-testing-en` replays real responses to validate the mock, or diffs both directions (Pact, OpenAPI diff) |
+| 3. Seam glue (identity propagation / serialisation / error-to-UI) | Glue points neither side's tests can see | Drive the path with real auth headers and assert the UI error states | `fullstack-slice-testing-en` drives cross-process and asserts UI state |
+| 4. Real-time ordering (conditional hit) | Streaming and async paths have zero coverage | Wire a tool and assert incremental arrival ordering | `fullstack-slice-testing-en` wires SSE / WebSocket / polling assertions (**marked only for streaming or async**) |
 
-## 各缺口展开（能力定义 + 多栈示例）
+## Each gap in detail (capability definition + multi-stack examples)
 
-### ① 环境编排（两侧 + 依赖真实同起） — 🔧 第一动作（新难点所在）
+### 1. Environment orchestration (both sides + dependencies up for real) — the first action, and where the new difficulty lives
 
-**能力定义：** 把前端 + 后端 + 真依赖（数据存储 / 缓存 / 外部服务）真实、同时、可复现地起起来，
-让这条接缝能在真实组装物上被驱动一遍。两侧各自 mock 跑绿不等于拼起来能通——起真栈是本格的第一道坎，
-也是断言能不能落地的前提。
+**Capability definition:** get the frontend, the backend and the real dependencies (data
+store, cache, external services) up simultaneously and reproducibly, so the seam can be
+driven once against the genuine assembly. Both sides being green against their own mocks
+does not mean they connect when joined — standing the real stack up is this category's
+first hurdle, and the precondition for any assertion landing at all.
 
-- **多栈示例（由 `fullstack-slice-testing-en` 按栈选）：** `docker-compose` 起整栈；进程内 ASGI/WSGI
-  组装真应用 handler + `testcontainers` 起真数据存储 / 缓存；gstack 一键起栈——**gstack 非硬依赖，
-  有则优先、无则回退** docker-compose 或进程内组装。**这些是示例，不是写死答案。**
+- **Multi-stack examples (chosen by `fullstack-slice-testing-en` per stack):**
+  `docker-compose` for the whole stack; in-process ASGI/WSGI assembly of the real
+  application handler plus `testcontainers` for a real data store or cache; a one-command
+  stack tool where the project has one — **such a tool is optional, preferred where it
+  exists and falling back to docker-compose or in-process assembly where it does not.
+  These are examples, not fixed answers.**
 
-### ② 契约真实性（消费者 mock vs 提供者真实对账）
+### 2. Contract reality (consumer mock versus real provider)
 
-**能力定义：** 把单前端阶段用来跑绿的**消费者 mock** 换成**真实提供者**，对账两者的形状是否一致。
-单前端用 mock 全绿，不代表真后端返回同样的字段 / 类型 / 嵌套结构——这一格专抓 mock 与真实之间悄无
-声息的偏差（少了字段、类型变了、可空性变了）。
+**Capability definition:** replace the **consumer mock** the frontend-only stage used to
+reach green with the **real provider**, and reconcile whether the shapes match. Green
+against a mock does not mean the real backend returns the same fields, types or nesting —
+this gap exists to catch the silent divergence between mock and reality (a missing field, a
+changed type, a changed nullability).
 
-- **多栈示例（由 `fullstack-slice-testing-en` 按栈选）：** 用真后端响应回放校验前端的 MSW handler；
-  跨独立部署时用 `Pact` 风格消费者驱动契约把"前端的期望"与"后端的真实输出"对账；同仓库可用 OpenAPI
-  规约双向 diff。**按栈与部署形态定。**
+- **Multi-stack examples (chosen by `fullstack-slice-testing-en` per stack):** replay real
+  backend responses to validate the frontend's MSW handlers; across independently deployed
+  services, use `Pact`-style consumer-driven contracts to reconcile "what the frontend
+  expects" against "what the backend actually emits"; within one repository, diff an
+  OpenAPI spec in both directions. **Depends on the stack and the deployment shape.**
 
-### ③ 接缝粘合（身份透传 / 序列化 / 错误→UI 映射）
+### 3. Seam glue (identity propagation / serialisation / error-to-UI mapping)
 
-**能力定义：** 断言跨进程的接缝上那些**单侧测试都看不到**的粘合点：身份令牌是否真的从前端透传到
-后端并被正确校验；两侧的序列化口径（日期 / 数字 / 枚举 / 空值）是否一致；后端的各类错误态（4xx /
-5xx / 业务错误码）是否正确映射到前端对应的 UI 状态。
+**Capability definition:** assert the glue points on the cross-process seam that **neither
+side's tests can see**: whether the identity token really propagates from frontend to
+backend and is validated correctly; whether both sides agree on serialisation conventions
+(dates, numbers, enums, nulls); whether the backend's error states (4xx, 5xx, business
+error codes) map correctly to the frontend's corresponding UI states.
 
-- **多栈示例（由 `fullstack-slice-testing-en` 按栈选）：** 带真实鉴权头打通整条请求路径，断言受保护资源
-  可达 / 越权被拒；构造后端返回各类错误，断言 UI 渲染出对应的错误 / 空 / 降级态。**按栈定。**
+- **Multi-stack examples (chosen by `fullstack-slice-testing-en` per stack):** drive the
+  whole request path with real auth headers and assert that protected resources are
+  reachable and cross-user access is refused; make the backend return each class of error
+  and assert the UI renders the corresponding error, empty or degraded state. **Depends on
+  the stack.**
 
-### ④ 真实时序 / 实时（条件命中：流式 / 异步才命中）
+### 4. Real-time ordering (conditional: only hit by streaming or async)
 
-**能力定义：** 对**流式 / 异步 / 实时推送**断言时序与增量到达——首字到达、增量顺序、流结束 /
-中断 / 超时的 UI 行为。**仅当本 feature 命中流式 / 异步 / 实时推送时才标**，否则不标（防过度测）。
+**Capability definition:** assert timing and incremental arrival for **streaming, async or
+real-time push** — first byte arrival, increment ordering, and UI behaviour on stream end,
+interruption or timeout. **Marked only when this feature actually involves streaming, async
+or real-time push**; otherwise not marked, to prevent over-testing.
 
-- **多栈示例（由 `fullstack-slice-testing-en` 按栈选）：** SSE / WebSocket 增量与时序断言；轮询到达
-  时序断言。**按栈定。**
+- **Multi-stack examples (chosen by `fullstack-slice-testing-en` per stack):** SSE or
+  WebSocket increment and ordering assertions; polling arrival ordering assertions.
+  **Depends on the stack.**
 
-## 与条件命中配合
+## Working with conditional hits
 
-不是每个 feature 都命中全部缺口——按 feature 实际触及的东西筛子集（命中规则见 `tool-mapping.md`
-的「条件命中」表）：任何前后端同时改动都先起①环境编排（真栈本身常常从没拼起来）；单前端有消费者
-mock、本 feature 内又有真提供者才标②契约真实性对账；跨进程传身份 / 序列化 / 有错误态要映射 UI 才标
-③接缝粘合；**仅流式 / 异步 / 实时**才标④真实时序·实时。无前后端接缝的纯单侧改动归单后端 / 单前端，
-不进本格。本 skill 只标命中的接缝缺口；**具体工具一律由 `fullstack-slice-testing-en` 按栈实例化（含
-gstack 这类有则优先、无则回退的非硬依赖），本 skill 不替它决定。**
+Not every feature hits every gap — take the subset the feature actually touches (the hit
+rules are in the "conditional hits" table in `tool-mapping.md`): any change touching both
+sides starts with gap 1, environment orchestration (the real stack has often never been
+assembled); mark gap 2, contract reality, only where the frontend had a consumer mock and
+this feature also has the real provider; mark gap 3, seam glue, where identity crosses
+processes, where serialisation matters, or where error states must map to the UI; mark gap
+4, real-time ordering, **only for streaming, async or real-time push**. Pure single-side
+changes with no frontend-backend seam belong to backend-only or frontend-only, not here.
+This skill marks only the seam gaps that are hit; **the concrete tools are always
+instantiated by `fullstack-slice-testing-en` for the stack (including optional tools that
+are preferred where present and fall back where absent), and this skill does not decide
+them on its behalf.**

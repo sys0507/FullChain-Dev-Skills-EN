@@ -1,89 +1,120 @@
-# 单前端结构性缺口清单（栈无关能力 → 路由给 `frontend-testing-en`）
+# Frontend-only structural gap list (stack-agnostic capabilities -> routed to `frontend-testing-en`)
 
-这张清单专门服务「单前端」类别：一个 feature 的前端 task 全绿、进入收尾时，TDD 循环（若有）只
-覆盖了少量单元，而真正高风险的缺口在 TDD 通常碰不到的地方——而且前端常常**连测试地基都没有**。
-下面把这些**结构性缺口**逐项列出（都是**栈无关的能力**），并给出每项的做法。**本 skill 不写死
-任何单栈工具**——判出命中哪些缺口后，连同命中理由一并**路由给 `frontend-testing-en` skill**，由它读
-项目的 `package.json`（含框架 / 测试运行器线索）等判栈后接该栈对应工具来闭环补测。
+This list serves the "frontend only" category: when a feature's frontend tasks are all
+green and it enters close-out, the TDD loop (if there was one) has covered only a few
+units, while the genuinely high-risk gaps sit where TDD does not usually reach — and the
+frontend frequently **has no test foundation at all**. Below, those **structural gaps** are
+listed one by one (all of them **stack-agnostic capabilities**) with the approach for each.
+**This skill hardcodes no single-stack tool** — once you have judged which gaps are hit,
+**route them, with the reason each was hit, to the `frontend-testing-en` skill**, which
+reads the project's `package.json` (including framework and test-runner clues) to identify
+the stack and wires up that stack's tools to close the gap.
 
-> 方法论以 `testing-system-blueprint-en` skill 为蓝本。下文出现的工具名仅为**多栈示例**，非写死答案。
+> Methodology follows the `testing-system-blueprint-en` skill as its blueprint. Tool names
+> below are **multi-stack examples**, not fixed answers.
 
-## 判类条件（什么时候归「单前端」）
+## Classification condition (when this is "frontend only")
 
-改动**只落在前端层**——组件 / 页面 / 样式 / 前端路由 / 前端状态——不涉及后端业务逻辑、也不与
-真后端联调。一旦涉及真后端联调，归「完整功能链路」；同一 feature 内前端↔后端局部打通归「局部
-前后端」。
+Changes land **in the frontend layer alone** — components, pages, styles, frontend routing,
+frontend state — with no backend business logic and no integration against a live backend.
+Once a live backend is involved it belongs to "full functional chain"; frontend-to-backend
+wiring within a single feature belongs to "local full-stack slice".
 
-## 形态差异：前端是"接工具"，不是"自己写测试代码"
+## A difference in shape: the frontend wires tools rather than writing test code
 
-这是单前端区别于单后端的根本点：
+This is what fundamentally separates frontend-only from backend-only:
 
-- **单后端执行器（`backend-testing-en`）"自己写测试代码"** —— 越权双用户断言、并发不变量等多半要手写。
-- **单前端执行器（`frontend-testing-en`）"接成熟工具 + 配置 + 把项目视觉契约翻译成断言"** ——
-  stylelint / Vitest+RTL / Playwright / axe / MSW 都是现成的，活儿在于按栈接好、配好、把项目的
-  视觉与契约规则翻译成断言。**唯一需要人审的节点是 L2 视觉基线裁决**（基线快照变更要人确认是
-  预期改版还是回归）。
+- **The backend executor (`backend-testing-en`) writes test code itself** — two-user
+  escalation assertions, concurrency invariants and the like are mostly hand-written.
+- **The frontend executor (`frontend-testing-en`) wires mature tools, configures them, and
+  translates the project's visual contracts into assertions** — stylelint, Vitest + RTL,
+  Playwright, axe and MSW all exist already; the work is wiring and configuring them for
+  the stack and turning the project's visual and contract rules into assertions. **The
+  single point needing human review is adjudicating the L2 visual baseline** (a changed
+  baseline snapshot needs a person to confirm whether it is an intended redesign or a
+  regression).
 
-## 缺口清单（栈无关）
+## Gap list (stack-agnostic)
 
-| 结构性缺口（能力） | 流程目前怎么对待 | 做法 | 路由去向 / 工具示例 |
+| Structural gap (capability) | How the process treats it today | Approach | Routes to / example tools |
 |---|---|---|---|
-| L0/L1 测试地基 | 流程**完全没碰**——[FE] 出参常只写"手测"、没装测试运行器 | 🔧 第一动作：立地基 | → `frontend-testing-en` 按栈接组件测试库（Vitest+RTL 等） |
-| L2 视觉回归（像素 / 深色 / 颜色契约） | 靠肉眼看截图 | 接工具 + 翻译契约（**人审 L2 基线裁决**） | → `frontend-testing-en` 按栈接截图快照（Playwright 等） |
-| L3 可访问性 a11y（对比度 / ARIA / label） | 零覆盖 | 接工具 | → `frontend-testing-en` 按栈接 a11y 审计（axe 等） |
-| L4 跨浏览器 + 响应式 | 零覆盖 | 接工具（多视口 + 几何断言） | → `frontend-testing-en` 按栈接多 viewport 运行 |
-| L6 前后端契约 mock | 流程没碰，契约易漂移 | 接工具（从规约生成 mock） | → `frontend-testing-en` 按栈接 MSW + OpenAPI 生成 |
-| 设计 token / 硬编码颜色 | 靠 review 看 | **走 lint 门，不写测试** | → lint 规则在门上拦（stylelint 等） |
+| L0/L1 test foundation | **Not touched at all** — `[FE]` outputs often just say "tested manually", with no test runner installed | Must be built: the first action is to lay the foundation | `frontend-testing-en` wires a component testing library for the stack (Vitest + RTL and similar) |
+| L2 visual regression (pixels / dark mode / colour contracts) | Eyeballing screenshots | Wire a tool and translate the contracts (**human adjudication of the L2 baseline**) | `frontend-testing-en` wires screenshot snapshots for the stack (Playwright and similar) |
+| L3 accessibility (contrast / ARIA / labels) | Zero coverage | Wire a tool | `frontend-testing-en` wires an a11y audit for the stack (axe and similar) |
+| L4 cross-browser + responsive | Zero coverage | Wire a tool (multiple viewports + geometry assertions) | `frontend-testing-en` wires multi-viewport runs for the stack |
+| L6 frontend-backend contract mocking | Untouched by the process; contracts drift easily | Wire a tool (generate mocks from the spec) | `frontend-testing-en` wires MSW with generation from OpenAPI |
+| Design tokens / hardcoded colours | Caught by review | **Enforce at the lint gate, do not write a test** | A lint rule blocks it at the gate (stylelint and similar) |
 
-## 各缺口展开（能力定义 + 多栈示例）
+## Each gap in detail (capability definition + multi-stack examples)
 
-### L0/L1. 测试地基 — 🔧 常常为零（第一动作）
+### L0/L1. Test foundation — frequently zero (the first action)
 
-**能力定义：** 一个能跑组件渲染 + 交互的最小测试运行器与脚手架。前端 feature 的 [FE] 出参常常
-只写"手测"、根本没装任何测试运行器——地基本身就是缺的。所以 `frontend-testing-en` 的**第一动作
-是立地基**：按栈装好组件测试库、跑通最小渲染 / 交互用例，之后所有上层缺口补测都挂在它下面，
-同一栈内不引第二套框架。
+**Capability definition:** a minimal test runner and scaffold that can render components
+and drive interactions. A frontend feature's `[FE]` outputs frequently say only "tested
+manually" with no test runner installed at all — the foundation itself is missing. So
+`frontend-testing-en`'s **first action is to lay that foundation**: install a component
+testing library for the stack and get a minimal render-and-interact case passing. Every
+upper-layer gap then hangs off it, and no second framework is introduced within one stack.
 
-- **多栈示例（由 `frontend-testing-en` 按栈选）：** JS/TS 栈常见 `vitest` / `jest` + 组件测试库
-  （React Testing Library 等）；其它前端栈用各自原生框架。**这些是示例，不是写死答案。**
+- **Multi-stack examples (chosen by `frontend-testing-en` per stack):** JS/TS stacks
+  commonly use `vitest` or `jest` with a component testing library (React Testing Library
+  and similar); other frontend stacks use their own native frameworks. **These are
+  examples, not fixed answers.**
 
-### L2. 视觉回归（像素 / 深色 / 颜色契约） — 接工具 + 翻译契约（唯一人审节点）
+### L2. Visual regression (pixels / dark mode / colour contracts) — wire a tool and translate the contracts (the only human-review point)
 
-**能力定义：** 对页面 / 组件做截图快照并跨版本对比，抓像素级回归；把项目的视觉契约（深色模式、
-涨跌色等颜色约定）翻译成断言。这是单前端**唯一需要人审的节点**——基线快照发生变更时，要由人
-裁决是"预期改版"（接受新基线）还是"回归"（拒绝），不能让 agent 自行刷新基线。
+**Capability definition:** take screenshot snapshots of pages and components, compare them
+across versions to catch pixel-level regressions, and translate the project's visual
+contracts (dark mode, rise-and-fall colour conventions and the like) into assertions. This
+is the **only point in frontend-only work that needs human review** — when a baseline
+snapshot changes, a person adjudicates whether it is an intended redesign (accept the new
+baseline) or a regression (reject it). An agent MUST NOT refresh the baseline on its own.
 
-- **多栈示例（由 `frontend-testing-en` 按栈选）：** Playwright 截图快照等。
+- **Multi-stack examples (chosen by `frontend-testing-en` per stack):** Playwright
+  screenshot snapshots and similar.
 
-### L3. 可访问性 a11y（对比度 / ARIA / label） — 接工具
+### L3. Accessibility (contrast / ARIA / labels) — wire a tool
 
-**能力定义：** 自动审计对比度、ARIA 角色 / 属性、表单 label 关联等可访问性规则。
+**Capability definition:** automatically audit contrast, ARIA roles and attributes, form
+label association and other accessibility rules.
 
-- **多栈示例（由 `frontend-testing-en` 按栈选）：** `axe` 系列审计库。
+- **Multi-stack examples (chosen by `frontend-testing-en` per stack):** the `axe` family of
+  audit libraries.
 
-### L4. 跨浏览器 + 响应式 — 接工具
+### L4. Cross-browser + responsive — wire a tool
 
-**能力定义：** 在多视口 / 多浏览器下运行，并对布局做几何断言——典型如"任意视口下无横向滚动条"。
+**Capability definition:** run across multiple viewports and browsers, with geometry
+assertions on the layout — typically "no horizontal scrollbar at any viewport".
 
-- **多栈示例（由 `frontend-testing-en` 按栈选）：** Playwright 多 project / 多 viewport。
+- **Multi-stack examples (chosen by `frontend-testing-en` per stack):** Playwright with
+  multiple projects and viewports.
 
-### L6. 前后端契约 mock — 接工具（防漂移）
+### L6. Frontend-backend contract mocking — wire a tool (drift protection)
 
-**能力定义：** 用从接口规约生成的 mock 拦截前端外呼，让前端按真实契约形状被测；当后端契约变更时
-能抓到前端仍按旧形状读的悄无声息漂移。
+**Capability definition:** intercept the frontend's outbound calls with mocks generated
+from the interface spec, so the frontend is tested against the real contract shape; when
+the backend contract changes, this catches the silent drift of a frontend still reading the
+old shape.
 
-- **多栈示例（由 `frontend-testing-en` 按栈选）：** MSW + 从 OpenAPI 规约生成的 handler。
+- **Multi-stack examples (chosen by `frontend-testing-en` per stack):** MSW with handlers
+  generated from an OpenAPI spec.
 
-### 设计 token / 硬编码颜色 — 走 lint 门，不写测试
+### Design tokens / hardcoded colours — enforce at the lint gate, do not write a test
 
-颜色 / 间距 / 字号是否硬编码、是否走设计 token，**用 lint 规则在门上拦，不写成测试用例**——
-它是静态约束，lint 比测试更合适，也更快。
+Whether colours, spacing and font sizes are hardcoded or go through design tokens is
+**blocked by a lint rule at the gate, not written as a test case** — it is a static
+constraint, and lint suits it better and runs faster than a test.
 
-- **多栈示例（由 `frontend-testing-en` 按栈选）：** `stylelint` 配自定义规则。
+- **Multi-stack examples (chosen by `frontend-testing-en` per stack):** `stylelint` with
+  custom rules.
 
-## 与条件命中配合
+## Working with conditional hits
 
-不是每个 feature 都命中全部缺口——按 feature 实际触及的东西筛子集（命中规则见 `tool-mapping.md`
-的「条件命中」表）：任何前端改动都先立 L0/L1 地基（常为零）；有视觉 / 深色 / 颜色契约才标 L2；
-有交互组件才标 L3；有多视口 / 响应式才标 L4；调后端接口才标 L6；有硬编码颜色 / token 走 lint 门。
-本 skill 只标命中的能力缺口；**具体工具一律由 `frontend-testing-en` 按栈实例化，本 skill 不替它决定。**
+Not every feature hits every gap — take the subset the feature actually touches (the hit
+rules are in the "conditional hits" table in `tool-mapping.md`): any frontend change lays
+the L0/L1 foundation first (it is usually zero); mark L2 only where there are visual, dark
+mode or colour contracts; L3 only where there are interactive components; L4 only where
+there are multiple viewports or responsive behaviour; L6 only where it calls a backend
+endpoint; hardcoded colours and tokens go to the lint gate. This skill marks only the
+capability gaps that are hit; **the concrete tools are always instantiated by
+`frontend-testing-en` for the stack, and this skill does not decide them on its behalf.**

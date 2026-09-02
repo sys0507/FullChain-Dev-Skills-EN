@@ -1,237 +1,336 @@
-# 类别 → 能力 → 路由（stack-agnostic）
+# Category -> capability -> routing (stack-agnostic)
 
-这张表把场景类别映射到**测试能力（capability）**和**路由去向**——**不写死任何单栈工具**。
-能力是栈无关的（如"真库数据层验证""并发原子性验证""对象级越权验证"）；**具体工具由被路由到
-的执行器 skill 按项目实际技术栈实例化**（读 `package.json` / `pyproject.toml` / `go.mod` /
-`Cargo.toml` 等判栈后再选该栈的工具）。本 skill 只判类 + 标缺口 + 路由，不替项目挑工具。
+This table maps scenario categories to **testing capabilities** and to a **routing
+destination** — **hardcoding no single-stack tool**. The capabilities are stack-agnostic
+("real-database data-layer verification", "concurrency atomicity verification",
+"object-level authorisation verification"); **the concrete tools are instantiated by the
+executor skill that receives the routing**, which identifies the stack by reading
+`package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml` and the like, then picks that
+stack's tools. This skill only classifies, marks gaps and routes; it does not pick tools on
+the project's behalf.
 
-> 方法论以 `testing-system-blueprint-en` skill 为蓝本；本表是其在"feature 收尾路由"环节的落地。
+> Methodology follows the `testing-system-blueprint-en` skill as its blueprint; this table
+> is that blueprint landed in the feature close-out routing step.
 
-## 状态图例
+## Status legend
 
-- **✅ 执行器已建** —— 该类别已有对应执行器 skill，可直接路由。
-- **🔧 占位·待建** —— 对应类别执行器 skill 尚未建好；先标占位，待建后路由生效。
+- **Executor built** — this category has its executor skill; route directly.
+- **Placeholder, to be built** — the category's executor skill does not exist yet; mark the
+  placeholder now, and the routing takes effect once it is built.
 
-## 速览：类别 → 能力 → 路由
+## At a glance: category -> capability -> routing
 
-| 类别 | 需要的测试能力（栈无关） | 路由去向（执行器 skill） | 状态 |
+| Category | Testing capabilities needed (stack-agnostic) | Routes to (executor skill) | Status |
 |---|---|---|---|
-| 单后端 | 真库数据层 / 迁移、并发原子性、韧性 / 降级、对象级越权（BOLA·BFLA）、可选契约 fuzz | → `backend-testing-en`（按栈解析工具） | ✅ 执行器已建 |
-| 单前端 | L0/L1 测试地基、L2 视觉回归、L3 a11y、L4 跨浏览器 + 响应式、L6 前后端契约 mock（设计 token / 硬编码颜色走 lint 门） | → `frontend-testing-en`（按栈接成熟工具 + 配置 + 翻译视觉契约） | ✅ 执行器已建 |
-| 局部前后端 | ① 环境编排（两侧 + 依赖真实同时可复现起来）② 契约真实性（消费者 mock vs 提供者真实对账）③ 接缝粘合（身份透传 / 序列化 / 错误→UI 映射）④ 真实时序 / 实时（条件命中：流式 / 异步才命中） | → `fullstack-slice-testing-en`（按栈起真栈 + 接缝断言；diff-aware E2E 候选样例 gstack `/qa`，非依赖、无则回退） | ✅ 执行器已建 |
-| 完整功能链路 | ① 通路挖掘（从依赖图 / 跨模块契约 / AC 半自动枚举 + 人确认）② 关键性分级 + 选少（P0 安全网，非穷举）③ 全系统编排 + 外部边界 stub（只 stub 外部第三方）④ 异步 / 时间 / 跨通道贯穿（fake clock / 手动触发 job / poll-retry，禁 sleep）⑤ journey 级可追溯 + 安全网定位（首现即回补下层） | → `full-chain-testing-en`（按栈挖通路 + 全系统编排 + 编排驱动非 UI 跳步；UI 可走段 diff-aware E2E 如 gstack `/qa` 折叠进此处、非依赖、无则回退） | ✅ 执行器已建 |
-| 跨模块契约（候选可增类） | 生产者派生规约 → 下游 codegen → 破坏性变更 diff | → 对应类别 skill | 🔧 占位·待建 |
-| （可增类…） | 视项目实际信号而定 | → 视该类性质而定 | 🔧 占位·待建 |
+| Backend only | Real-database data layer and migrations, concurrency atomicity, resilience and degradation, object-level authorisation (BOLA, BFLA), optional contract fuzzing | `backend-testing-en` (resolves tools per stack) | Executor built |
+| Frontend only | L0/L1 test foundation, L2 visual regression, L3 a11y, L4 cross-browser + responsive, L6 frontend-backend contract mocking (design tokens and hardcoded colours go to the lint gate) | `frontend-testing-en` (wires mature tools per stack, configures them, translates visual contracts) | Executor built |
+| Local full-stack slice | 1. Environment orchestration (both sides + dependencies up simultaneously and reproducibly) 2. Contract reality (consumer mock versus real provider) 3. Seam glue (identity propagation / serialisation / error-to-UI mapping) 4. Real-time ordering (conditional: streaming or async only) | `fullstack-slice-testing-en` (stands the real stack up per stack and adds seam assertions; a diff-aware E2E tool is optional, fall back where absent) | Executor built |
+| Full functional chain | 1. Path excavation (semi-automatic enumeration from the dependency graph, cross-module contracts and ACs + human confirmation) 2. Criticality grading + take few (P0 safety net, not exhaustive) 3. Whole-system orchestration + external boundary stubs (stub only external third parties) 4. Async / time / cross-channel continuity (fake clock / manual job trigger / poll-retry, no sleep) 5. Journey-level traceability + safety-net localisation (first appearance means backfill a lower layer) | `full-chain-testing-en` (excavates paths per stack, orchestrates the whole system, drives non-UI hops; the UI-traversable segment folds a diff-aware E2E in here, optional, fall back where absent) | Executor built |
+| Cross-module contract (candidate category) | Derive a spec from a typed producer -> downstream codegen -> breaking-change diff | That category's skill | Placeholder, to be built |
+| (further categories...) | Depends on the project's actual signals | Depends on the nature of that category | Placeholder, to be built |
 
-下面是各类别的细节。本表只描述"需要什么能力 + 路由给谁"，**具体工具名由执行器 skill 按栈给出**。
+The details for each category follow. This table describes only "what capability is needed
+and who it routes to"; **the concrete tool names come from the executor skill, per stack**.
 
-## 单后端 → 路由到 `backend-testing-en`
+## Backend only -> routes to `backend-testing-en`
 
-单后端的具体工具**不在本 skill 写死**。本 skill 只负责判出"这是单后端、命中了哪几类能力缺口"，
-把缺口连同命中理由交给 `backend-testing-en` skill，由它读 `pyproject.toml` / `package.json` /
-`go.mod` / `Cargo.toml` 等判栈后选该栈对应工具。下面只列**栈无关的能力**及其"现成 ✅ / 需自建 🔧"
-判定（多栈示例仅作说明，不是写死答案）：
+The concrete tools for backend-only work are **not hardcoded in this skill**. This skill
+only judges "this is backend-only, and these capability gaps are hit", and hands the gaps,
+with the reason each was hit, to the `backend-testing-en` skill, which reads
+`pyproject.toml`, `package.json`, `go.mod`, `Cargo.toml` and the like to identify the stack
+and pick its tools. Below are only the **stack-agnostic capabilities** and their
+"available / must be built" judgements (the multi-stack examples are illustrative, not fixed
+answers):
 
-- **基础单元层：** 用项目所在栈**已在用的那一套**单元测试框架，缺口补测都挂在它下面，不引第二套。
-  *（多栈示例：Python 栈常见 `pytest`；JS/TS 栈常见 `vitest` / `jest`；Go 栈用内置 `testing`；
-  Rust 栈用内置 `#[test]`——由 `backend-testing-en` 按栈定，本 skill 不指定。）*
-- **真库数据层 / 迁移（✅ 现成）：** 需要"对真实数据库跑迁移 up/down 往返 + 约束 / 序列化验证"
-  的能力。**真库才能抓到 mock 掩盖的 schema / 约束 / 序列化 bug。**
-  *（多栈示例：Python 栈有 `pytest-alembic` + `pytest-postgresql`；任意栈可用 `testcontainers`
-  起真容器——具体由 `backend-testing-en` 按栈选。）*
-- **并发 / 竞态 / 限频原子性（✅ 现成）：** 需要"在一个测试内并发打 N 个请求并断言限频 / 配额 /
-  唯一约束不被击穿"的能力。
-  *（多栈示例：Python 栈 `pytest-run-parallel` + `asyncio.gather`；Go 栈用 goroutine + `-race`；
-  JS/TS 栈用 `Promise.all`——按栈定。）*
-- **韧性 / 故障注入（✅ 现成）：** 需要"对外部依赖注入超时 / 异常序列，模拟重试到第 N 次成功 /
-  触发降级 / fallback 切换"的能力。
-  *（多栈示例：Python httpx 栈 `respx` / `pytest-httpx`；Node 栈 `nock` / `msw`；其它栈用各自
-  的 HTTP mock 库——按栈定。）*
-- **契约 fuzz（✅ 现成，可选）：** 需要"从接口规约自动 fuzz + 检查接口是否强制鉴权"的能力。
-  *（多栈示例：有 OpenAPI 规约时可用 `Schemathesis` 等——按栈定。）* 注意它只能测"有无鉴权"，
-  **测不了对象级越权**（见下）。
-- **对象级越权 BOLA·BFLA（🔧 需自建，栈无关判定）：** 无即用方案——这是业务语义，任何栈都没有
-  即插即用的工具，必须自建双用户断言逻辑（做法见 `backend-gaps.md`）。此判定与栈无关。
-- **路由说明：** 本 skill 把命中的能力缺口清单交给 `backend-testing-en`；任何会写 / 修测试的 agent
-  行为都受 5 条护栏约束（见 `self-healing-guardrails.md`）。缺陷固化方法论复用 `testing-system-blueprint-en`
-  指向的 TDD / systematic-debugging（"bug 先写失败测试"再修）。
-- **条件命中 / 防过度测：** 上述能力**不是全标**——按 feature 实际碰了什么筛子集（见下「条件命中」
-  与 `backend-gaps.md`）。纯逻辑 / 纯读的简单后端可能一项都不命中，TDD + 契约即够。同一栈内始终
-  不引入第二套单元框架。
+- **Base unit layer:** use **the unit-testing framework the project's stack already uses**;
+  all gap work hangs off it, and no second framework is introduced.
+  *(Multi-stack examples: Python stacks commonly use `pytest`; JS/TS stacks `vitest` or
+  `jest`; Go the built-in `testing`; Rust the built-in `#[test]` — decided by
+  `backend-testing-en` per stack, not specified here.)*
+- **Real-database data layer and migrations (available):** needs the capability to "run
+  migrations up and down as a round trip against a real database, plus constraint and
+  serialisation verification". **Only a real database catches the schema, constraint and
+  serialisation bugs a mock conceals.**
+  *(Multi-stack examples: Python has `pytest-alembic` with `pytest-postgresql`; any stack
+  can use `testcontainers` — chosen by `backend-testing-en` per stack.)*
+- **Concurrency / races / rate-limit atomicity (available):** needs the capability to "fire
+  N concurrent requests inside one test and assert rate limits, quotas and unique
+  constraints are not broken".
+  *(Multi-stack examples: Python `pytest-run-parallel` with `asyncio.gather`; Go goroutines
+  with `-race`; JS/TS `Promise.all` — per stack.)*
+- **Resilience / fault injection (available):** needs the capability to "inject timeouts and
+  error sequences into external dependencies, simulating success on the Nth retry or
+  triggering degradation and fallback".
+  *(Multi-stack examples: Python httpx stacks `respx` or `pytest-httpx`; Node `nock` or
+  `msw`; other stacks their own HTTP mocking library — per stack.)*
+- **Contract fuzzing (available, optional):** needs the capability to "fuzz automatically
+  from an interface spec and check whether endpoints enforce authorisation".
+  *(Multi-stack examples: where an OpenAPI spec exists, tools such as `Schemathesis` — per
+  stack.)* Note it can only test **whether** authorisation exists; it **cannot test
+  object-level escalation** (see below).
+- **Object-level authorisation, BOLA and BFLA (must be built; the judgement is
+  stack-agnostic):** there is no off-the-shelf answer — this is business semantics, no stack
+  has a plug-and-play tool, and the two-user assertion logic must be built (the approach is
+  in `backend-gaps.md`). This judgement does not vary by stack.
+- **Routing note:** this skill hands the list of hit capability gaps to `backend-testing-en`;
+  any agent behaviour that writes or fixes tests is bound by the five guardrails (see
+  `self-healing-guardrails.md`). Defect-hardening methodology reuses the TDD /
+  systematic-debugging practice `testing-system-blueprint-en` points at ("for a bug, write
+  the failing test first", then fix).
+- **Conditional hits / over-testing guard:** the capabilities above are **not all marked** —
+  take the subset by what the feature actually touched (see "conditional hits" below and
+  `backend-gaps.md`). A simple backend that is pure logic or read-only may hit none of them,
+  where TDD plus contracts is enough. Within one stack, never introduce a second unit
+  framework.
 
-### 条件命中（防过度测）
+### Conditional hits (over-testing guard)
 
-按本 feature 实际触及的东西决定标哪几类缺口，不要无差别全标（具体工具由 `backend-testing-en` 按栈选）：
+Decide which gaps to mark by what this feature actually touched; do not mark them
+indiscriminately (the concrete tools are chosen by `backend-testing-en` per stack):
 
-| 本 feature 实际碰了…… | 命中的能力缺口 | 现成 ✅ / 需自建 🔧 |
+| What this feature actually touched | Capability gap hit | Available / must be built |
 |---|---|---|
-| DB 写入 / 约束 / 迁移 | 真库数据层验证 | ✅ 现成（按栈选真库 / 容器工具） |
-| 多用户 / 按用户隔离数据 / 特权接口 | 对象级越权验证（BOLA/BFLA） | 🔧 **需自建**（见 backend-gaps.md，栈无关） |
-| 共享资源 / 限频 / 配额 | 并发原子性验证 | ✅ 现成（按栈选并发压测手段） |
-| 调外部依赖（外部 API / 模型服务等） | 韧性 / 故障注入验证 | ✅ 现成（按栈选 HTTP mock 库） |
-| 纯逻辑 / 纯读简单后端 | 一项都不命中 | TDD + 契约即够 |
+| Database writes / constraints / migrations | Real-database data-layer verification | Available (pick a real-database or container tool per stack) |
+| Multiple users / per-user data isolation / privileged endpoints | Object-level authorisation (BOLA/BFLA) | **Must be built** (see backend-gaps.md; stack-agnostic) |
+| Shared resources / rate limits / quotas | Concurrency atomicity verification | Available (pick a concurrency load approach per stack) |
+| Calls to external dependencies (external APIs, model services) | Resilience / fault-injection verification | Available (pick an HTTP mocking library per stack) |
+| Pure logic or read-only simple backend | Nothing hit | TDD plus contracts is enough |
 
-## 单前端 → 路由到 `frontend-testing-en`
+## Frontend only -> routes to `frontend-testing-en`
 
-**判类条件：** 改动**只落在前端层**（组件 / 页面 / 样式 / 前端路由 / 前端状态），不涉及后端业务
-逻辑、也不与真后端联调——联调归「完整功能链路」。
+**Classification condition:** changes land **in the frontend layer alone** (components,
+pages, styles, frontend routing, frontend state), with no backend business logic and no
+integration against a live backend — live integration belongs to "full functional chain".
 
-单前端的具体工具**不在本 skill 写死**。本 skill 只负责判出"这是单前端、命中了哪几类前端结构性
-缺口"，把缺口连同命中理由交给 `frontend-testing-en` skill，由它读 `package.json`（含框架 / 测试运行器
-线索）判栈后接对应工具。**形态差异（一句话）：单后端执行器"自己写测试代码"，单前端执行器"接成熟
-工具（stylelint / Vitest+RTL / Playwright / axe / MSW）+ 配置 + 把项目视觉契约翻译成断言"，且唯一
-人审节点是 L2 视觉基线裁决。** 下面只列**栈无关的能力**及其做法（多栈示例仅作说明，不是写死答案）：
+The concrete tools are **not hardcoded in this skill**. This skill only judges "this is
+frontend-only, and these structural gaps are hit", and hands them, with the reason each was
+hit, to the `frontend-testing-en` skill, which reads `package.json` (including framework and
+test-runner clues) to identify the stack and wires the corresponding tools. **The difference
+in shape, in one sentence: the backend executor writes test code itself, while the frontend
+executor wires mature tools (stylelint, Vitest + RTL, Playwright, axe, MSW), configures them
+and translates the project's visual contracts into assertions — and its only human-review
+point is adjudicating the L2 visual baseline.** Below are only the **stack-agnostic
+capabilities** and their approaches (multi-stack examples are illustrative, not fixed
+answers):
 
-- **L0/L1 测试地基（🔧 常常为零，第一动作）：** 很多项目 [FE] 出参只写"手测"、没装任何测试运行器，
-  地基本身缺失。`frontend-testing-en` 的**第一动作是立地基**——按栈接 Vitest+RTL（或等价组件测试库）
-  并跑通最小渲染 / 交互用例，之后所有缺口补测都挂在它下面，不引第二套。
-- **L2 视觉回归（接工具 + 翻译契约）：** 像素 / 深色 / 颜色契约的快照与回归对比能力。把项目的视觉
-  契约翻译成断言。*（多栈示例：Playwright 截图快照等——按栈定。）* **唯一人审节点：L2 视觉基线
-  裁决**（基线快照变更需人确认是预期改版还是回归）。
-- **L3 可访问性 a11y（接工具）：** 对比度 / ARIA / label 的自动审计能力。*（多栈示例：`axe` 系列——
-  按栈定。）*
-- **L4 跨浏览器 + 响应式（接工具）：** 多视口运行 + "无横向滚动条"等几何断言能力。*（多栈示例：
-  Playwright 多 project / 多 viewport——按栈定。）*
-- **L6 前后端契约 mock（接工具，防漂移）：** 用从接口规约生成的 mock 拦截前端外呼，防止前端按旧
-  形状读、契约悄悄漂移。*（多栈示例：MSW + 从 OpenAPI 生成的 handler——按栈定。）*
-- **设计 token / 硬编码颜色 → 走 lint 门，不写测试：** 颜色 / 间距 / 字号是否硬编码、是否走 token，
-  用 lint 规则在门上拦，不写成测试用例。*（多栈示例：`stylelint` 配自定义规则——按栈定。）*
-- **路由说明：** 本 skill 把命中的能力缺口清单交给 `frontend-testing-en`；任何会写 / 修测试的 agent
-  行为都受 5 条护栏约束（见 `self-healing-guardrails.md`）。
-- **条件命中 / 防过度测：** 上述能力**不是全标**——有视觉 / 深色 / 颜色契约才标 L2；交互组件才标
-  L3；多视口 / 响应式才标 L4；调后端接口才标 L6。命中规则见下「条件命中」与 `frontend-gaps.md`。
+- **L0/L1 test foundation (frequently zero; the first action):** many projects' `[FE]`
+  outputs say only "tested manually" with no test runner installed, so the foundation itself
+  is missing. `frontend-testing-en`'s **first action is to lay it** — wire Vitest + RTL (or
+  an equivalent component testing library) for the stack and get a minimal render and
+  interaction case passing; all gap work then hangs off it, with no second framework.
+- **L2 visual regression (wire a tool, translate the contracts):** snapshot and
+  regression-compare pixels, dark mode and colour contracts; translate the project's visual
+  contracts into assertions. *(Multi-stack examples: Playwright screenshot snapshots — per
+  stack.)* **The only human-review point: adjudicating the L2 visual baseline** (a changed
+  baseline snapshot needs a person to confirm intended redesign versus regression).
+- **L3 accessibility (wire a tool):** automatic auditing of contrast, ARIA and labels.
+  *(Multi-stack examples: the `axe` family — per stack.)*
+- **L4 cross-browser + responsive (wire a tool):** multi-viewport runs plus geometry
+  assertions such as "no horizontal scrollbar". *(Multi-stack examples: Playwright with
+  multiple projects and viewports — per stack.)*
+- **L6 frontend-backend contract mocking (wire a tool; drift protection):** intercept the
+  frontend's outbound calls with mocks generated from the interface spec, so the frontend
+  cannot silently keep reading an old shape while the contract drifts. *(Multi-stack
+  examples: MSW with handlers generated from OpenAPI — per stack.)*
+- **Design tokens / hardcoded colours -> the lint gate, not a test:** whether colours,
+  spacing and font sizes are hardcoded or go through tokens is blocked by a lint rule at the
+  gate, not written as a test case. *(Multi-stack examples: `stylelint` with custom rules —
+  per stack.)*
+- **Routing note:** this skill hands the list of hit capability gaps to
+  `frontend-testing-en`; any agent behaviour that writes or fixes tests is bound by the five
+  guardrails (see `self-healing-guardrails.md`).
+- **Conditional hits / over-testing guard:** the capabilities above are **not all marked** —
+  mark L2 only where there are visual, dark mode or colour contracts; L3 only for
+  interactive components; L4 only for multiple viewports or responsive behaviour; L6 only
+  where it calls a backend endpoint. The hit rules are in "conditional hits" below and in
+  `frontend-gaps.md`.
 
-### 条件命中（防过度测）
+### Conditional hits (over-testing guard)
 
-按本 feature 实际触及的东西决定标哪几类缺口，不要无差别全标（具体工具由 `frontend-testing-en` 按栈接）：
-
-| 本 feature 实际碰了…… | 命中的能力缺口 | 做法 |
+| What this feature actually touched | Capability gap hit | Approach |
 |---|---|---|
-| 任何前端改动（地基常为零） | L0/L1 测试地基 | 🔧 第一动作：按栈立地基（Vitest+RTL 等） |
-| 视觉 / 深色 / 颜色契约 | L2 视觉回归 | 接工具 + 翻译契约（人审 L2 基线裁决） |
-| 交互组件 / 表单 / 控件 | L3 a11y | 接工具（axe 等） |
-| 多视口 / 响应式 / 移动端 | L4 跨浏览器 + 响应式 | 接工具（多 viewport + 几何断言） |
-| 调后端接口 | L6 前后端契约 mock | 接工具（MSW + OpenAPI 生成，防漂移） |
-| 硬编码颜色 / 设计 token | 走 lint 门 | 不写测试，lint 规则在门上拦 |
+| Any frontend change (the foundation is usually zero) | L0/L1 test foundation | First action: lay the foundation per stack (Vitest + RTL and similar) |
+| Visual / dark mode / colour contracts | L2 visual regression | Wire a tool and translate the contracts (human adjudication of the L2 baseline) |
+| Interactive components / forms / controls | L3 a11y | Wire a tool (axe and similar) |
+| Multiple viewports / responsive / mobile | L4 cross-browser + responsive | Wire a tool (multiple viewports + geometry assertions) |
+| Calls to backend endpoints | L6 frontend-backend contract mocking | Wire a tool (MSW with OpenAPI generation, drift protection) |
+| Hardcoded colours / design tokens | The lint gate | Do not write a test; a lint rule blocks it at the gate |
 
-## 局部前后端 → 路由到 `fullstack-slice-testing-en`
+## Local full-stack slice -> routes to `fullstack-slice-testing-en`
 
-**判类条件：** 改动**同时落在前端和后端**、且这条接缝**不跨出本 feature 边界**（跨多 feature 旅程归
-「完整功能链路」）。本质 = 单 feature 内 *真前端 ↔ 真后端* 单切片对账。
+**Classification condition:** changes land in **both frontend and backend**, and the seam
+**does not cross the feature boundary** (journeys spanning several features belong to "full
+functional chain"). In essence, a single-slice reconciliation of *real frontend to real
+backend* within one feature.
 
-局部前后端的具体工具**不在本 skill 写死**。本 skill 只负责判出"这是局部前后端、命中了哪几类接缝
-缺口"，把缺口连同命中理由交给 `fullstack-slice-testing-en` skill，由它读项目栈（`package.json` /
-`pyproject.toml` / `docker-compose.yml` 等）判栈后接对应工具。**形态差异（一句话）：本格新难点在
-"起真栈（环境编排）"而非写断言；它是单前端 mock 与单后端真实的对账；第一层黑盒冒烟可选 diff-aware
-E2E（如 gstack `/qa`，非依赖、无则回退 Playwright），第二层再补结构化接缝断言。** 下面只列**栈无关
-的能力**（多栈示例仅作说明，不是写死答案）：
+The concrete tools are **not hardcoded in this skill**. This skill only judges "this is a
+local full-stack slice, and these seam gaps are hit", and hands them, with the reason each
+was hit, to the `fullstack-slice-testing-en` skill, which reads the project's stack
+(`package.json`, `pyproject.toml`, `docker-compose.yml`) and wires the corresponding tools.
+**The difference in shape, in one sentence: the new difficulty here is standing the real
+stack up (environment orchestration) rather than writing assertions; it is a reconciliation
+between the frontend's mocks and the backend's reality; the first layer is an optional
+diff-aware E2E black-box smoke (fall back to Playwright where absent), and the second layer
+adds structured seam assertions.** Below are only the **stack-agnostic capabilities**
+(multi-stack examples are illustrative, not fixed answers):
 
-- **① 环境编排（🔧 第一动作，新难点所在）：** 需要"把前端 + 后端 + 真依赖（数据存储 / 缓存 / 外部
-  服务）真实同时可复现地起起来"的能力。这是本格区别于单前后端的第一道坎——断言好写，起真栈难。
-  *（多栈示例：`docker-compose` 起整栈；进程内 ASGI/WSGI 组装 + `testcontainers` 起真依赖；
-  gstack 一键起栈——有则优先、无则回退，按栈定。）*
-- **② 契约真实性（接缝对账）：** 需要"把单前端阶段用的消费者 mock 换成真实提供者，对账两者形状
-  是否一致"的能力。单前端用 mock 跑绿不代表真后端返回同样的形状——这一格专抓 mock 与真实的偏差。
-  *（多栈示例：用真后端响应回放校验前端 MSW handler；或对 OpenAPI 规约双向 diff——按栈定。）*
-- **③ 接缝粘合（身份透传 / 序列化 / 错误→UI 映射）：** 需要"断言跨进程的身份令牌真的透传过去、
-  两侧序列化口径一致、后端错误态正确映射到 UI 状态"的能力。这些粘合点单侧测试都看不到。
-  *（多栈示例：带真实鉴权头打通整条请求 + 断言 UI 渲染对应错误态——按栈定。）*
-- **④ 真实时序 / 实时（条件命中：流式 / 异步才命中）：** 需要"对流式 / 异步 / 实时推送断言时序与
-  增量到达"的能力。**仅当本 feature 命中流式 / 异步 / 实时**才标，否则不标（防过度测）。
-  *（多栈示例：SSE / WebSocket 增量断言；轮询到达时序断言——按栈定。）*
-- **路由说明：** 本 skill 把命中的接缝缺口清单交给 `fullstack-slice-testing-en`；任何会写 / 修测试的
-  agent 行为（含 diff-aware E2E 的 gstack `/qa`）都受 5 条护栏约束（见 `self-healing-guardrails.md`）。
-- **条件命中 / 防过度测：** 上述能力**不是全标**——任何前后端同时改动都先标①环境编排；有消费者 mock
-  对真提供者要对账才标②；跨进程传身份 / 序列化 / 有错误态要映射 UI 才标③；**仅流式 / 异步 / 实时**
-  才标④。命中规则见下「条件命中」与 `fullstack-slice-gaps.md`。
+- **1. Environment orchestration (the first action; where the new difficulty lives):** needs
+  the capability to "get the frontend, the backend and the real dependencies (data store,
+  cache, external services) up simultaneously and reproducibly". This is the first hurdle
+  separating this category from single-side work — the assertions are easy to write, the
+  real stack is hard to stand up.
+  *(Multi-stack examples: `docker-compose` for the whole stack; in-process ASGI/WSGI
+  assembly plus `testcontainers` for real dependencies; a one-command stack tool where the
+  project has one — preferred where present, falling back where absent, per stack.)*
+- **2. Contract reality (seam reconciliation):** needs the capability to "replace the
+  consumer mock used in the frontend-only stage with the real provider and reconcile whether
+  the shapes match". Green against a mock does not mean the real backend returns the same
+  shape — this gap exists to catch that divergence.
+  *(Multi-stack examples: replay real backend responses to validate the frontend's MSW
+  handlers; or diff an OpenAPI spec in both directions — per stack.)*
+- **3. Seam glue (identity propagation / serialisation / error-to-UI mapping):** needs the
+  capability to "assert the identity token really propagates across processes, both sides
+  agree on serialisation conventions, and backend error states map correctly to UI states".
+  Neither side's tests can see these glue points.
+  *(Multi-stack examples: drive the whole request path with real auth headers and assert the
+  UI renders the corresponding error state — per stack.)*
+- **4. Real-time ordering (conditional: streaming or async only):** needs the capability to
+  "assert timing and incremental arrival for streaming, async or real-time push". **Marked
+  only when this feature actually involves streaming, async or real-time push**; otherwise
+  not marked (over-testing guard).
+  *(Multi-stack examples: SSE or WebSocket increment assertions; polling arrival ordering
+  assertions — per stack.)*
+- **Routing note:** this skill hands the list of hit seam gaps to
+  `fullstack-slice-testing-en`; any agent behaviour that writes or fixes tests (including a
+  diff-aware E2E tool) is bound by the five guardrails (see `self-healing-guardrails.md`).
+- **Conditional hits / over-testing guard:** the capabilities above are **not all marked** —
+  any change touching both sides marks gap 1 first; mark gap 2 where a consumer mock needs
+  reconciling against a real provider; mark gap 3 where identity crosses processes, where
+  serialisation matters, or where error states must map to the UI; mark gap 4 **only for
+  streaming, async or real-time**. The hit rules are in "conditional hits" below and in
+  `fullstack-slice-gaps.md`.
 
-### 条件命中（防过度测）
+### Conditional hits (over-testing guard)
 
-按本 feature 实际触及的东西决定标哪几类缺口，不要无差别全标（具体工具由 `fullstack-slice-testing-en` 按栈接）：
-
-| 本 feature 实际碰了…… | 命中的接缝缺口 | 做法 |
+| What this feature actually touched | Seam gap hit | Approach |
 |---|---|---|
-| 任何前后端同时改动 | ① 环境编排 | 🔧 第一动作：按栈起真栈（docker-compose / 进程内组装 + testcontainers / gstack） |
-| 单前端有消费者 mock + 本 feature 内有真提供者 | ② 契约真实性 | 把 mock 换真提供者对账形状（防 mock 与真实偏差） |
-| 跨进程传身份 / 序列化 / 错误态映射 UI | ③ 接缝粘合 | 带真鉴权头打通 + 断言 UI 错误态 |
-| 流式 / 异步 / 实时推送 | ④ 真实时序·实时 | 接工具断言增量到达时序（**仅命中流式 / 异步才标**） |
-| 无前后端接缝（纯单侧） | 一项都不命中 | 归单后端 / 单前端，不进本格 |
+| Any change touching both sides | 1. Environment orchestration | First action: stand the real stack up per stack (docker-compose, in-process assembly + testcontainers) |
+| A consumer mock in the frontend plus a real provider in this feature | 2. Contract reality | Swap the mock for the real provider and reconcile the shapes |
+| Identity across processes / serialisation / error states mapped to UI | 3. Seam glue | Drive with real auth headers and assert the UI error states |
+| Streaming / async / real-time push | 4. Real-time ordering | Wire a tool and assert incremental arrival ordering (**marked only for streaming or async**) |
+| No frontend-backend seam (pure single side) | Nothing hit | Belongs to backend-only or frontend-only, not here |
 
-## 完整功能链路 → 路由到 `full-chain-testing-en`
+## Full functional chain -> routes to `full-chain-testing-en`
 
-**判类条件：** 这条被测路径**跨出了本 feature 边界、横跨多个 feature**（单 feature 内单切片归「局部
-前后端」）。本质 = 跨多 feature 的端到端旅程，含非 UI 跳步（定时 / 异步 / 跨通道）。
+**Classification condition:** the path under test **crosses the feature boundary and spans
+several features** (a single slice within one feature belongs to "local full-stack slice").
+In essence, an end-to-end journey across several features, including non-UI hops (scheduled,
+async, cross-channel).
 
-完整功能链路的具体工具**不在本 skill 写死**。本 skill 只负责判出"这是完整功能链路、命中了哪几类链路
-缺口"，把缺口连同命中理由交给 `full-chain-testing-en` skill，由它读项目栈（`package.json` /
-`pyproject.toml` / `docker-compose.yml` 等）判栈后接对应工具。**形态差异（一句话）：这格最独特——被测
-对象（通路）要先被【挖掘】出来（前三格被测对象是给定的）；且它是安全网层，bug 若首次在此发现=下层漏
-测、应回补下层。第一层 UI 可走段 = 可选 diff-aware E2E（gstack `/qa` 折叠进此处、非依赖、无则回退
-Playwright），非 UI 跳步 = 编排驱动。** 下面只列**栈无关的能力**（多栈示例仅作说明，不是写死答案）：
+The concrete tools are **not hardcoded in this skill**. This skill only judges "this is a
+full functional chain, and these chain gaps are hit", and hands them, with the reason each
+was hit, to the `full-chain-testing-en` skill, which reads the project's stack and wires the
+corresponding tools. **The difference in shape, in one sentence: this category is the most
+distinctive — the subject under test (the path) must be excavated first (the previous three
+categories are handed their subject); and it is the safety-net layer, so a bug found here
+first means a lower layer under-tested it and that layer should be backfilled. The first
+layer, the UI-traversable segment, is an optional diff-aware E2E (falling back where
+absent); the non-UI hops are orchestration-driven.** Below are only the **stack-agnostic
+capabilities** (multi-stack examples are illustrative, not fixed answers):
 
-- **① 通路挖掘（🔧 第一动作，本格独有）：** 需要"**走三源**（静态代码图 + 运行时 trace + spec 契约）
-  半自动枚举出当前已贯通的端到端通路，再由人确认哪些是真实旅程"的能力。前三格被测对象给定，本格被测对象
-  藏在依赖图里、要先挖出来——这正是 test-routing-advisor-en 杀手锏"从依赖图推出 A→B→C 首次贯通"的落地入口。
-  **实证边界：静态图只挖得动半张图**——框架封装的 FE↔BE 桥边、cron / 异步解耦边静态缝不动（两项目实证），
-  必须用运行时 trace 或 spec 契约补；代码未落地时 spec 契约是唯一来源。详见 `full-chain-gaps.md` 缺口 ①。
-  *（多栈示例，均为可选实例、非依赖：静态图 glia〔非商业 license〕/ OpenLore 式；运行时 trace
-  Pathfinder / Tracetest / OpenTelemetry；event-storming 梳理领域事件流；gstack 项目可借 `/qa` 旅程梳理——
-  有则优先、无则回退手工梳理，按栈定。）*
-- **② 关键性分级 + 选少（P0 安全网，非穷举）：** 需要"对挖出的通路做关键性分级、只取最高优先级一小撮
-  P0 作安全网"的能力。穷举是下层的职责；端到端最慢最脆，多了反而拖垮信号。分级遵循
-  `testing-system-blueprint-en` 的 P0–P3。
-- **③ 全系统编排 + 外部边界 stub（只 stub 外部第三方）：** 需要"把整个跨 feature 系统真实可复现地起
-  起来，只对最外层第三方边界打 stub（支付 / 外部模型 / 三方推送）、系统内部一律走真实组装"的能力。栈比
-  局部前后端更大，且外部边界以外不许 stub——否则就不是端到端了。
-  *（多栈示例：docker-compose 起整系统 / 进程内组装多 feature 真 handler；外部第三方用 WireMock /
-  录制回放打边界 stub——按栈定。）*
-- **④ 异步 / 时间 / 跨通道贯穿（条件命中：含定时 / 异步 / 跨通道才命中）：** 需要"把 UI 走不到的非 UI
-  跳步串起来断言贯通"的能力——fake clock 快进到定时点、手动触发 job / 注入消息把异步步骤拉到前台、
-  poll-retry 有界轮询断言到达。**严禁 `sleep`**（让测试既慢又 flaky）。**仅当旅程含定时 / 异步 / 跨通道
-  时才标**，纯同步 UI 旅程不标（防过度测）。
-  *（多栈示例：Playwright `page.clock` / 后端 fake clock 快进；调度器接口手动触发 cron；队列注入消息后
-  轮询消费结果；跨通道断言落到目标通道出站记录——按栈定。）*
-- **⑤ journey 级可追溯 + 安全网定位（首现即回补下层）：** 需要"把每条断言挂到 journey 步骤↔AC、失败时
-  定位到旅程哪一跳断了"的能力，并落实安全网语义：bug 若**首次**在本层被发现=下层漏测，提示回补下层
-  （单后端 / 单前端 / 局部前后端）对应那条测试。本层只留少量 P0 安全网，不当下层替身。
-- **路由说明：** 本 skill 把命中的链路缺口清单交给 `full-chain-testing-en`；任何会写 / 修测试的 agent
-  行为（含 diff-aware E2E 的 gstack `/qa`）都受 5 条护栏约束（见下）。
-- **条件命中 / 防过度测：** 上述能力**不是全标**——被判为本格的旅程都先标①通路挖掘 + ②分级选少；起整
-  系统跑通就标③全系统编排；**仅流式 / 异步 / 定时 / 跨通道**才标④；要把失败定位到旅程步骤、落实安全网
-  回补语义才标⑤。命中规则见下「条件命中」与 `full-chain-gaps.md`。
+- **1. Path excavation (the first action; unique to this category):** needs the capability to
+  "**use three sources** (static code graph + runtime trace + spec contracts) to
+  semi-automatically enumerate the end-to-end paths that are currently connected, then have
+  a person confirm which are genuine journeys". The previous three categories are handed
+  their subject; here it hides in the dependency graph and must be excavated — which is
+  exactly where this advisor's distinctive move, "derive from the dependency graph that
+  A->B->C is connected for the first time", lands. **Empirical boundary: a static graph
+  reaches only half the graph** — framework-wrapped frontend-backend bridge edges and
+  cron/async decoupled edges cannot be stitched statically (observed across two projects),
+  and must come from runtime tracing or spec contracts; where the code has not landed, spec
+  contracts are the only source. See gap 1 in `full-chain-gaps.md`.
+  *(Multi-stack examples, all optional instances and not dependencies: static-graph tooling;
+  runtime tracing; event-storming to comb domain event flows; a project's own journey tool
+  where it has one — preferred where present, falling back to manual combing, per stack.)*
+- **2. Criticality grading + take few (P0 safety net, not exhaustive):** needs the capability
+  to "grade the excavated paths by criticality and take only a small handful of the highest
+  priority as a safety net". Exhaustiveness is the lower layers' responsibility; end-to-end
+  is the slowest and most brittle, and more of it degrades the signal. Grading follows P0-P3
+  in `testing-system-blueprint-en`.
+- **3. Whole-system orchestration + external boundary stubs (stub only external third
+  parties):** needs the capability to "stand the entire cross-feature system up for real and
+  reproducibly, stubbing only the outermost third-party boundary (payments, external models,
+  third-party push) while everything inside runs against the real assembly". The stack is
+  larger than in a local slice, and nothing inside the external boundary may be stubbed —
+  otherwise it is not end to end.
+  *(Multi-stack examples: docker-compose for the whole system, or in-process assembly of
+  several features' real handlers; WireMock or record-and-replay for the external boundary
+  stubs — per stack.)*
+- **4. Async / time / cross-channel continuity (conditional: scheduled, async or
+  cross-channel only):** needs the capability to "stitch together and assert continuity
+  across the non-UI hops the UI cannot reach" — a fake clock to fast-forward to the scheduled
+  point, manual job triggers or message injection to pull async steps forward, and bounded
+  poll-retry to assert arrival. **`sleep` is forbidden** (it makes tests slow and flaky).
+  **Marked only when the journey contains scheduled, async or cross-channel hops**; a purely
+  synchronous UI journey does not (over-testing guard).
+  *(Multi-stack examples: Playwright `page.clock` or a backend fake clock; the scheduler
+  interface to trigger cron manually; inject into the queue and poll for the consumed
+  result; assert cross-channel delivery against the target channel's outbound record — per
+  stack.)*
+- **5. Journey-level traceability + safety-net localisation (first appearance means backfill
+  a lower layer):** needs the capability to "attach every assertion to a journey step and its
+  AC, so a failure localises to the hop that broke", and to enforce the safety-net semantics:
+  a bug found **for the first time** at this layer means a lower layer under-tested it, so
+  prompt to backfill that layer's test. This layer keeps only a few P0s and is not a stand-in
+  for the layers below.
+- **Routing note:** this skill hands the list of hit chain gaps to `full-chain-testing-en`;
+  any agent behaviour that writes or fixes tests (including a diff-aware E2E tool) is bound
+  by the five guardrails (see below).
+- **Conditional hits / over-testing guard:** the capabilities above are **not all marked** —
+  any journey classified here marks gap 1 plus gap 2 first; mark gap 3 once the whole system
+  must be stood up; mark gap 4 **only for streaming, async, scheduled or cross-channel**;
+  mark gap 5 where failures must localise to a journey step and the backfill semantics must
+  be enforced. The hit rules are in "conditional hits" below and in `full-chain-gaps.md`.
 
-### 条件命中（防过度测）
+### Conditional hits (over-testing guard)
 
-按本 feature 实际补全了什么链路决定标哪几类缺口，不要无差别全标（具体工具由 `full-chain-testing-en` 按栈接）：
-
-| 本 feature 实际补全了…… | 命中的链路缺口 | 做法 |
+| What chain this feature actually completed | Chain gap hit | Approach |
 |---|---|---|
-| 任何被判为本格的跨 feature 旅程 | ① 通路挖掘 + ② 关键性分级·选少 | 🔧 前提动作：半自动枚举 + 人确认 → 只取 P0 安全网 |
-| 起整系统跑通端到端 | ③ 全系统编排 + 外部边界 stub | 起真整栈，只 stub 外部第三方（WireMock 等） |
-| 定时 / 异步 / 跨通道跳步 | ④ 异步 / 时间 / 跨通道贯穿 | fake clock / 手动触发 job / poll-retry，**禁 sleep**（**仅含此类跳步才标**） |
-| 要把失败定位到旅程步骤 | ⑤ journey 级可追溯 + 安全网定位 | 断言挂到 journey 步骤↔AC；首现即回补下层 |
-| 单 feature 内单切片（不跨 feature） | 一项都不命中 | 归局部前后端，不进本格 |
+| Any cross-feature journey classified here | 1. Path excavation + 2. criticality grading and taking few | Prerequisite actions: semi-automatic enumeration + human confirmation, then take only P0s as the safety net |
+| Standing the whole system up end to end | 3. Whole-system orchestration + external boundary stubs | Stand the real full stack up, stubbing only external third parties (WireMock and similar) |
+| Scheduled / async / cross-channel hops | 4. Async / time / cross-channel continuity | Fake clock / manual job trigger / poll-retry, **no sleep** (**marked only when such hops exist**) |
+| Failures needing to localise to a journey step | 5. Journey-level traceability + safety-net localisation | Attach assertions to journey step and AC; first appearance means backfill a lower layer |
+| A single slice within one feature (not crossing features) | Nothing hit | Belongs to local full-stack slice, not here |
 
-## 跨模块契约（候选可增类）→ 对应类别 skill（🔧 占位·待建）
+## Cross-module contract (candidate category) -> that category's skill (placeholder, to be built)
 
-- **需要的能力：** 从**带类型的生产者**派生接口规约 → 喂给**下游 codegen**让消费者按真实形状编译 →
-  在版本间做**破坏性变更检测** → 可选地反射校验线上签名是否仍与声明一致。
-- **路由去向：** 对应类别执行器 skill（待建）。具体工具由该 skill 按栈实例化
-  *（多栈示例：带类型 Web 框架产出 OpenAPI / JSON-schema，配 `oasdiff` 风格 diff；跨团队独立部署时
-  升级到 `Pact` 风格消费者驱动契约测试——按栈与部署形态定）*。
-- **为什么：** 从带类型代码生成契约能让生产者 / 消费者免费保持同步；破坏性变更 diff 能抓到单元测试
-  看不见的、悄无声息的 A→B 不匹配——接缝高发区的价值所在。
-- **何时偏离：** 单仓库 monorepo 用"规约派生 + diff"更轻、也够用；仅当生产者 / 消费者由不同团队
-  独立部署时才升级到消费者驱动契约测试。
+- **Capability needed:** derive an interface spec from a **typed producer** -> feed it to
+  **downstream codegen** so consumers compile against the real shape -> run **breaking-change
+  detection** between versions -> optionally verify by reflection that the live signature
+  still matches the declaration.
+- **Routes to:** that category's executor skill (to be built). Concrete tools are
+  instantiated by that skill per stack *(multi-stack examples: typed web frameworks emitting
+  OpenAPI or JSON Schema, paired with an `oasdiff`-style diff; escalating to `Pact`-style
+  consumer-driven contract tests where producer and consumer are deployed independently by
+  different teams — depends on stack and deployment shape)*.
+- **Why:** generating the contract from typed code keeps producer and consumer in sync for
+  free; a breaking-change diff catches the silent A->B mismatch unit tests cannot see — which
+  is the value at a high-drift seam.
+- **When to deviate:** in a single monorepo, "derive the spec and diff it" is lighter and
+  sufficient; escalate to consumer-driven contract testing only when producer and consumer
+  are deployed independently by different teams.
 
-## 让这张表生长
+## Letting this table grow
 
-这是一张活表。当某个 🔧 占位的类别执行器 skill 建好后，把对应路由去向的状态从「占位·待建」改成
-「✅ 执行器已建」即可。**注意：本 skill 永远只记录"路由到哪个执行器 skill"，不在本表内写死任何
-单栈工具**——具体工具的选择始终是被路由到的执行器 skill 的职责，由它按栈实例化。
+This is a living table. Once a placeholder category's executor skill is built, change that
+routing destination's status from "placeholder, to be built" to "executor built". **Note:
+this skill only ever records which executor skill something routes to, and never hardcodes a
+single-stack tool in this table** — choosing the concrete tool is always the receiving
+executor skill's responsibility, instantiated per stack.
 
-## 护栏提醒
+## Guardrail reminder
 
-上面任何**会编写或修复测试**的 **agent 行为**（包括完整功能链路 UI 可走段折叠进来的 gstack `/qa`），都必须
-在 `self-healing-guardrails.md` 里的 5 条护栏下运行。本 skill 只判类与路由；它自己绝不运行任何工具，
-也不替项目选定任何单栈工具。
+Any **agent behaviour above that writes or fixes tests** (including a diff-aware E2E tool
+folded into the full functional chain's UI-traversable segment) MUST run under the five
+guardrails in `self-healing-guardrails.md`. This skill only classifies and routes; it never
+runs a tool itself, and it never picks a single-stack tool on the project's behalf.

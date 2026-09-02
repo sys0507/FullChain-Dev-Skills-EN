@@ -1,33 +1,42 @@
-# 自愈测试 agent —— 5 条护栏
+# Self-healing test agents: five guardrails
 
-当本顾问推荐一个 **agent 驱动**的测试选项时（例如一个自愈 E2E 循环或一个自动修复 agent），
-那个 agent 必须在这五条护栏下运作。它们之所以存在，是因为一个不受约束、只想"把测试弄绿"
-的 agent，会很乐意删掉断言、或者去给产品打补丁来掩盖一次失败——而这恰恰摧毁了测试本该
-提供的那个信号。顾问自己绝不运行任何 agent；它只是指向这里，让搭建 agent 的人安全地做这件事。
+When this advisor recommends an **agent-driven** testing option (a self-healing E2E loop,
+say, or an auto-repair agent), that agent MUST operate under these five guardrails. They
+exist because an unconstrained agent whose only goal is "make the tests green" will
+happily delete assertions or patch the product to mask a failure — which destroys exactly
+the signal the tests were there to give. The advisor never runs an agent itself; it points
+here so that whoever builds one does it safely.
 
-## 5 条护栏
+## The five guardrails
 
-1. **只能写测试，绝不碰产品代码。** agent 只能在测试目录（`tests/` 或等价目录）下新增或编辑
-   文件，别的一概不动。一个失败的测试意味着产品错了；agent 的活儿是用测试正确地表达出这一点，
-   而不是去"修"它没被要求改动的生产行为。
+1. **Write tests only; never touch product code.** The agent may add or edit files under
+   the test directory (`tests/` or its equivalent) and nowhere else. A failing test means
+   the product is wrong; the agent's job is to express that correctly in a test, not to
+   "fix" production behaviour it was never asked to change.
 
-2. **断言绝不可以被弱化。** 不变量是：*如果 feature 坏了，测试必须变红。* agent 不得放宽
-   比较、扩大容差、删除断言，也不得把一个有意义的检查替换成一个恒为真的检查来凑绿。CI 里的
-   一个断言强度 diff 应当拒绝任何降低测试甄别力的改动。
+2. **An assertion MUST NOT be weakened.** The invariant is: *if the feature breaks, the
+   test MUST go red.* The agent MUST NOT loosen a comparison, widen a tolerance, delete an
+   assertion, or replace a meaningful check with one that is always true in order to reach
+   green. An assertion-strength diff in CI should reject any change that lowers the tests'
+   discriminating power.
 
-3. **禁止运行时伪造修复。** agent 不得在运行时打桩（stub）、monkeypatch 或短路被测系统来
-   制造一个通过（例如强迫一个函数返回期望值、拦截那个实际正在失败的调用）。测试必须走真实的
-   代码路径。
+3. **No fabricated fixes at runtime.** The agent MUST NOT stub, monkeypatch or short-circuit
+   the system under test to manufacture a pass — forcing a function to return the expected
+   value, intercepting the very call that is failing. Tests MUST exercise the real code path.
 
-4. **有界重试，然后升级给人。** agent 拿到一个固定的、很小的重试预算。当它用尽预算仍没拿到
-   一个合法的绿时，它停下来，把失败的上下文升级给一个人——它不会一直变着法子改东西直到某个
-   东西通过为止。
+4. **Bounded retries, then escalate to a human.** The agent gets a fixed, small retry
+   budget. When it exhausts that budget without a legitimate green, it stops and escalates
+   with the failure context — it does not keep changing things until something passes.
 
-5. **产出一个 PR 供人工 review。** agent 的工作产物是一个 pull request，绝不是直接提交到受
-   保护分支。一个人在它落地之前 review 这个 diff，于是护栏 1–4 由人作为最后一道兜底来核查。
+5. **Produce a PR for human review.** The agent's work product is a pull request, never a
+   direct commit to a protected branch. A human reviews the diff before it lands, so
+   guardrails 1-4 get a person as the final backstop.
 
-## 这为什么对顾问很重要
+## Why this matters to the advisor
 
-这些护栏是顾问明确**不去替代**的那个**确定性验证层**的一部分。当收尾报告把一条推荐标注
-✅（"已被 CI 闸覆盖"）时，它依赖的正是像断言强度 diff（护栏 2）和破坏性变更闸这样的机制来
-提供真正的证明。顾问的推荐是方向；这些护栏加上 CI 闸，才是让最终产出的测试值得信任的东西。
+These guardrails are part of the **deterministic verification layer** the advisor
+explicitly does **not** replace. When the closing report marks a recommendation with a
+check mark ("already covered by a CI gate"), what it relies on for real proof are
+mechanisms like the assertion-strength diff (guardrail 2) and the breaking-change gate.
+The advisor's recommendations set direction; these guardrails plus the CI gates are what
+make the resulting tests worth trusting.

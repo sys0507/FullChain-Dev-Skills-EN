@@ -1,138 +1,200 @@
-# 完整功能链路结构性缺口清单（栈无关能力 → 路由给 `full-chain-testing-en`）
+# Full functional chain structural gap list (stack-agnostic capabilities -> routed to `full-chain-testing-en`)
 
-这张清单专门服务「完整功能链路」类别：当某个 feature 落地后，一条**横跨多个 feature** 的用户旅程
-首次变得端到端可达。此时每个 feature 自己的单元、局部前后端接缝都可能各自全绿——但**这条贯穿多
-feature、含非 UI 跳步（定时 / 异步 / 跨通道）的完整旅程从没有人端到端跑过**。下面把这些**结构性
-缺口**逐项列出（都是**栈无关的能力**），并给出每项的做法。**本 skill 不写死任何单栈工具**——判出
-命中哪些缺口后，连同命中理由一并**路由给 `full-chain-testing-en` skill**，由它读项目栈
-（`package.json` / `pyproject.toml` / `docker-compose.yml` / `go.mod` 等）判栈后接该栈对应工具来
-闭环补测。
+This list serves the "full functional chain" category: once some feature lands, a user
+journey **spanning several features** becomes reachable end to end for the first time. At
+that point every feature's own units and local full-stack seams may each be green — but
+**the complete journey across those features, including its non-UI hops (scheduled, async,
+cross-channel), has never been run end to end by anyone**. Below, those **structural gaps**
+are listed one by one (all of them **stack-agnostic capabilities**) with the approach for
+each. **This skill hardcodes no single-stack tool** — once you have judged which gaps are
+hit, **route them, with the reason each was hit, to the `full-chain-testing-en` skill**,
+which reads the project's stack (`package.json`, `pyproject.toml`, `docker-compose.yml`,
+`go.mod` and so on) and wires that stack's tools to close the gap.
 
-> 方法论以 `testing-system-blueprint-en` skill 为蓝本。下文出现的工具名（静态代码图 glia / OpenLore、
-> 运行时 trace Pathfinder / Tracetest / OpenTelemetry、docker-compose / WireMock /
-> Playwright `page.clock` / gstack `/qa` / event-storming…）仅为**多栈示例**，非写死答案、非依赖。
-> 其中 **glia 为非商业 license**，仅作"按栈实例化"的可选示例列出，不构成本 skill 的任何依赖。项目专有
-> 名词（旅程步骤名、通道名、job 名）一律现读，不硬编码。
+> Methodology follows the `testing-system-blueprint-en` skill as its blueprint. The tool
+> names below (static code graphs, runtime tracing via OpenTelemetry-style tooling,
+> docker-compose, WireMock, Playwright `page.clock`, event storming and the rest) are
+> **multi-stack examples** — not fixed answers and not dependencies. Some named static-graph
+> tools carry **non-commercial licences**; they are listed only as optional examples of
+> "instantiate per stack" and constitute no dependency of this skill. Project-specific
+> names (journey step names, channel names, job names) are always read live, never hardcoded.
 >
-> **默认可用的干净实例**：`full-chain-testing-en` skill 自带一套 **MIT clean-room 自研参考工具**
-> （`scripts/` 下 刀1 spec / 刀2 静态 / 刀3 trace → 刀4 三源合并 → `path-inventory.json` → 刀6 旅程可视化，
-> 每条边带 provenance、反瞎编），三源均可由它实例化——**无 glia 的非商业约束**，是 license 干净的默认选择，
-> 本身也 stack-agnostic（读 pyproject/package.json 后处理）。glia/OpenLore 等仍可作其它栈的可选替代。
+> **A clean instance that is available by default**: the `full-chain-testing-en` skill ships
+> its own **MIT clean-room reference toolset** (under `scripts/`: knife 1 spec / knife 2
+> static / knife 3 trace, merged by knife 4 into `path-inventory.json`, visualised as
+> journeys by knife 6, every edge carrying provenance and refusing to fabricate). All three
+> sources can be instantiated from it — **with no non-commercial constraint**, making it the
+> licence-clean default, and it is itself stack-agnostic (it reads `pyproject.toml` or
+> `package.json` and works from there). Other static-graph tools remain optional
+> alternatives for other stacks.
 
-## 判类条件（什么时候归「完整功能链路」）
+## Classification condition (when this is a "full functional chain")
 
-这条被测路径**跨出了本 feature 边界、横跨多个 feature**。单 feature 内的单条切片对账（哪怕前后端
-同时改）归「局部前后端」，不进本格。本质 = **跨多 feature 的端到端旅程，含非 UI 跳步**（定时触发 /
-异步消费 / 跨通道流转）。判类的入口正是 test-routing-advisor-en 的杀手锏——**从依赖图推出某条
-A→B→C 首次贯通**：当一个 feature 恰好补上某条跨 feature 旅程里最后缺失的一环时，这条旅程就归本格。
+The path under test **crosses the feature boundary and spans several features**. A single
+slice reconciled within one feature — even one touching both frontend and backend — belongs
+to "local full-stack slice", not here. In essence this is **an end-to-end journey across
+several features, including non-UI hops** (scheduled triggers, async consumption,
+cross-channel handoffs). The entry point for the classification is exactly this advisor's
+distinctive move — **deriving from the dependency graph that some A->B->C has become
+connected for the first time**: when a feature happens to supply the last missing link in a
+cross-feature journey, that journey belongs here.
 
-## 形态差异：被测对象要先被【挖掘】出来，且这是安全网层
+## Two differences in shape: the subject must be excavated, and this is the safety-net layer
 
-这是完整功能链路区别于前三格的两个根本点：
+These are what fundamentally separate the full functional chain from the previous three
+categories:
 
-- **被测对象（通路）要先被【挖掘】出来。** 单后端 / 单前端 / 局部前后端的被测对象都是**给定的**
-  （某个单元、某个组件、某条切片）；而本格的被测对象——一条端到端通路——**藏在依赖图里、不在任何
-  单个 task 里**，必须先半自动枚举、再由人确认才能拿到。"挖通路"是本格独有的第一动作。
-- **这是安全网（safety net）层，不是穷举层。** 一个 bug 如果**首次**在这一层被发现，说明它本该在
-  下层（单后端 / 单前端 / 局部前后端）就被抓到却漏了——正确的反应是**回补下层**那个漏掉的测试，而
-  不是把断言堆在这一层。所以本格只留**少量 P0 关键通路**做安全网，不追求覆盖所有通路（穷举是下层
-  的事）。
+- **The subject under test (the path) must be excavated first.** In backend-only,
+  frontend-only and local full-stack slice work the subject is **given** (a unit, a
+  component, a slice). Here the subject — an end-to-end path — **hides in the dependency
+  graph and appears in no single task**, so it must be semi-automatically enumerated and
+  then confirmed by a person. Path excavation is this category's unique first action.
+- **This is the safety-net layer, not the exhaustive layer.** If a bug is found **for the
+  first time** at this layer, that means a lower layer (backend-only, frontend-only, local
+  full-stack slice) should have caught it and did not — the correct response is to
+  **backfill the missing test at that lower layer**, not to pile assertions up here.
+  So this category keeps only a **small number of P0 critical paths** as a safety net, and
+  does not aim to cover every path (exhaustiveness is the lower layers' job).
 
-**分层做法：** 第一层是 UI **可走段**——用 **diff-aware E2E** 对真实组装系统跑一遍旅程里 UI 能走通
-的部分（候选样例 gstack `/qa`，**非硬依赖、有则优先、无则回退** Playwright 等）；**非 UI 跳步**
-（定时 job / 异步消费 / 跨通道投递）UI 走不到，改用**编排驱动**——直接手动触发 job / 注入消息 /
-轮询断言把这些跳步串起来。
+**A layered approach:** the first layer is the **UI-traversable segment** — use a
+**diff-aware E2E** run against the real assembled system to walk the part of the journey the
+UI can reach (a one-command E2E tool is **optional, preferred where present and falling back
+to Playwright and similar where absent**). **Non-UI hops** (scheduled jobs, async
+consumption, cross-channel delivery) cannot be reached through the UI, so use
+**orchestration-driven** testing instead: manually trigger the job, inject the message, and
+poll to assert, stitching those hops together.
 
-## 缺口清单（栈无关）
+## Gap list (stack-agnostic)
 
-| 结构性缺口（能力） | 流程目前怎么对待 | 做法 | 路由去向 / 工具示例 |
+| Structural gap (capability) | How the process treats it today | Approach | Routes to / example tools |
 |---|---|---|---|
-| ① 通路挖掘（**三源**枚举端到端通路 + 人确认） | 流程**完全没碰**——通路藏在依赖图里，没人把它列出来；且静态图只挖得动**半张图** | 🔧 第一动作：三源（静态图 + 运行时 trace + spec 契约）半自动枚举 + 人确认 | → `full-chain-testing-en` 静态图（glia〔非商业 license〕/ OpenLore 式）打底 + 运行时 trace（Pathfinder / Tracetest / OpenTelemetry）补 FE↔BE 桥边与 cron/异步解耦边 + spec 契约（代码未落地时唯一来源） |
-| ② 关键性分级 + 选少（P0 安全网，非穷举） | 流程倾向"全测"或"不测" | 给挖出的通路分级、只取 P0 一小撮 | → `full-chain-testing-en` 按风险分级取少数 P0 通路（蓝本 P0–P3） |
-| ③ 全系统编排 + 外部边界 stub | 各 feature 各自 mock，整系统从没拼起来 | 起整系统，只 stub 最外层第三方 | → `full-chain-testing-en` 起真整栈（docker-compose / 进程内组装）+ 仅 stub 外部第三方（WireMock 等） |
-| ④ 异步 / 时间 / 跨通道贯穿 | 定时 / 异步 / 跨通道跳步零端到端覆盖 | fake clock + 手动触发 job + poll-retry，**禁 sleep** | → `full-chain-testing-en` 接 fake clock / 手动触发 + 轮询断言（Playwright `page.clock` 等） |
-| ⑤ journey 级可追溯 + 安全网定位 | 失败只指向某个 feature，看不出整条旅程 | 把断言挂到 journey 步骤 + 首现即回补下层 | → `full-chain-testing-en` journey↔AC 可追溯 + "首次在此发现=下层漏测"回补提示 |
+| 1. Path excavation (**three sources** enumerate end-to-end paths + human confirmation) | **Not touched at all** — paths hide in the dependency graph and nobody lists them; and a static graph reaches only **half the graph** | Must be built: three sources (static graph + runtime trace + spec contracts) semi-automatically enumerate, then a person confirms | `full-chain-testing-en` uses a static graph as the base, runtime tracing to add the frontend-backend bridge edges and the cron/async decoupled edges, and spec contracts as the only source where the code does not exist yet |
+| 2. Criticality grading + take few (P0 safety net, not exhaustive) | The process tends to "test everything" or "test nothing" | Grade the excavated paths and take only a small handful of P0s | `full-chain-testing-en` grades by risk and takes a few P0 paths (blueprint P0-P3) |
+| 3. Whole-system orchestration + external boundary stubs | Each feature mocks its own neighbours; the whole system has never been assembled | Stand the whole system up; stub only the outermost third parties | `full-chain-testing-en` stands the real full stack up (docker-compose, in-process assembly) and stubs only external third parties (WireMock and similar) |
+| 4. Async / time / cross-channel continuity | Scheduled, async and cross-channel hops have zero end-to-end coverage | Fake clock + manual job trigger + poll-retry, **`sleep` forbidden** | `full-chain-testing-en` wires a fake clock, manual triggers and polling assertions (Playwright `page.clock` and similar) |
+| 5. Journey-level traceability + safety-net localisation | A failure points at one feature, never at the journey | Attach assertions to journey steps; first appearance here means backfill a lower layer | `full-chain-testing-en` provides journey-to-AC traceability plus a "first found here means a lower layer under-tested it" backfill prompt |
 
-## 各缺口展开（能力定义 + 多栈示例）
+## Each gap in detail (capability definition + multi-stack examples)
 
-### ① 通路挖掘（从依赖图 / 跨模块契约 / user-story AC 枚举端到端通路） — 🔧 第一动作（本格独有）
+### 1. Path excavation (enumerate end-to-end paths from the dependency graph, cross-module contracts and user-story ACs) — the first action, unique to this category
 
-**能力定义：** 把一条端到端通路从隐式变显式。前三格的被测对象是给定的，本格的被测对象要先**挖**
-出来——再交给**人确认**哪些是真实的用户旅程（半自动枚举降噪、人确认定边界）。这正是
-test-routing-advisor-en 杀手锏"从依赖图推出 A→B→C 首次贯通"的落地入口——**那条刚贯通的链路，就是通路
-挖掘的起点**。
+**Capability definition:** turn an end-to-end path from implicit into explicit. The previous
+three categories are handed their subject; here the subject must be **excavated** first, and
+then **confirmed by a person** as to which of them are genuine user journeys
+(semi-automatic enumeration reduces the noise; human confirmation sets the boundary). This
+is precisely where the advisor's distinctive move — "derive from the dependency graph that
+A->B->C is connected for the first time" — lands: **that newly connected chain is where path
+excavation starts.**
 
-**通路挖掘走三源（缺一不可）：**
+**Path excavation uses three sources, and needs all three:**
 
-1. **静态代码图** —— 从源码的 import / call / 依赖拓扑静态推出边（glia〔非商业 license〕/ OpenLore 式
-   工具）。这只挖得动**半张图**：语法上清晰的边（直接函数调用、显式 import）能挖到。
-2. **运行时 trace** —— 把系统跑起来、用分布式追踪观察真实调用链补出静态缝不动的边
-   （Pathfinder / Tracetest / OpenTelemetry 式）。
-3. **spec 契约** —— 当**代码尚未落地**时，static graph 与 runtime trace 都无从谈起，spec 的跨模块契约
-   声明 / user-story AC 是通路的**唯一来源**。
+1. **Static code graph** — derive edges statically from the source's imports, calls and
+   dependency topology. This reaches only **half the graph**: the syntactically obvious
+   edges (direct function calls, explicit imports).
+2. **Runtime trace** — run the system and use distributed tracing to observe the real call
+   chain, filling in the edges static analysis cannot stitch.
+3. **Spec contracts** — when **the code does not exist yet**, neither a static graph nor a
+   runtime trace is available, and the spec's cross-module contract declarations and
+   user-story ACs are the **only source** of the path.
 
-**实证边界（两项目实证）：静态图只挖得动半张图。** 有两类边静态缝**缝不动**，必须靠运行时 trace 或
-spec 契约补：
+**Empirical boundary (observed across two projects): a static graph reaches only half the
+graph.** Two classes of edge **cannot be stitched statically** and must come from runtime
+tracing or spec contracts:
 
-- **框架封装的 FE↔BE 桥边** —— 前后端之间经由框架约定（路由表 / RPC 代理 / 自动序列化客户端）连接的
-  调用，源码里看不到一条直白的跨端调用边，静态分析挖不到。
-- **cron / 异步解耦边** —— 定时触发、消息队列、后台 worker 这类**时间 / 事件解耦**的步骤，生产者与消费者
-  在代码里互不引用，静态图天然断在这里。
+- **Framework-wrapped frontend-backend bridge edges** — calls connected across the frontend
+  and backend by a framework convention (a routing table, an RPC proxy, an auto-serialising
+  client) leave no plain cross-tier call edge in the source, so static analysis cannot find
+  them.
+- **Cron and async decoupled edges** — scheduled triggers, message queues and background
+  workers are **decoupled in time or by event**, so producer and consumer never reference
+  each other in code and the static graph naturally breaks there.
 
-这就是为什么三源缺一不可：静态图给骨架，运行时 trace 补桥边与解耦边，spec 契约在代码未落地时兜底。
+That is why all three sources are needed: the static graph supplies the skeleton, runtime
+tracing adds the bridge and decoupled edges, and spec contracts cover the case where the
+code has not landed.
 
-- **多栈示例（由 `full-chain-testing-en` 按栈选，均为可选实例、非依赖）：** 静态图用 glia〔非商业
-  license〕/ OpenLore 式工具列候选；运行时 trace 用 Pathfinder / Tracetest / OpenTelemetry 观察真实
-  调用链；用 event-storming 风格把跨 feature 的领域事件流梳成旅程；gstack 项目可借 `/qa` 的旅程梳理
-  能力——**gstack 非硬依赖，有则优先、无则回退**手工梳理。**这些都是示例，不是写死答案。**
+- **Multi-stack examples (chosen by `full-chain-testing-en` per stack; all optional
+  instances, not dependencies):** static-graph tools to list candidates; runtime tracing to
+  observe the real call chain; event-storming style modelling to comb cross-feature domain
+  event flows into journeys; a project's own one-command journey tool where it has one —
+  **optional, preferred where present, falling back to manual combing where absent. These
+  are all examples, not fixed answers.**
 
-### ② 关键性分级 + 选少（P0 安全网，非穷举）
+### 2. Criticality grading + take few (P0 safety net, not exhaustive)
 
-**能力定义：** 对挖出的每条通路做**关键性分级**（这条旅程断了，对用户 / 业务的杀伤多大），只取最高
-优先级的一小撮（P0）作为安全网，**不穷举所有通路**。穷举是下层的职责；本格端到端测试最慢最脆，多了
-反而拖垮信号。分级标准遵循 `testing-system-blueprint-en` 的 P0–P3 风险分级。
+**Capability definition:** grade each excavated path by **criticality** (how much damage to
+the user or the business if this journey breaks), and take only a small handful of the
+highest priority (P0) as a safety net, **not every path**. Exhaustiveness is the lower
+layers' responsibility; end-to-end tests here are the slowest and most brittle, and more of
+them degrades the signal rather than improving it. Grading follows the P0-P3 risk grading in
+`testing-system-blueprint-en`.
 
-- **多栈示例（由 `full-chain-testing-en` 按栈选）：** 按 AC 的"必须成立"程度 + 旅程触达用户面排序，取
-  Top-N P0 通路。**按项目实际旅程定，不写死数量。**
+- **Multi-stack examples (chosen by `full-chain-testing-en` per stack):** rank by how
+  strongly the AC says "must hold" plus how much user surface the journey touches, then take
+  the top N P0 paths. **Set by the project's actual journeys; the count is not hardcoded.**
 
-### ③ 全系统编排 + 外部边界 stub（只 stub 外部第三方边界）
+### 3. Whole-system orchestration + external boundary stubs (stub only the external third-party boundary)
 
-**能力定义：** 把**整个跨 feature 系统**真实、可复现地起起来，让整条通路能在真实组装物上被驱动；
-**只对最外层的第三方边界打 stub**（支付网关 / 外部模型服务 / 三方推送等不可控、有成本、有副作用的
-外部依赖），系统内部的 feature 间一律走真实组装、不 mock。与局部前后端的「起真栈」相比，本格的栈
-更大（多 feature + 多依赖），且明确**外部边界以外不许 stub**——否则就不是端到端了。
+**Capability definition:** stand the **entire cross-feature system** up for real and
+reproducibly, so the whole path can be driven against the genuine assembly; **stub only the
+outermost third-party boundary** (payment gateways, external model services, third-party
+push and other external dependencies that are uncontrollable, costly or have side effects),
+while everything between features inside the system runs against the real assembly and is
+never mocked. Compared with the local full-stack slice's "stand the real stack up", the
+stack here is larger (several features and several dependencies), and **nothing inside the
+external boundary may be stubbed** — otherwise it is not end to end.
 
-- **多栈示例（由 `full-chain-testing-en` 按栈选）：** `docker-compose` 起整系统；进程内组装多 feature 的
-  真 handler；外部第三方用 `WireMock` / 录制回放打边界 stub——**外部边界以外不 stub**。**按栈定。**
+- **Multi-stack examples (chosen by `full-chain-testing-en` per stack):** `docker-compose`
+  for the whole system; in-process assembly of several features' real handlers; `WireMock` or
+  record-and-replay for the external third-party boundary stubs — **nothing inside that
+  boundary is stubbed. Depends on the stack.**
 
-### ④ 异步 / 时间 / 跨通道贯穿（fake clock / 手动触发 job / poll-retry，禁 sleep）
+### 4. Async / time / cross-channel continuity (fake clock / manual job trigger / poll-retry, no sleep)
 
-**能力定义：** 把旅程里 UI 走不到的**非 UI 跳步**串起来并断言贯通：**定时**（cron / 调度到点才发生
-的步骤）、**异步**（消息队列 / 后台 worker 消费）、**跨通道**（一个通道触发、另一个通道收尾，如 Web
-操作 → 邮件 / IM 推送）。关键纪律：用 **fake clock** 把时间快进到定时点（不真等）、**手动触发** job /
-注入消息把异步步骤拉到前台、用 **poll-retry**（有界轮询直到条件成立）断言到达——**严禁 `sleep`**
-（sleep 让测试既慢又 flaky，是端到端测试最大的脆性来源）。
+**Capability definition:** stitch together and assert continuity across the **non-UI hops**
+the journey's UI cannot reach: **scheduled** (cron or scheduler steps that only happen when
+the time arrives), **async** (message queue or background worker consumption), and
+**cross-channel** (one channel triggers, another finishes — a web action producing an email
+or IM push). The key discipline: use a **fake clock** to fast-forward to the scheduled point
+(never really wait), **manually trigger** the job or inject the message to pull async steps
+into the foreground, and use **poll-retry** (bounded polling until the condition holds) to
+assert arrival — **`sleep` is forbidden**, because it makes tests both slow and flaky and is
+the single largest source of brittleness in end-to-end testing.
 
-- **多栈示例（由 `full-chain-testing-en` 按栈选）：** Playwright `page.clock` 或后端 fake clock 快进时间；
-  直接调度器接口手动触发 cron job；对队列注入消息后轮询消费结果；跨通道断言落到目标通道的出站记录。
-  **按栈定。**
+- **Multi-stack examples (chosen by `full-chain-testing-en` per stack):** Playwright
+  `page.clock` or a backend fake clock to fast-forward time; call the scheduler interface
+  directly to trigger a cron job; inject a message into the queue and poll for the consumed
+  result; assert cross-channel delivery against the target channel's outbound record.
+  **Depends on the stack.**
 
-### ⑤ journey 级可追溯 + 安全网定位（首现即回补下层）
+### 5. Journey-level traceability + safety-net localisation (first appearance means backfill a lower layer)
 
-**能力定义：** 把每条断言**挂到 journey 的具体步骤**上（哪一步、对应哪条 user-story AC），失败时能定位
-到旅程的哪一跳断了、而不是只甩出某个 feature 的异常。并落实**安全网语义**：若某 bug **首次**在本层
-被发现，明确判定为**下层漏测**，在报告里提示去**回补下层**（单后端 / 单前端 / 局部前后端）对应的那条
-测试——本层只留少量 P0 安全网，不当下层的替身。
+**Capability definition:** attach every assertion **to a specific journey step** (which step,
+and which user-story AC it corresponds to), so a failure localises to the hop of the journey
+that broke rather than merely surfacing some feature's exception. And enforce the
+**safety-net semantics**: if a bug is found **for the first time** at this layer, judge it
+explicitly as **a lower layer under-testing**, and prompt in the report to **backfill the
+corresponding test at that lower layer** (backend-only, frontend-only, or local full-stack
+slice) — this layer keeps only a few P0s as a safety net and is not a stand-in for the
+layers below.
 
-- **多栈示例（由 `full-chain-testing-en` 按栈选）：** journey 步骤↔AC 可追溯矩阵；失败时输出"这是
-  journey 第 k 步断裂，疑似下层 X 漏测，建议回补 X 的回归"。**按栈定。**
+- **Multi-stack examples (chosen by `full-chain-testing-en` per stack):** a journey
+  step-to-AC traceability matrix; on failure, emit "this is journey step k breaking,
+  suspected under-testing at lower layer X, recommend backfilling X's regression".
+  **Depends on the stack.**
 
-## 与条件命中配合
+## Working with conditional hits
 
-不是每个补全了链路的 feature 都命中全部缺口——按实际旅程形态筛子集（命中规则见 `tool-mapping.md`
-的「条件命中」表）：任何被判为本格的旅程都先做①通路挖掘 + ②分级选少（这是本格的前提动作）；起整
-系统跑通就标③全系统编排（外部边界 stub）；**仅当**旅程含定时 / 异步 / 跨通道跳步才标④异步 / 时间 /
-跨通道贯穿（纯同步 UI 旅程不标，防过度测）；要把失败定位到旅程步骤、并落实安全网回补语义才标⑤。
-单 feature 内的切片归局部前后端，不进本格。本 skill 只标命中的链路缺口；**具体工具一律由
-`full-chain-testing-en` 按栈实例化（含 gstack `/qa` 这类有则优先、无则回退的非硬依赖），本 skill 不替
-它决定。**
+Not every feature that completes a chain hits every gap — take the subset by the journey's
+actual shape (the hit rules are in the "conditional hits" table in `tool-mapping.md`): any
+journey classified here starts with gap 1, path excavation, plus gap 2, grading and taking
+few (these are the category's prerequisite actions); mark gap 3, whole-system orchestration
+with external boundary stubs, once the whole system has to be stood up; mark gap 4, async /
+time / cross-channel continuity, **only when** the journey contains scheduled, async or
+cross-channel hops (a purely synchronous UI journey does not, to prevent over-testing); mark
+gap 5 when failures need to localise to a journey step and the safety-net backfill semantics
+need enforcing. A slice within a single feature belongs to the local full-stack slice, not
+here. This skill marks only the chain gaps that are hit; **the concrete tools are always
+instantiated by `full-chain-testing-en` for the stack (including optional tools that are
+preferred where present and fall back where absent), and this skill does not decide them on
+its behalf.**
