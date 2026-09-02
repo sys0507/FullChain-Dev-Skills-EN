@@ -668,5 +668,46 @@ class TestBilingualVocabulary(unittest.TestCase):
                     level="optional", fallback=False)
         self.assertTrue(any("fallback" in f.detail for f in C8Requires().run(self.root)))
 
+class TestC2SkipsIncompleteDirs(unittest.TestCase):
+    """英文版目录存在但还没有 SKILL.md 时，C2 必须跳过而不是崩溃。
+
+    真实缺陷：并行执行者中途被会话上限打断，留下 5 个只有目录没有 SKILL.md 的
+    半成品。C2 只判了 `is_dir()` 就去读文件，直接抛 FileNotFoundError——
+    **一个崩溃的检查器比一个会报错的更糟**：它让整条检查链停在这里，
+    后面的发现全都看不到了。
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+
+    def _zh(self, name, n=3):
+        d = self.root / name
+        d.mkdir()
+        (d / "SKILL.md").write_text(
+            NL.join(["## 节 %d" % i for i in range(n)]) + NL, encoding="utf-8")
+
+    def test_en_dir_without_skill_md_is_skipped(self):
+        self._zh("foo")
+        (self.root / "foo-en").mkdir()          # 空目录，无 SKILL.md
+        self.assertEqual(C2Pairing().run(self.root), [],
+                         "尚未落地的英文版应被跳过，而不是崩溃")
+
+    def test_zh_dir_without_skill_md_is_skipped(self):
+        """反向：中文版侧缺 SKILL.md 同样不得崩溃。"""
+        (self.root / "bar").mkdir()
+        (self.root / "bar-en").mkdir()
+        (self.root / "bar-en" / "SKILL.md").write_text("## x" + NL, encoding="utf-8")
+        self.assertEqual(C2Pairing().run(self.root), [])
+
+    def test_complete_pair_still_compared(self):
+        """负样本：两侧齐全时照常比对，不得被这次容错顺手放过。"""
+        self._zh("baz", 5)
+        d = self.root / "baz-en"
+        d.mkdir()
+        (d / "SKILL.md").write_text("## only one" + NL, encoding="utf-8")
+        self.assertEqual(len(C2Pairing().run(self.root)), 1)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

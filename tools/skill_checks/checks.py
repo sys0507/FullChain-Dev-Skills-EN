@@ -76,8 +76,11 @@ class C2Pairing(Check):
         base = en_root if en_root is not None else root
         for d in logical_skills(root):
             en = base / (d.name + "-en")
-            if not en.is_dir():
-                continue  # 英文版尚未复刻属预期，由 C2 不管
+            # 目录在但 SKILL.md 还没写，属尚未落地——与目录不存在同等对待。
+            # 只判 is_dir() 会在半成品目录上抛 FileNotFoundError，
+            # 而一个崩溃的检查器比一个会报错的更糟：它让后面的发现全看不到。
+            if not (en / "SKILL.md").is_file() or not (d / "SKILL.md").is_file():
+                continue
             hz = headings((d / "SKILL.md").read_text(encoding="utf-8"))
             he = headings((en / "SKILL.md").read_text(encoding="utf-8"))
             if len(hz) != len(he):

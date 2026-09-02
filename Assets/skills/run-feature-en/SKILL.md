@@ -22,10 +22,10 @@ metadata:
       fallback: "Execute against the output verification in tasks.md and label the result 'constitution not loaded'"
     - name: "external TDD capability"
       level: optional
-      fallback: "Run the built-in red-green-refactor loop"
+      fallback: "Run the built-in red-green-refactor loop in references/fallback-workflows.md"
     - name: "external code review capability"
       level: optional
-      fallback: "Run the built-in structured review checklist"
+      fallback: "Run the built-in structured review checklist in references/fallback-workflows.md"
     - name: "DESIGN.md and design references"
       level: optional
       fallback: "Execute against the interaction contract and label visual constraints as not covered"
@@ -91,6 +91,9 @@ After all tasks are green, use `superpowers:requesting-code-review`, scanning to
 Use `superpowers:receiving-code-review` to process, output table: `| # | Category | File:Line | Description | Priority |`
 0 defects → Step 5; defects found → return to the corresponding task for TDD fix, re-run review, until 0 defects.
 
+Where that capability is unavailable, run the built-in structured review checklist in
+`references/fallback-workflows.md`, and label the output as not having used external tooling.
+
 ## Step 5 · Wrap-up
 
 1. Final commit, message containing `Closes <id>-<feature>`
@@ -99,6 +102,10 @@ Use `superpowers:receiving-code-review` to process, output table: `| # | Categor
 4. Update the feature's session/handoff record (if present, e.g., `session.md`) marking completion
 5. **The feature's spec directory is never deleted** (CI seed + context for the next feature)
 6. Report: this feature had N tasks / M [FE] / K [BE] / review found X defects, all fixed
+
+The four project conventions for close-out — merge versus PR, the tag convention, updating
+the progress and handoff records, and freezing the spec directory — are in
+`references/finish-branch.md`.
 
 ## Rhythm rules
 

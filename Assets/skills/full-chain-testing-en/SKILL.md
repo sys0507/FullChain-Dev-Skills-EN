@@ -252,6 +252,9 @@ features / nodes / edges (each with source+status+provenance) / journeys.
 
 Single-tool usage: run `knife1_spec.py <specs/>` against the spec tree, run `knife2_static.py <repo/>` against real code, then `knife4_merge.py` to merge, `knife4b_narrate.py` to add narration — this sequence is essentially the breakdown of step 2.
 
+The knife number, language and purpose of each of the twelve files are in
+`references/scripts-manifest.md`.
+
 ## Upstream Artifacts
 
 | Artifact | Level | When missing |
