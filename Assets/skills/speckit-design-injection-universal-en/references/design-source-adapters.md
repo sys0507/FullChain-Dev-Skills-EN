@@ -50,7 +50,7 @@ Each `_N/code.html` has a `<title>` tag. Read it to determine the page identity.
 Example mapping (e-commerce product, assuming English + Chinese):
 - `_1/` → title "ShopDash - Product Catalog" → rename to `catalog-en`
 - `_2/` → title "ShopDash | Shopping Cart" → rename to `cart-en`
-- `_3/` → title "ShopDash - 商品目录" → rename to `catalog-zh` (Chinese version)
+- `_3/` -> title "ShopDash - Catalogue (localised)" -> rename to `catalog-l10n` (localised variant)
 - `_4/` → title "ShopDash | Order Management" → rename to `orders-en`
 
 General rule: Read the <title> tag, extract the page name, lowercase with hyphens,

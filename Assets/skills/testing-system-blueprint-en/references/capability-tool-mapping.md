@@ -1,52 +1,68 @@
-# stack-agnostic 工具映射原则（完整对照）
+# Stack-agnostic tool mapping principles (full reference)
 
-> 本文是 SKILL.md §六 的展开。这是全蓝本里最容易被违反 stack-agnostic 约束的地方，务必守住。
+> This expands section 6 of SKILL.md. It is the place in the whole blueprint where the
+> stack-agnostic constraint is most easily violated, so hold the line here.
 
-## 核心区分：能力 vs 工具
+## The core distinction: capability versus tool
 
-- **能力（capability）**：通用原语。回答"我需要做哪一类测试动作"。例如：单元断言、
-  接口/HTTP 契约校验、真库集成、并发/竞态、E2E 驱动、属性测试、变异测试、覆盖率度量。
-  **能力跨栈恒定**——任何语言都需要"能断言一个函数返回值"。
-- **工具（tool）**：能力在**某个具体栈**里的实例。回答"在这个项目的栈里用哪个库去做"。
-  **工具由调用方读完项目实际技术栈后选定**，蓝本不锁、不推荐特定库。
+- **Capability**: a generic primitive. It answers "what class of testing action do I need".
+  For example: unit assertions, interface/HTTP contract validation, real-database
+  integration, concurrency and races, E2E driving, property testing, mutation testing,
+  coverage measurement. **Capabilities are constant across stacks** — every language needs
+  "assert a function's return value".
+- **Tool**: a capability's instance **in one concrete stack**. It answers "which library does
+  this in this project's stack". **The tool is chosen by the caller after reading the
+  project's actual stack**; the blueprint neither pins nor recommends a particular library.
 
-## 唯一原则
+## The single principle
 
-> **先确定需要哪个能力，再把能力实例化为该栈的工具。蓝本永远停在能力层。**
+> **Determine which capability is needed first, then instantiate that capability as a tool
+> for the stack. The blueprint always stops at the capability layer.**
 
-这条原则保证蓝本可以被任何栈的项目复用：某 Python 后端、Go 微服务、JVM 单体、前端应用……
-它们的"能力清单"高度重合，只是"工具实例"各不相同。
+This principle is what lets the blueprint be reused by a project in any stack: a Python
+backend, a Go microservice, a JVM monolith, a frontend application — their **capability
+lists** overlap heavily, and only their **tool instances** differ.
 
-## 能力 → 多栈示例（仅示意"同能力在不同栈有不同实例"，不构成推荐、不锁定）
+## Capability -> multi-stack examples (illustrating only that one capability has different instances per stack; not a recommendation, not a lock-in)
 
-下表**故意不写具体库名**。意图是展示"映射这件事长什么样"，而**真正的库名由 `test-routing-advisor-en`
-或类别 skill（如 backend-testing-en）读项目栈后填入**。
+The table below **deliberately names no concrete library**. Its purpose is to show what the
+mapping looks like, while **the actual library names are filled in by
+`test-routing-advisor-en` or a category skill (such as `backend-testing-en`) after reading
+the project's stack**.
 
-| 能力（通用原语） | Python 实例位 | Node 实例位 | Go 实例位 | JVM 实例位 |
+| Capability (generic primitive) | Python instance slot | Node instance slot | Go instance slot | JVM instance slot |
 |---|---|---|---|---|
-| 单元 / 断言 | 该栈主流单测框架 | 该栈主流单测框架 | 内置 testing 一类 | 该栈主流单测框架 |
-| Mock / 替身 | 该栈替身机制 | 该栈替身机制 | 该栈替身机制 | 该栈替身机制 |
-| HTTP / 接口契约 | 契约/schema 校验库 | 契约/schema 校验库 | 契约/schema 校验库 | 契约/schema 校验库 |
-| 真库集成（真实 DB + 迁移） | 临时真实数据库实例 | 临时真实数据库实例 | 临时真实数据库实例 | 临时真实数据库实例 |
-| 并发 / 竞态 | 该栈并发测试手段 | 该栈并发测试手段 | 内置竞态检测一类 | 该栈并发测试手段 |
-| E2E 驱动 | 浏览器/API 驱动器 | 浏览器/API 驱动器 | 浏览器/API 驱动器 | 浏览器/API 驱动器 |
-| 覆盖率度量 | 该栈覆盖率工具 | 该栈覆盖率工具 | 内置覆盖率一类 | 该栈覆盖率工具 |
+| Unit / assertions | That stack's mainstream unit framework | That stack's mainstream unit framework | The built-in testing facility | That stack's mainstream unit framework |
+| Mocks / doubles | That stack's doubles mechanism | That stack's doubles mechanism | That stack's doubles mechanism | That stack's doubles mechanism |
+| HTTP / interface contracts | A contract or schema validation library | A contract or schema validation library | A contract or schema validation library | A contract or schema validation library |
+| Real-database integration (real DB + migrations) | An ephemeral real database instance | An ephemeral real database instance | An ephemeral real database instance | An ephemeral real database instance |
+| Concurrency / races | That stack's concurrency testing approach | That stack's concurrency testing approach | The built-in race detection facility | That stack's concurrency testing approach |
+| E2E driving | A browser or API driver | A browser or API driver | A browser or API driver | A browser or API driver |
+| Coverage measurement | That stack's coverage tool | That stack's coverage tool | The built-in coverage facility | That stack's coverage tool |
 
-> 注：表里"内置 testing 一类""内置竞态检测一类"是对某些栈自带能力的中性描述，
-> 仍属"能力实例位"，不等于钦定某个具体命令；以项目实际约定为准。
+> Note: "the built-in testing facility" and "the built-in race detection facility" are
+> neutral descriptions of what some stacks ship with. They are still **instance slots**, not
+> an anointed command; the project's own convention decides.
 
-## 实例化流程（给遵循本蓝本的 skill）
+## The instantiation flow (for skills following this blueprint)
 
-1. **读项目栈**：从依赖清单 / 构建配置 / 现有测试目录推断项目实际用的语言与测试设施。
-2. **按能力清单逐项落地**：对本次任务需要的每个能力，在该栈里选定一个**已在用或团队约定**的工具。
-   优先复用项目里已有的，而不是引入新依赖。
-3. **若该栈缺某能力的成熟工具**：在能力层记下缺口（如"该栈无现成契约校验"），
-   交由类别 skill 决定降级方案，**不要硬塞别的栈的工具**。
+1. **Read the project's stack**: infer the language and testing infrastructure actually in
+   use from the dependency manifest, the build configuration and the existing test directory.
+2. **Land each capability on the list**: for every capability this task needs, pick a tool in
+   that stack that is **already in use or agreed by the team**. Prefer reusing what the
+   project already has over introducing a new dependency.
+3. **Where the stack lacks a mature tool for a capability**: record the gap at the capability
+   layer ("this stack has no ready contract validation"), and let the category skill decide
+   the fallback. **Do not force in a tool from another stack.**
 
-## 反模式（违反 stack-agnostic）
+## Anti-patterns (violating stack-agnosticism)
 
-- 在蓝本/路由层写死"用 X 库"——这把方法骨架绑死到一个栈，其他项目无法复用。
-- 假设所有项目都是同一种语言，给出单栈命令行示例当作通用指令。
-- 把"工具选择"留在蓝本里做，而不是交给读过项目栈的下游 skill 做。
+- Hardcoding "use library X" in the blueprint or the routing layer — this binds the
+  methodological skeleton to one stack, and other projects cannot reuse it.
+- Assuming every project uses the same language, and presenting a single-stack command-line
+  example as a universal instruction.
+- Making the **tool choice** inside the blueprint rather than leaving it to the downstream
+  skill that has read the project's stack.
 
-记住：**蓝本负责"需要哪些能力"，下游负责"用哪些工具"。** 两者职责不混。
+Remember: **the blueprint owns "which capabilities are needed"; downstream owns "which tools
+to use".** The two responsibilities do not mix.

@@ -1,45 +1,81 @@
-# 自愈式补测的 5 条护栏
+# The five guardrails for self-healing backfill
 
-> 参考文档。任何"自动检测缺口 / 自动生成测试 / 自动修复让测试转绿"的流程，
-> 动手前必须先读本文并逐条遵守。stack-agnostic、project-agnostic。
+> Reference document. Any process that "detects gaps automatically, generates tests
+> automatically, or automatically repairs until tests go green" MUST read this and follow
+> every guardrail before starting. Stack-agnostic and project-agnostic.
 
-"自愈"指让自动化（含 AI agent）参与闭环补测（见 closed-loop-backfill.md）：自动发现缺口、
-自动写测试、自动尝试修复。能力很强，但**也极易把"测试体系"悄悄变成"自我安慰系统"**。
-以下 5 条护栏是不可逾越的安全边界。
+"Self-healing" means letting automation (including AI agents) take part in closed-loop
+backfill (see `closed-loop-backfill.md`): finding gaps automatically, writing tests
+automatically, attempting fixes automatically. It is powerful, and it **also makes it
+extremely easy to turn a test suite quietly into a self-reassurance system**. The five
+guardrails below are safety boundaries that MUST NOT be crossed.
 
-## 护栏 1 · 只能写 tests/，不改产品码
-自愈流程的写权限**只限测试目录**。它可以新增/调整测试，**不得擅自修改产品代码**。
-- 为什么：让自动化同时改产品码和测试，等于让它"自己出题自己改答案"，无人能信任结果。
-- 修产品码这一步（闭环第 4 步）应是**显式、可审查**的变更，而非自愈流程顺手做掉。
+## Guardrail 1: write only to tests/, never modify product code
 
-## 护栏 2 · 断言不可弱化（功能坏 → 测试必红）
-自愈过程中，**不允许通过削弱断言让测试变绿**。检验标准恒定：**当被测功能真的坏掉时，测试必须变红。**
-- 禁止：放宽期望值、删掉关键断言、把精确断言改成"只要不抛异常就算过"、扩大容忍区间到失去意义。
-- 为什么：弱化断言后测试"绿了"，但它已不再保护任何东西。一个永远绿的测试比没有测试更危险——
-  它制造虚假安全感。
-- 自检：改完后问"如果我把这条功能写错，这个测试还会红吗？"答案必须是"会"。
+A self-healing process's write permission is **limited to the test directory**. It may add
+or adjust tests; it **MUST NOT modify product code on its own initiative**.
 
-## 护栏 3 · 禁止运行时伪造修复
-**不得通过运行时打补丁 / 猴补丁 / 拦截 / 桩替换真实逻辑等手段，让测试"看起来过了"。**
-- 禁止：在测试里把被测函数偷偷替换成永远返回正确值、mock 掉正在被验证的那段核心逻辑、
-  捕获并吞掉本应导致失败的错误。
-- 为什么：这类"修复"只在测试进程里成立，真实运行时缺陷原封不动。测试通过 ≠ 缺陷消失。
-- 区分：mock **外部依赖**（真实意图是隔离被测单元）是正当的；mock **被测对象本身**让它假装正确是伪造。
+- Why: letting automation change both the product code and the tests is letting it set its
+  own exam and mark its own paper — nobody can trust the result.
+- Fixing the product code (step 4 of the closed loop) should be an **explicit, reviewable**
+  change, not something the self-healing process does in passing.
 
-## 护栏 4 · 有界重试 → 升级给人
-自愈尝试必须**有次数/时间上界**；达到上界仍未真正解决（在护栏 1–3 约束下），**升级交给人**。
-- 禁止：无限重试、为了"跑到绿"反复换策略直到偶然通过（这往往滑向护栏 2/3 的违反）。
-- 为什么：反复自动重试既烧资源，又极易掩盖一个本质上需要人判断的问题（如需求本身有歧义、
-  缺陷在产品设计层）。**卡住就升级**，比"硬刷到绿"健康。
-- 升级时应携带：复现的失败测试、已尝试的路径、为什么没能在护栏内解决。
+## Guardrail 2: assertions MUST NOT be weakened (feature breaks -> test goes red)
 
-## 护栏 5 · 产 PR，人审
-自愈流程的产出（新增测试、缺口报告、修复建议）必须以 **PR / 变更请求**形式提交，**经人审查后合入**。
-- 禁止：自动直推主干 / 自动合并、绕过评审把变更落地。
-- 为什么：测试是项目长期资产，自动生成的测试质量参差（可能过拟合、可能误解意图）。
-  人审是把"自动产出"变成"可信资产"的最后一道闸——也呼应发布门由人在 CI 之上做最终 go/no-go。
+During self-healing, **turning a test green by weakening its assertions is not permitted**.
+The standard is constant: **when the feature under test genuinely breaks, the test MUST go
+red.**
 
-## 5 条之间的关系
+- Forbidden: loosening expected values, deleting a key assertion, downgrading a precise
+  assertion to "passes as long as nothing throws", widening a tolerance until it means
+  nothing.
+- Why: after weakening, the test is "green" but no longer protects anything. A test that is
+  always green is more dangerous than no test — it manufactures false confidence.
+- Self-check: after the change, ask "if I broke this feature, would this test still go red?"
+  The answer MUST be yes.
 
-护栏 1–3 防止自愈"作弊"（改不该改的、弱化断言、伪造修复）；护栏 4 防止它"硬刷"；
-护栏 5 保证最终落地有人把关。任何一条被绕过，自愈就从"加速补测"退化成"批量制造虚假绿灯"。
+## Guardrail 3: no fabricated fixes at runtime
+
+**Runtime patching, monkeypatching, interception or stubbing out the real logic to make a
+test "look like it passes" is forbidden.**
+
+- Forbidden: quietly replacing the function under test with one that always returns the
+  right value; mocking out the very core logic being verified; catching and swallowing the
+  error that should have caused the failure.
+- Why: such a "fix" holds only inside the test process, while the defect remains untouched
+  at runtime. A passing test is not a fixed defect.
+- The distinction: mocking an **external dependency** (whose genuine purpose is isolating the
+  unit under test) is legitimate; mocking **the subject under test itself** so it pretends to
+  be correct is fabrication.
+
+## Guardrail 4: bounded retries, then escalate to a human
+
+A self-healing attempt MUST have a **bound on attempts or time**; on reaching that bound
+without a genuine resolution (within guardrails 1-3), it **escalates to a human**.
+
+- Forbidden: unbounded retries; cycling through strategies to "get to green" until something
+  passes by chance (which usually slides into violating guardrail 2 or 3).
+- Why: repeated automatic retries burn resources and readily conceal a problem that
+  fundamentally needs human judgement (an ambiguous requirement, a defect at the product
+  design level). **Stuck means escalate** — that is healthier than grinding to green.
+- The escalation should carry: the reproducing failing test, the paths already tried, and
+  why it could not be solved within the guardrails.
+
+## Guardrail 5: produce a PR, reviewed by a human
+
+A self-healing process's output (new tests, gap reports, fix suggestions) MUST be submitted
+as a **PR or change request** and merged **only after human review**.
+
+- Forbidden: pushing straight to the trunk, auto-merging, or landing changes around the
+  review.
+- Why: tests are a long-term project asset, and automatically generated tests vary in quality
+  (they may overfit, they may misread the intent). Human review is the final gate that turns
+  automated output into a trustworthy asset — mirroring the release gate, where a person
+  makes the final go/no-go above CI.
+
+## How the five relate
+
+Guardrails 1-3 stop self-healing from cheating (changing what it should not, weakening
+assertions, fabricating fixes); guardrail 4 stops it from grinding; guardrail 5 ensures a
+person vets what finally lands. **Bypass any one of them and self-healing degrades from
+"accelerating backfill" into "mass-producing false green lights".**

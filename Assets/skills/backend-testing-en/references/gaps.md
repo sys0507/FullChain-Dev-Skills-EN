@@ -1,105 +1,156 @@
-# 四类后端结构性缺口 · 能力层 + 按栈实例化
+# Four classes of backend structural gap: capabilities + per-stack instantiation
 
-> 用法：先按 SKILL.md 步骤 0 识别项目栈，再读对应缺口下该栈那一行实例化工具。
-> 每类缺口先写**能力**（栈无关、永远成立），再给**多栈示例**。示例是 lookup，不是唯一答案——
-> 项目用什么栈、装什么库由项目自身决定；本表只做"能力 → 该栈生态工具"的映射。
+> How to use: identify the project's stack per step 0 of SKILL.md, then read that stack's
+> row under the relevant gap to instantiate the tools.
+> Each gap states the **capability** first (stack-agnostic, always true), then gives
+> **multi-stack examples**. The examples are a lookup, not the only answer — the stack and
+> the libraries are the project's own choice; this table only maps "capability -> a tool in
+> that stack's ecosystem".
 
-## 目录
+## Contents
 
-1. [真库数据层 / 迁移 / 事务 / 约束](#1-真库数据层--迁移--事务--约束)
-2. [鉴权 / 越权 BOLA·BFLA](#2-鉴权--越权-bolabfla)
-3. [并发 / 竞态 / 限频原子性](#3-并发--竞态--限频原子性)
-4. [韧性 / 故障注入](#4-韧性--故障注入)
+1. [Real-database data layer / migrations / transactions / constraints](#1-real-database-data-layer--migrations--transactions--constraints)
+2. [Authorisation / escalation, BOLA and BFLA](#2-authorisation--escalation-bola-and-bfla)
+3. [Concurrency / races / rate-limit atomicity](#3-concurrency--races--rate-limit-atomicity)
+4. [Resilience / fault injection](#4-resilience--fault-injection)
 
 ---
 
-## 1. 真库数据层 / 迁移 / 事务 / 约束
+## 1. Real-database data layer / migrations / transactions / constraints
 
-**能力**：起一个**真实数据库容器**（不是内存替身、不是 mock），对其跑迁移的 `up` 与 `down` 往返，断言：
-- 唯一约束 / 外键 / CHECK / NOT NULL 在真库下确实拦截非法写入；
-- 事务在异常路径下完整回滚，不留脏数据；
-- 迁移可逆（up→down→up 后 schema 一致），无破坏性丢数据迁移悄悄通过。
+**Capability**: start a **real database container** (not an in-memory stand-in, not a mock),
+run the migrations `up` and `down` as a round trip against it, and assert that:
+- unique constraints, foreign keys, CHECK and NOT NULL really do block illegal writes on the
+  real database;
+- transactions roll back completely on the error path, leaving no dirty data;
+- migrations are reversible (the schema after up -> down -> up matches), and no destructive
+  data-losing migration slips through quietly.
 
-**为什么不能用内存替身**：SQLite 等内存库与生产库（Postgres/MySQL）在约束、类型、并发隔离级别上行为不同；用替身测约束 = 测了个寂寞。真库容器才能暴露真实行为。
+**Why an in-memory stand-in will not do**: SQLite and similar in-memory databases behave
+differently from production databases (Postgres, MySQL) on constraints, types and
+concurrency isolation levels; testing constraints against a stand-in tests nothing. Only a
+real database container exposes the real behaviour.
 
-| 栈 | 真库容器 | 迁移往返 |
+| Stack | Real database container | Migration round trip |
 |---|---|---|
-| Python | `testcontainers` 或 `pytest-postgresql` | `pytest-alembic`（断言 up/down 往返、无未生成迁移） |
-| Node / TS | `testcontainers`（testcontainers-node） | 项目所用迁移工具（Prisma Migrate / Knex / TypeORM / node-pg-migrate）跑 up·down |
-| Go | `dockertest`（ory/dockertest） | `golang-migrate`（up/down） |
-| JVM | `Testcontainers`（org.testcontainers） | `Flyway`（migrate / undo）或 Liquibase |
-| 其他栈 | 反查该栈的"docker 化集成测试 DB"方案 | 反查该栈主流迁移工具的 up/down 命令 |
+| Python | `testcontainers` or `pytest-postgresql` | `pytest-alembic` (asserts the up/down round trip and that no migration is ungenerated) |
+| Node / TS | `testcontainers` (testcontainers-node) | The project's migration tool (Prisma Migrate, Knex, TypeORM, node-pg-migrate) run up and down |
+| Go | `dockertest` (ory/dockertest) | `golang-migrate` (up/down) |
+| JVM | `Testcontainers` (org.testcontainers) | `Flyway` (migrate / undo) or Liquibase |
+| Other stacks | Look up that stack's "dockerised integration-test database" option | Look up that stack's mainstream migration tool's up/down commands |
 
-**典型断言清单**：唯一键重复插入抛约束错误；外键指向不存在父行被拒；事务内异常后行数不变；迁移 down 后再 up 与初始一致。
+**Typical assertion list**: inserting a duplicate unique key raises a constraint error; a
+foreign key pointing at a non-existent parent row is refused; after an exception inside a
+transaction the row count is unchanged; the schema after a migration down and up again
+matches the original.
 
 ---
 
-## 2. 鉴权 / 越权 BOLA·BFLA
+## 2. Authorisation / escalation, BOLA and BFLA
 
-**能力（框架无关自建模式——任何栈都这么做）**：
-1. 准备**两个不同身份**的凭证 fixture——身份 A 与身份 B（同级别但归属不同对象），以及一个普通用户与一个特权用户。
-2. **BOLA（对象级越权）**：用身份 A 的 token 去访问身份 B 拥有的对象（按对象 id 参数化遍历各资源端点），断言被拒（`403` 或 `404`，按项目泄露策略）。
-3. **BFLA（功能级越权）**：用普通用户 token 去访问特权/管理端点（参数化遍历各特权动作），断言被拒。
-4. 反向正例：本人访问自己对象、特权用户访问特权端点应成功——确保拒绝不是"全拒"造的假象。
+**Capability (a framework-agnostic build-it-yourself pattern — every stack does it this
+way)**:
 
-**为什么默认自建**：开源侧**没有 pip/npm 即装即用的越权测试器**——越权逻辑依赖业务对象归属关系，通用工具无从知晓。可选的商用/扫描类方案（如 StackHawk、hadrian 等 DAST）能做面上探测，但精确的对象级断言仍需按上面的模式自建。因此这一类在覆盖区分里几乎总是标 `需自建 🔧`，且与栈无关——区别只是 token fixture 和参数化遍历用该栈的测试框架写。
+1. Prepare credential fixtures for **two distinct identities** — identity A and identity B
+   (same privilege level, different object ownership) — plus one ordinary user and one
+   privileged user.
+2. **BOLA (broken object level authorisation)**: use identity A's token to access an object
+   owned by identity B (parameterise across the resource endpoints by object id) and assert
+   it is refused (`403` or `404`, per the project's disclosure policy).
+3. **BFLA (broken function level authorisation)**: use an ordinary user's token to reach
+   privileged or administrative endpoints (parameterise across the privileged actions) and
+   assert it is refused.
+4. Positive counter-cases: a user accessing their own object, and a privileged user reaching
+   a privileged endpoint, MUST succeed — so that the refusals are not an artefact of
+   refusing everything.
 
-| 栈 | 仅"用什么写 fixture/参数化"的实例化（模式不变） |
+**Why this is built by default**: **there is no pip- or npm-installable escalation tester** —
+escalation logic depends on business object ownership, which no generic tool can know.
+Optional commercial or scanning options (StackHawk, hadrian and other DAST tools) can probe
+the surface, but the precise object-level assertions still have to be built to the pattern
+above. So this class is almost always marked "must be built" in the coverage breakdown, and
+it is stack-agnostic — the only difference is which testing framework writes the token
+fixtures and the parameterised sweep.
+
+| Stack | Only "what writes the fixtures and the parameterisation" is instantiated (the pattern does not change) |
 |---|---|
-| Python | pytest fixtures（两个 client + 两套 token）+ `pytest.mark.parametrize` 遍历端点 |
-| Node / TS | 测试框架（Vitest/Jest）+ supertest，参数化 describe.each |
-| Go | `testing` + table-driven tests，两个带不同 token 的 http client |
-| JVM | JUnit5 `@ParameterizedTest` + MockMvc/RestAssured，两个鉴权头 |
-| 其他栈 | 用该栈的参数化测试机制重复同一模式：双身份 × 遍历对象/特权端点 × 断言被拒 |
+| Python | pytest fixtures (two clients, two token sets) plus `pytest.mark.parametrize` across endpoints |
+| Node / TS | The test framework (Vitest/Jest) with supertest, parameterised via `describe.each` |
+| Go | `testing` with table-driven tests, two HTTP clients carrying different tokens |
+| JVM | JUnit5 `@ParameterizedTest` with MockMvc or RestAssured, two auth headers |
+| Other stacks | Repeat the same pattern with that stack's parameterisation mechanism: two identities, sweep the objects and privileged endpoints, assert refusal |
 
-**典型断言清单**：A 读/改/删 B 的对象 → 拒；普通用户调管理端点 → 拒；越权返回不泄露对象存在性（按策略统一 404）；正例放行。
+**Typical assertion list**: A reads, modifies or deletes B's object -> refused; an ordinary
+user calls an admin endpoint -> refused; a refusal does not leak whether the object exists
+(a uniform 404 where that is the policy); the positive cases pass.
 
 ---
 
-## 3. 并发 / 竞态 / 限频原子性
+## 3. Concurrency / races / rate-limit atomicity
 
-**能力**：用**多个并发请求同时打同一端点/资源**，断言并发后的**不变量与原子性**成立：
-- 库存/配额式扣减无超卖、无负值；
-- 计数器/余额无丢失更新（lost update）；
-- 限频窗口在并发下计数准确（不会因竞态放过超额请求）；
-- 唯一性创建在并发下只成功一次（无重复行）。
+**Capability**: hit the same endpoint or resource with **several concurrent requests at
+once** and assert the **invariants and atomicity** hold afterwards:
+- stock or quota decrements neither oversell nor go negative;
+- counters and balances suffer no lost updates;
+- the rate-limit window counts accurately under concurrency (a race does not let excess
+  requests through);
+- a uniqueness-creating operation succeeds exactly once under concurrency (no duplicate rows).
 
-**为什么重要**：单请求顺序测试永远绿，竞态只在并发交错时出现。必须制造真实并发压力。
+**Why it matters**: sequential single-request tests are always green; races appear only when
+operations interleave. Genuine concurrent pressure has to be created.
 
-| 栈 | 并发制造 |
+| Stack | Generating concurrency |
 |---|---|
-| Python | `pytest-run-parallel`；或测试内 `asyncio.gather([...])` 并发发请求；同步则 `ThreadPoolExecutor` |
-| Node / TS | `Promise.all([...])` 并发发请求 + 测试框架（Vitest/Jest）断言不变量 |
-| Go | 起多个 goroutine 并发打端点 + `sync.WaitGroup`，`testing` 断言；可配 `-race` 检测数据竞争 |
-| JVM | `ExecutorService` + `CountDownLatch` 并发，JUnit 断言；或 `@RepeatedTest` |
-| 其他栈 | 用该栈并发原语并发触发同一资源操作，断言不变量 |
+| Python | `pytest-run-parallel`; or `asyncio.gather([...])` inside the test to fire concurrent requests; `ThreadPoolExecutor` where synchronous |
+| Node / TS | `Promise.all([...])` to fire concurrent requests, with the test framework (Vitest/Jest) asserting the invariants |
+| Go | Several goroutines hitting the endpoint with `sync.WaitGroup`, asserted via `testing`; pair with `-race` to detect data races |
+| JVM | `ExecutorService` with `CountDownLatch` for concurrency, asserted via JUnit; or `@RepeatedTest` |
+| Other stacks | Use that stack's concurrency primitives to trigger the same resource operation concurrently and assert the invariants |
 
-**典型断言清单**：N 个并发扣减后剩余量 = 初始 − 成功数且 ≥ 0；并发限频下放行数 = 配额上限；并发"创建唯一资源"恰好 1 次成功、其余拒。
+**Typical assertion list**: after N concurrent decrements the remainder equals the initial
+minus the successes and is not negative; under a concurrent rate limit the number let
+through equals the quota ceiling; concurrently "creating a unique resource" succeeds exactly
+once and the rest are refused.
 
 ---
 
-## 4. 韧性 / 故障注入
+## 4. Resilience / fault injection
 
-**能力**：在测试中**拦截被测服务对外部依赖的调用**，注入超时 / 错误响应 / 错误序列（如前 2 次 500、第 3 次 200），断言被测服务的**重试 / 超时 / 降级 / 熔断**逻辑按预期生效——而不是把故障原样抛给上游或挂死。
+**Capability**: **intercept the service under test's calls to its external dependencies**
+inside the test and inject timeouts, error responses or error sequences (two 500s then a
+200), asserting that the service's **retry, timeout, degradation and circuit-breaking** logic
+behaves as intended — rather than passing the failure straight up or hanging.
 
-**为什么重要**：外部依赖在生产一定会抖。韧性逻辑（退避重试、超时上限、降级返回兜底、熔断打开）只有在故障被注入时才会执行到，正常路径测试碰不到这些分支。
+**Why it matters**: external dependencies will wobble in production. Resilience logic
+(backoff retry, timeout ceiling, degraded fallback, breaker open) only executes when a fault
+is injected; happy-path tests never reach those branches.
 
-| 栈 | HTTP 层故障注入 |
+| Stack | HTTP-layer fault injection |
 |---|---|
-| Python | `respx`（拦截 httpx）或 `pytest-httpx`——按调用次序返回超时/错误/正常序列 |
-| Node / TS | `nock` 或 `msw`——定义被拦截端点的失败序列与延迟 |
-| Go | `httptest.Server` 返回可编排的失败序列；或注入自定义 `RoundTripper` |
-| JVM | WireMock（stub 故障 + 延迟 + scenario 状态机） |
-| 通用网络层（任何栈） | `toxiproxy`——在 TCP 代理层注入延迟/断连/超时，跨语言适用 |
+| Python | `respx` (intercepting httpx) or `pytest-httpx` — return timeout / error / success in call order |
+| Node / TS | `nock` or `msw` — define the failure sequence and latency for the intercepted endpoint |
+| Go | `httptest.Server` returning a scripted failure sequence; or inject a custom `RoundTripper` |
+| JVM | WireMock (stubbed faults, latency, scenario state machine) |
+| Generic network layer (any stack) | `toxiproxy` — inject latency, disconnects and timeouts at the TCP proxy layer, applicable across languages |
 
-**典型断言清单**：依赖超时 → 触发重试 N 次后降级返回兜底，不挂起；上游 500 序列 → 退避重试且最终成功或优雅失败；熔断阈值后快速失败不再打依赖；注入故障时被测端点仍返回受控响应（非 5xx 透传）。
+**Typical assertion list**: a dependency timeout triggers N retries then a degraded fallback
+rather than hanging; a sequence of upstream 500s produces backoff retries and then either
+success or a graceful failure; past the breaker threshold it fails fast without hitting the
+dependency; while faults are injected the endpoint under test still returns a controlled
+response rather than passing a 5xx straight through.
 
 ---
 
-## 跨缺口通用提醒
+## Cross-gap reminders
 
-- **先条件命中再补**（SKILL.md 步骤 1）：上面四类不是清单式全测，只补该 feature 实际命中的。
-- **覆盖区分**（步骤 2）：命中的维度先看是否已被开发期 TDD/契约覆盖，已覆盖则跳过，避免重复。
-- **RED 必须有意义**：先确认测试因真实缺口而红，再 GREEN，再固化进回归。
-- **护栏**：只写 `tests/`、断言不弱化、禁伪造修复、有界重试、隔离变更 + 人审交付（见 SKILL.md 自愈护栏）。
-- **归档**：每个新增回归挂可追溯 ID、按风险分级、纳入发布门、对齐三层节奏（遵循 testing-system-blueprint-en）。
+- **Judge conditional hits before filling** (SKILL.md step 1): the four classes above are not
+  a checklist to complete; fill only what this feature actually hits.
+- **Coverage breakdown** (step 2): for each dimension hit, first check whether development
+  TDD or contracts already cover it; where they do, skip it and avoid duplication.
+- **RED must be meaningful**: confirm the test is red because of a genuine gap before going
+  green, then harden it into the regression suite.
+- **Guardrails**: write only under `tests/`, never weaken an assertion, no fabricated fixes,
+  bounded retries, isolated changes delivered for human review (see the self-healing
+  guardrails in SKILL.md).
+- **Archiving**: give every new regression a traceable ID, grade it by risk, fold it into the
+  release gate, and align it with the three-layer rhythm (per `testing-system-blueprint-en`).

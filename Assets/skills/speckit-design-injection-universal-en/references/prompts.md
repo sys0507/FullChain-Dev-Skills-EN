@@ -21,7 +21,7 @@ Tasks:
 3. Copy all _1 ~ _N page directories from source into
    design-reference/stitch-export/, renaming each to a semantic name based on
    the <title> tag in its code.html
-   (example: _3 has title "Shopping Cart" → rename to cart-en; _5 has title "购物车" → rename to cart-zh)
+   (example: _3 has title "Shopping Cart" -> rename to cart-en; _5 is the localised variant of the same screen -> rename to cart-l10n)
 4. Do NOT copy prd.md from source — project already has specs/prd.md.
    If contents differ, stop and ask me
 5. App shell directory (if present) → design-reference/stitch-export/_app-shell/

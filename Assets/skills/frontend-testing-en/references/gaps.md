@@ -1,195 +1,268 @@
-# 五层前端结构性缺口 · 能力层 + 按栈实例化
+# Five layers of frontend structural gaps: capabilities + per-stack instantiation
 
-> 用法：先按 SKILL.md 步骤 0 识别项目栈，再读对应层下该栈那一行实例化工具。
-> 每层先写**能力**（栈无关、永远成立），再给**示例实例**（以 JS/TS 栈为主示例）。示例是 lookup，
-> 不是唯一答案——项目用什么栈、装什么库由项目自身决定；本表只做"能力 → 该栈生态工具"的映射。
+> How to use: identify the project's stack per step 0 of SKILL.md, then read that stack's
+> row under the relevant layer to instantiate the tools.
+> Each layer states the **capability** first (stack-agnostic, always true), then gives
+> **example instances** (JS/TS as the primary example). The examples are a lookup, not the
+> only answer — the stack and the libraries are the project's own choice; this table only
+> maps "capability -> a tool in that stack's ecosystem".
 >
-> **本 skill 是装配工 + 监理，不是施工队**：以下每层都有成熟工具，不要自己造。skill 的活是
-> **装 + 配 + 翻译**——把通用工具接进项目，把*这个项目的*视觉/交互契约翻成工具能跑的断言/规则。
+> **This skill is a fitter and an inspector, not a construction crew**: every layer below
+> has mature tools; do not build your own. The skill's job is **install, configure,
+> translate** — wire the generic tool into the project, and turn *this project's* visual and
+> interaction contracts into assertions and rules the tool can run.
 >
-> **所有"项目专有"输入都是条件式**：凡涉及 token 名/值、涨跌色约定、设计规范、必跑页面——
-> 一律"**若项目存在视觉规范文档 / design token，则**从中读取据此生成断言"；不存在则该类断言不命中。
+> **Every "project-specific" input is conditional**: wherever token names or values,
+> rise-and-fall colour conventions, design specs or must-run pages are involved, the rule is
+> always "**if the project has a visual spec document or design tokens, then** read from it
+> and generate assertions accordingly"; where it does not, that class of assertion is not hit.
 
-## 目录
+## Contents
 
-0. [立地基（前置，前端特有）](#0-立地基前置前端特有)
-1. [① 编译期 lint 门](#1--编译期-lint-门最便宜优先)
-2. [② L0/L1 单测](#2--l0l1-单测)
-3. [③ a11y + 跨浏览器/响应式](#3--a11y--跨浏览器响应式)
-4. [④ 前后端契约 mock](#4--前后端契约-mock)
-5. [⑤ 视觉回归](#5--视觉回归)
-6. [人审节点与"机器断言不了"项](#人审节点与机器断言不了项)
-7. [跨层通用提醒](#跨层通用提醒)
+0. [Lay the foundation (prerequisite, specific to frontend)](#0-lay-the-foundation-prerequisite-specific-to-frontend)
+1. [1. Compile-time lint gate](#1-1-compile-time-lint-gate-cheapest-first)
+2. [2. L0/L1 unit tests](#2-2-l0l1-unit-tests)
+3. [3. a11y + cross-browser/responsive](#3-3-a11y--cross-browserresponsive)
+4. [4. Frontend-backend contract mocking](#4-4-frontend-backend-contract-mocking)
+5. [5. Visual regression](#5-5-visual-regression)
+6. [The human-review point and what machines cannot assert](#the-human-review-point-and-what-machines-cannot-assert)
+7. [Cross-layer reminders](#cross-layer-reminders)
 
 ---
 
-## 0. 立地基（前置，前端特有）
+## 0. Lay the foundation (prerequisite, specific to frontend)
 
-**能力**：在补任何层之前，先确认项目具备测试地基——① 测试运行器；② 组件/DOM 测试库；
-③ 浏览器驱动（端到端/截图）。**若没有，先把地基立起来**，让"能跑一条最简单测试并变绿"先成立。
+**Capability**: before filling any layer, confirm the project has a test foundation — a test
+runner, a component/DOM testing library, and a browser driver (end-to-end and screenshots).
+**If it has none, lay the foundation first**, so that "one trivial test runs and goes green"
+holds before anything else.
 
-**为什么前端要专门有这一步**：前端项目的测试地基**常常为零**——很多 [FE] 任务出参验证只写
-"手测"，运行器/组件库/浏览器驱动可能完全没装。后端项目通常已有单测框架，前端不能假设这一点。
+**Why the frontend needs this step specifically**: a frontend project's test foundation is
+**frequently zero** — many `[FE]` tasks state their output verification as "tested
+manually", and the runner, component library and browser driver may not be installed at all.
+Backend projects usually already have a unit framework; the frontend must not assume it.
 
-| 栈 | 测试运行器 | 组件/DOM 测试库 | 浏览器驱动 |
+| Stack | Test runner | Component/DOM testing library | Browser driver |
 |---|---|---|---|
-| JS / TS | Vitest（或 Jest） | Testing Library | Playwright（或 Cypress） |
-| Dart / Flutter | 内置 `flutter test` | `flutter_test`（widget test） | `integration_test` + golden test |
+| JS / TS | Vitest (or Jest) | Testing Library | Playwright (or Cypress) |
+| Dart / Flutter | Built-in `flutter test` | `flutter_test` (widget tests) | `integration_test` + golden tests |
 | .NET / Blazor | xUnit + bUnit | bUnit | Playwright for .NET |
-| 其他栈 | 反查该栈主流单测运行器 | 反查该栈组件渲染测试库 | 反查该栈浏览器/端到端驱动 |
+| Other stacks | Look up that stack's mainstream unit runner | Look up that stack's component-render testing library | Look up that stack's browser/end-to-end driver |
 
-**立地基断言起点**：装好后先跑通一条 trivial 渲染测试变绿，证明地基可用，再进入分层补测。
+**Foundation starting assertion**: once installed, get one trivial render test to green to
+prove the foundation works, then move into the layered work.
 
 ---
 
-## 1. ① 编译期 lint 门（最便宜，优先）
+## 1. 1. Compile-time lint gate (cheapest, first)
 
-**能力**：把项目的视觉契约翻成**静态 lint 规则**，在编译/提交期就拦截违规——**完全不写测试**，
-性价比最高，永远先做。三类典型规则：
-- **禁裸色值 / 只允许 `var()`**：颜色/字号/间距等视觉值必须走 token 变量，禁止硬编码字面量。
-- **禁第二 UI 库 import**：若项目锁定单一组件库，静态拦截其他 UI 库的 import。
-- **禁任意值 hex class**：若用原子化 CSS（如 Tailwind 风格），禁止 `[#xxxxxx]` 这类绕过 token 的任意值类。
+**Capability**: translate the project's visual contracts into **static lint rules** that
+block violations at compile or commit time — **no tests written at all**, the best value for
+money, always done first. Three typical rule classes:
+- **No bare colour values / only `var()`**: colours, font sizes, spacing and other visual
+  values MUST go through token variables; hardcoded literals are forbidden.
+- **No second UI library import**: where the project has settled on one component library,
+  statically block imports of others.
+- **No arbitrary hex classes**: with atomic CSS (Tailwind-style), forbid `[#xxxxxx]`-style
+  arbitrary value classes that bypass the tokens.
 
-**为什么是 lint 而不是测试**：这些是"形状/来源"约束，编译期静态可判，无需渲染、无需运行——
-拦在最左侧最便宜。**全自动，不写测试，不需人审。**
+**Why lint rather than a test**: these are "shape and origin" constraints, decidable
+statically at compile time with no rendering and no execution — blocking them furthest left
+is cheapest. **Fully automatic, no test written, no human review needed.**
 
-**翻译动作（skill 的活）**：stylelint 等工具通用，但**不知道你的 token 叫什么**。skill 要
-**若项目存在 design token，则**把允许的 `var()` 名单、禁用的库名、禁用的任意值模式配进规则。
+**The translation work (the skill's job)**: stylelint and its peers are generic, but they
+**do not know what your tokens are called**. The skill must, **if the project has design
+tokens**, configure the permitted `var()` list, the forbidden library names and the
+forbidden arbitrary-value patterns into the rules.
 
-| 栈 | 裸色值 / token 强制 | 禁第二 UI 库 import | 禁任意值类 |
+| Stack | Bare colour / token enforcement | No second UI library import | No arbitrary value classes |
 |---|---|---|---|
-| JS / TS | stylelint（`declaration-property-value-disallowed-list` / 自定义规则只允许 `var()`） | ESLint `no-restricted-imports` | stylelint / ESLint 自定义规则拦 `[#hex]` 任意值 |
-| Dart / Flutter | 自定义 lint（`custom_lint`）禁字面 `Color(0x..)`，强制走 theme | `custom_lint` 限制 import | — |
-| 其他栈 | 反查该栈 linter 的"禁字面值/强制变量"规则 | 反查该栈 linter 的 import 限制 | 反查该栈原子化 CSS 的任意值约束 |
+| JS / TS | stylelint (`declaration-property-value-disallowed-list`, or a custom rule permitting only `var()`) | ESLint `no-restricted-imports` | stylelint or an ESLint custom rule blocking `[#hex]` arbitrary values |
+| Dart / Flutter | A custom lint (`custom_lint`) forbidding literal `Color(0x..)` and forcing the theme | `custom_lint` import restrictions | — |
+| Other stacks | Look up that linter's "forbid literals / require variables" rule | Look up that linter's import restrictions | Look up that stack's atomic-CSS arbitrary-value constraint |
 
-**典型规则清单**：颜色属性只允许 token `var()`；间距/圆角/字号走 token；非白名单 UI 库 import 报错；
-任意值 hex 类报错。规则一旦配好进 CI/pre-commit，违规连合并都进不来。
+**Typical rule list**: colour properties permit only token `var()`; spacing, radius and font
+size go through tokens; non-allowlisted UI library imports error; arbitrary hex classes
+error. Once these are in CI or pre-commit, a violation cannot even be merged.
 
 ---
 
-## 2. ② L0/L1 单测
+## 2. 2. L0/L1 unit tests
 
-**能力**：用组件/DOM 测试库渲染组件，断言**视觉契约真的落到了计算样式**。关键是用
-**`getComputedStyle`（或等价计算样式读取）断言解析后的实际值**，而不只是断言 class 名存在——
-class 存在不代表 token 真的解析成了正确的值。三类典型断言（均为条件式，**若项目有对应契约则命中**）：
-- **token 解析值**：某元素的颜色/间距计算值 == 设计 token 应解析出的值。
-- **深色覆盖**：在深色主题下，关键元素计算样式确实切到了深色 token（无漏覆盖的浅色残留）。
-- **涨跌色值**：涨/跌状态元素的计算颜色 == 项目约定的涨色/跌色 token 值（**约定由项目定**——
-  某些市场红涨绿跌、某些相反；工具无从知晓哪个对，**skill 从项目视觉规范翻译**）。
+**Capability**: render components with the component/DOM testing library and assert that
+**the visual contract actually reached the computed style**. The key is asserting the
+**resolved actual value via `getComputedStyle`** (or the equivalent computed-style read),
+not merely that a class name is present — a present class does not mean the token resolved
+to the right value. Three typical assertion classes (all conditional, **hit only if the
+project has the corresponding contract**):
+- **Token resolved value**: an element's computed colour or spacing equals what the design
+  token should resolve to.
+- **Dark-mode coverage**: under the dark theme, key elements' computed styles really switch
+  to the dark tokens (no light-mode remnants left uncovered).
+- **Rise-and-fall colours**: the computed colour of a rising or falling element equals the
+  project's agreed rise or fall token value (**the convention is the project's** — some
+  markets use red for a rise and green for a fall, others the reverse; the tool cannot know
+  which is right, so **the skill translates it from the project's visual spec**).
 
-**为什么要断计算值**：CSS 变量/主题/层叠让"class 对了但值错了"成为高发隐性 bug；只有读计算样式
-才能抓住 token 没解析、深色没覆盖、涨跌色配反这类问题。**全自动 RED→GREEN。**
+**Why assert the computed value**: CSS variables, theming and the cascade make "right class,
+wrong value" a common hidden bug; only reading the computed style catches an unresolved
+token, an uncovered dark mode, or rise-and-fall colours wired backwards. **Fully automatic
+RED to GREEN.**
 
-| 栈 | 渲染 + 计算样式断言 |
+| Stack | Render + computed-style assertion |
 |---|---|
-| JS / TS | Vitest（或 Jest）+ Testing Library 渲染，`getComputedStyle(el)` 断言解析值；JSDOM 不解析 CSS 变量时用浏览器模式（Vitest browser mode / Playwright component testing）读真实计算样式 |
-| Dart / Flutter | `flutter_test` widget test，从 `Theme.of` / 渲染对象断言实际颜色/尺寸 |
-| .NET / Blazor | bUnit 渲染后断言 style/计算属性 |
-| 其他栈 | 反查该栈"渲染组件 + 读计算样式"的能力 |
+| JS / TS | Vitest (or Jest) + Testing Library to render, `getComputedStyle(el)` to assert resolved values; where JSDOM does not resolve CSS variables, use browser mode (Vitest browser mode, Playwright component testing) to read the real computed style |
+| Dart / Flutter | `flutter_test` widget tests, asserting actual colours and sizes from `Theme.of` or the render object |
+| .NET / Blazor | bUnit renders, then assert style and computed properties |
+| Other stacks | Look up that stack's "render a component and read computed style" capability |
 
-**翻译动作（skill 的活）**：**若项目存在 design token / 视觉规范**，把 token 值翻成期望断言值
-（涨色 token 值、深色背景 token 值…）；没有视觉规范的项目，本层只断结构性渲染逻辑，不断 token。
+**The translation work (the skill's job)**: **if the project has design tokens or a visual
+spec**, translate the token values into expected assertion values (the rise token's value,
+the dark background token's value, and so on); in a project with no visual spec, this layer
+asserts structural render logic only and does not assert tokens.
 
-**典型断言清单**：关键元素计算颜色 == 期望 token 值；深色下背景/前景切到深色 token；涨跌元素颜色
-符合项目涨跌约定；响应主题切换后计算值随之变化。
+**Typical assertion list**: a key element's computed colour equals the expected token value;
+under dark mode, background and foreground switch to the dark tokens; rise and fall elements
+match the project's convention; computed values follow when the theme is toggled.
 
 ---
 
-## 3. ③ a11y + 跨浏览器/响应式
+## 3. 3. a11y + cross-browser/responsive
 
-**能力**：两部分，都全自动。
-- **a11y（L3 层能力）**：用自动化无障碍引擎扫描渲染后的页面/组件，捕获可机器检测的违规
-  （自动可检约占全部 a11y 问题的 ~57%，其中对比度类约占 ~30%）。
-- **跨浏览器 / 响应式（L4 层能力）**：在多浏览器内核 + 多视口下运行，断言**几何不变量**——
-  最典型的是"**无横向滚动条**"：`document.documentElement.scrollWidth <= window.innerWidth`。
+**Capability**: two parts, both fully automatic.
+- **a11y (the L3 capability)**: scan the rendered page or component with an automated
+  accessibility engine to catch the machine-detectable violations (automatic detection
+  covers roughly 57% of all a11y problems, of which contrast issues are about 30%).
+- **Cross-browser / responsive (the L4 capability)**: run across several browser engines and
+  viewports, asserting **geometric invariants** — the classic being "**no horizontal
+  scrollbar**": `document.documentElement.scrollWidth <= window.innerWidth`.
 
-**为什么重要**：a11y 与对比度问题肉眼/单浏览器单视口测不全；响应式破版（移动端冒出横向滚动）
-只在特定视口出现，桌面单视口永远绿。必须真在多浏览器/多视口跑。
+**Why it matters**: a11y and contrast problems cannot be fully caught by eye in a single
+browser at a single viewport; a responsive break (a horizontal scrollbar appearing on
+mobile) only shows at particular viewports and is always green on a single desktop viewport.
+It has to run for real across browsers and viewports.
 
-| 栈 | a11y 引擎 | 跨浏览器/多视口驱动 |
+| Stack | a11y engine | Cross-browser/multi-viewport driver |
 |---|---|---|
-| JS / TS | axe-core；端到端用 `@axe-core/playwright`，组件单测用 `jest-axe`/`vitest-axe` | Playwright `projects` 配多浏览器内核 + 多 viewport；断言 `scrollWidth<=innerWidth` 等几何不变量 |
-| Dart / Flutter | `flutter_test` 的 semantics 断言 + a11y guideline 检查 | `integration_test` 多设备尺寸 + golden |
-| 其他栈 | 反查该栈 axe 集成或等价 a11y 扫描 | 反查该栈多浏览器/多视口端到端驱动 |
+| JS / TS | axe-core; `@axe-core/playwright` for end-to-end, `jest-axe` or `vitest-axe` for component tests | Playwright `projects` configured across browser engines and viewports; assert geometric invariants such as `scrollWidth <= innerWidth` |
+| Dart / Flutter | `flutter_test` semantics assertions plus a11y guideline checks | `integration_test` across device sizes plus goldens |
+| Other stacks | Look up that stack's axe integration or equivalent a11y scan | Look up that stack's multi-browser/multi-viewport end-to-end driver |
 
-**翻译动作（skill 的活）**：axe 通用，但**不知道哪些页面该跑、红了算不算发布门拦截**——skill 要
-指定必跑页面集合、把对比度阈值对齐项目设计、定义哪些违规级别阻断发布（严重项阻断 / 轻微项告警）。
+**The translation work (the skill's job)**: axe is generic, but it **does not know which
+pages must run, or whether a red result should block a release** — the skill must specify the
+must-run page set, align the contrast thresholds with the project's design, and define which
+violation levels block a release (serious blocks, minor warns).
 
-**典型断言清单**：关键页面 axe 无 serious/critical 违规；对比度达标；各视口下无横向滚动条；
-关键交互元素有可访问名称/角色；多浏览器内核下主路径渲染一致。
+**Typical assertion list**: key pages have no serious or critical axe violations; contrast
+meets the threshold; no horizontal scrollbar at any viewport; key interactive elements have
+accessible names and roles; the main path renders consistently across browser engines.
 
 ---
 
-## 4. ④ 前后端契约 mock
+## 4. 4. Frontend-backend contract mocking
 
-**能力**：在前端测试里**拦截前端对后端的网络请求**，用 mock 返回受控数据，使前端可**脱离真实后端独立测**。
-关键是 **mock 数据从后端契约源生成、随契约更新而更新**，避免"前端 mock 与后端真实响应漂移"——
-否则 mock 永远绿、上真后端就崩。可选更强的**双向契约（consumer-driven contract）**确保前后端两侧一致。
+**Capability**: **intercept the frontend's network requests to the backend** inside frontend
+tests and return controlled data from a mock, so the frontend can be **tested independently
+of a real backend**. The key is that **the mock data is generated from the backend contract
+source and updates as the contract updates**, avoiding drift between the frontend's mock and
+the backend's real responses — otherwise the mock stays green forever and the real backend
+breaks. Optionally, a stronger **consumer-driven contract** keeps both sides aligned.
 
-**为什么重要**：前端测试若用手写死的 mock，后端字段一改，mock 不会跟着变，单测照绿、集成必断。
-从契约（如 OpenAPI）生成 handler 让 mock 与后端同源，消漂移。**全自动进 CI。**
+**Why it matters**: if frontend tests use hand-written mocks, a backend field change does not
+propagate, the unit tests stay green and the integration breaks. Generating handlers from
+the contract (OpenAPI, say) gives the mock the same source as the backend and removes the
+drift. **Fully automatic in CI.**
 
-| 栈 | 请求拦截 mock | 从契约生成 / 双向契约 |
+| Stack | Request-interception mock | Generated from contract / bidirectional contract |
 |---|---|---|
-| JS / TS | MSW（Mock Service Worker，拦网络层） | 从后端 OpenAPI 生成 MSW handlers（如 `msw-auto-mock` 类工具）消漂移；可选 Pact 做 consumer-driven 双向契约 |
-| Dart / Flutter | `http`/`dio` 的 mock client 或拦截器 | 从 OpenAPI 生成模型 + mock；可选 Pact Dart |
-| 其他栈 | 反查该栈网络层拦截 mock 方案 | 反查该栈从 OpenAPI/schema 生成 mock + 双向契约工具 |
+| JS / TS | MSW (Mock Service Worker, intercepting at the network layer) | Generate MSW handlers from the backend's OpenAPI (tools of the `msw-auto-mock` class) to remove drift; optionally Pact for consumer-driven bidirectional contracts |
+| Dart / Flutter | A mock client or interceptor for `http` / `dio` | Generate models and mocks from OpenAPI; optionally Pact Dart |
+| Other stacks | Look up that stack's network-layer interception mock | Look up that stack's mock generation from OpenAPI/schema plus bidirectional contract tooling |
 
-**翻译动作（skill 的活）**：MSW 通用，但**不知道你的后端契约长什么样**——skill 要**若项目存在后端
-契约（OpenAPI/schema）则**据其生成 handlers，并接入 CI 让契约更新自动反映到 mock。
+**The translation work (the skill's job)**: MSW is generic, but it **does not know what your
+backend contract looks like** — the skill must, **if the project has a backend contract
+(OpenAPI or schema)**, generate the handlers from it and wire it into CI so contract updates
+propagate into the mocks automatically.
 
-**典型断言清单**：前端按契约形状正确渲染数据；契约定义的错误响应（4xx/5xx）下前端展示正确兜底/错误态；
-mock handler 与后端契约同源（契约变更触发 mock 更新）；可选 Pact 双向校验通过。
+**Typical assertion list**: the frontend renders data correctly per the contract shape; under
+the contract's error responses (4xx/5xx) the frontend shows the correct fallback or error
+state; mock handlers share their source with the backend contract (a contract change
+triggers a mock update); optional Pact bidirectional verification passes.
 
 ---
 
-## 5. ⑤ 视觉回归
+## 5. 5. Visual regression
 
-**能力**：对关键页面/组件**截图**，与已认可的**基线**做像素 diff，捕获 UI 意外回归。截图与 diff
-**全自动**；但 **diff 是否算回归的裁决，是人审**（见下节）。用 **Docker 固定渲染环境消平台 flake**
-（字体/抗锯齿/缩放在不同机器上不一致是假阳性大头）。
+**Capability**: **screenshot** key pages and components and pixel-diff them against an
+approved **baseline** to catch unintended UI regressions. The screenshotting and diffing are
+**fully automatic**; but **judging whether a diff counts as a regression is human review**
+(see the next section). Use **a fixed Docker rendering environment to remove platform
+flakiness** (fonts, antialiasing and scaling differing between machines are the main source
+of false positives).
 
-**为什么需要人**：机器只能算"有 N 个像素变了"，**不能判断这变化是有意改版（更新基线）还是意外破坏
-（拦截）**——这是语义判断。所以本层闭环性是"**截图 diff 自动，基线裁决人审**"。
+**Why a human is needed**: a machine can only compute "N pixels changed"; it **cannot judge
+whether that change is an intended redesign (update the baseline) or accidental breakage
+(block it)** — that is a semantic judgement. So this layer closes the loop as "**diff
+automatic, baseline adjudication human**".
 
-| 栈 | 截图 / 视觉回归 | 消 flake |
+| Stack | Screenshot / visual regression | Removing flakiness |
 |---|---|---|
-| JS / TS | Playwright `toHaveScreenshot`（自托管）或 Chromatic（托管，自带评审 UI） | Docker 固定渲染环境跑截图；统一字体/视口/动画冻结 |
-| Dart / Flutter | golden test（`matchesGoldenFile`） | CI 容器固定环境生成 golden |
-| 其他栈 | 反查该栈视觉回归/截图 diff 方案 | 容器化固定渲染环境 |
+| JS / TS | Playwright `toHaveScreenshot` (self-hosted) or Chromatic (hosted, with its own review UI) | Run screenshots in a fixed Docker rendering environment; standardise fonts, viewport and freeze animations |
+| Dart / Flutter | Golden tests (`matchesGoldenFile`) | Generate goldens in a fixed CI container environment |
+| Other stacks | Look up that stack's visual regression / screenshot diff option | A containerised fixed rendering environment |
 
-**把人审量压到最小（但 approve 仍是人）**：Docker 固定环境消平台 flake + 可选 AI 预过滤明显假阳性 +
-做成 PR check 集中呈现 diff 让人一眼批。**最终 approve 不可自动化**——不要用"自动更新基线"绕过它
-（那等于关掉这一层）。
+**Minimise the human-review volume (but approval stays human)**: a fixed Docker environment
+removes platform flakiness, an optional AI pre-filter removes obvious false positives, and
+presenting the diffs as a PR check lets a person approve them in one place. **Final approval
+MUST NOT be automated** — do not bypass it by "auto-updating the baseline" (that is
+equivalent to switching this layer off).
 
-**典型流程**：首次跑建立基线（人确认）→ 后续 PR 截图与基线 diff → 有 diff 则 PR check 呈现给人 →
-人裁决：有意改版则更新基线，意外破坏则拦截退回。
-
----
-
-## 人审节点与"机器断言不了"项
-
-**全套补测里需要人审的节点只有一个 = ⑤视觉回归的基线裁决**（理由见上）。其余四层全自动。
-
-**另有一类视觉/语义项机器永远断言不了，明确不塞进自动化套件**（留给代码评审 / 设计走查的人）：
-
-- 设计样本/参考的**引用与还原度**（"像不像那张认可的成品图"）；
-- **装饰性克制**（有没有多余装饰/噪声）；
-- **认知层级**（重要信息是否被正确视觉强调）；
-- **整体质感/品味**（"专不专业""有没有 AI 味"）。
-
-强行给这些写断言只会产生脆弱、误导的测试——诚实地把它们划在自动化之外。
+**Typical flow**: the first run establishes the baseline (human-confirmed) -> subsequent PRs
+diff screenshots against it -> where there is a diff, the PR check presents it to a person ->
+the person adjudicates: intended redesign means update the baseline, accidental breakage
+means block and send back.
 
 ---
 
-## 跨层通用提醒
+## The human-review point and what machines cannot assert
 
-- **先立地基**（步骤 1 / §0）：前端常常零地基，缺运行器/组件库/浏览器驱动先装，别假设 L0/L1 已就绪。
-- **先条件命中再补**（SKILL.md 步骤 2）：五层不是清单式全测，只补该 feature 实际命中的层。
-- **最便宜的层优先**：能用 ① lint 门拦的，不写测试；能 ② 单测断的，不上 ⑤ 截图。
-- **不重新发明工具**：每层都有成熟工具——装配工 + 监理，只做装 + 配 + 翻译；缺口由工具填，契约由 skill 译。
-- **项目专有皆条件式**：token/涨跌色/设计规范/必跑页面，一律"**若项目存在则**读取据此生成断言"。
-- **RED 必须有意义**：先确认测试因真实缺口而红，再 GREEN，再固化进回归。
-- **护栏**：只写测试/规则、断言不弱化、禁伪造修复（含禁"自动刷新基线掩盖回归"）、有界重试、隔离变更 + 人审交付；
-  发现真 bug **HALT 回交 superpowers TDD**，不自行改产品码（见 SKILL.md 自愈护栏）。
-- **归档**：每个新增规则/回归挂可追溯 ID、按风险分级、纳入发布门、对齐三层节奏（遵循 testing-system-blueprint-en）。
+**Across the whole suite there is exactly one human-review point: the visual-regression
+baseline adjudication in layer 5** (reasons above). The other four layers are fully automatic.
+
+**A further class of visual and semantic concerns can never be asserted by a machine, and is
+explicitly kept out of the automated suite** (left to code review and design walkthroughs):
+
+- **Fidelity to a design sample or reference** ("does it look like that approved mockup");
+- **Restraint in decoration** (is there superfluous ornament or noise);
+- **Cognitive hierarchy** (is the important information visually emphasised correctly);
+- **Overall craft and taste** ("does it look professional", "does it look machine-generated").
+
+Forcing assertions onto these only produces brittle, misleading tests — **honestly place them
+outside automation.**
+
+---
+
+## Cross-layer reminders
+
+- **Lay the foundation first** (step 1 / section 0): the frontend often has zero foundation;
+  install the missing runner, component library or browser driver rather than assuming L0/L1
+  is ready.
+- **Judge conditional hits before filling** (SKILL.md step 2): the five layers are not a
+  checklist to complete; fill only the layers this feature actually hits.
+- **Cheapest layer first**: what the layer 1 lint gate can block needs no test; what layer 2
+  unit tests can assert needs no layer 5 screenshot.
+- **Do not reinvent tools**: every layer has mature tooling — you are a fitter and an
+  inspector, doing install, configure and translate; the tools fill the gap, the skill
+  translates the contract.
+- **Everything project-specific is conditional**: tokens, rise-and-fall colours, design
+  specs, must-run pages — always "**if the project has it, then** read it and generate
+  assertions accordingly".
+- **RED must be meaningful**: confirm the test is red because of a genuine gap before going
+  green, then harden it into the regression suite.
+- **Guardrails**: write only tests and rules, never weaken an assertion, no fabricated fixes
+  (including no "auto-refresh the baseline" to mask a regression), bounded retries, isolated
+  changes delivered for human review; on finding a real bug, **HALT and hand it back to the
+  TDD loop** rather than editing product code (see the self-healing guardrails in SKILL.md).
+- **Archiving**: give every new rule or regression a traceable ID, grade it by risk, fold it
+  into the release gate, and align it with the three-layer rhythm (per
+  `testing-system-blueprint-en`).
