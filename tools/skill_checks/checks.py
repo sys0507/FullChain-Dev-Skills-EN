@@ -185,8 +185,13 @@ class C7StandaloneSection(Check):
     name = "C7-standalone"
     rule = "SKILL.md 必须含三节，且 ## 独立使用 须回答三问"
 
+    #: 双语词汇表的唯一定义处是 docs/skill-metadata-standard.md §5.0。
+    #: 英文版沿用中文节名会被 C3 判为中文残留；各自发挥则 C7 查不了——
+    #: 规则一旦不可枚举，CI 就守不住。故两套都认，按目录后缀选。
     SECTIONS = ("## 上游产物", "## 下游消费者", "## 独立使用")
     QUESTIONS = ("要你提供什么", "能得到什么", "得不到什么")
+    SECTIONS_EN = ("## Upstream Artifacts", "## Downstream Consumers", "## Standalone Use")
+    QUESTIONS_EN = ("What you provide", "What you get", "What you don't get")
 
     def run(self, root: Path) -> list[Finding]:
         out = []
@@ -194,18 +199,21 @@ class C7StandaloneSection(Check):
             sp = d / "SKILL.md"
             if not sp.is_file():
                 continue
+            en = d.name.endswith("-en")
+            sections = self.SECTIONS_EN if en else self.SECTIONS
+            questions = self.QUESTIONS_EN if en else self.QUESTIONS
             text = sp.read_text(encoding="utf-8")
             body = strip_fences(text)
-            for sec in self.SECTIONS:
+            for sec in sections:
                 if sec not in body:
                     out.append(Finding(self.name, f"{d.name}/SKILL.md", f"缺章节 {sec}"))
             # 切片后再找三问，避免命中别处
-            standalone = section(text, "## 独立使用")
+            standalone = section(text, sections[2])
             if standalone:
-                for q in self.QUESTIONS:
+                for q in questions:
                     if q not in standalone:
                         out.append(Finding(self.name, f"{d.name}/SKILL.md",
-                                           f"独立使用缺「{q}」"))
+                                           f"{sections[2]} 缺「{q}」"))
         return out
 
 
@@ -215,7 +223,12 @@ class C8Requires(Check):
     name = "C8-requires"
     rule = "依赖级别 ∈ {必需, 可选增强, 编排级}；非必需项必须有 fallback；lang 必填"
 
+    #: 双语枚举，定义处见 docs/skill-metadata-standard.md §5.0
     LEVELS = {"必需", "可选增强", "编排级"}
+    LEVELS_EN = {"required", "optional", "orchestration"}
+    REQUIRED = {"必需", "required"}
+    ANTI = ("不用于", "不负责", "不做")
+    ANTI_EN = ("do not use", "not for", "does not")
 
     def run(self, root: Path) -> list[Finding]:
         out = []
@@ -223,6 +236,7 @@ class C8Requires(Check):
             sp = d / "SKILL.md"
             if not sp.is_file():
                 continue
+            levels = self.LEVELS_EN if d.name.endswith("-en") else self.LEVELS
             fm = frontmatter(sp.read_text(encoding="utf-8"))
             if not fm:
                 out.append(Finding(self.name, f"{d.name}/SKILL.md", "无 frontmatter"))
@@ -239,14 +253,16 @@ class C8Requires(Check):
                 if not lv:
                     out.append(Finding(self.name, f"{d.name}/SKILL.md", "某依赖缺 level"))
                     continue
-                if lv.group(1) not in self.LEVELS:
+                if lv.group(1) not in levels:
                     out.append(Finding(self.name, f"{d.name}/SKILL.md",
                                        f"level 取值非法：{lv.group(1)!r}"))
-                elif lv.group(1) != "必需" and "fallback:" not in e:
+                elif lv.group(1) not in self.REQUIRED and "fallback:" not in e:
                     out.append(Finding(self.name, f"{d.name}/SKILL.md",
                                        f"非必需依赖缺 fallback（level={lv.group(1)}）"))
             desc = description(fm)
-            if not any(k in desc for k in ("不用于", "不负责", "不做")):
+            anti = self.ANTI_EN if d.name.endswith("-en") else self.ANTI
+            if not any(k in desc.lower() if d.name.endswith("-en") else k in desc
+                       for k in anti):
                 out.append(Finding(self.name, f"{d.name}/SKILL.md", "description 缺反触发场景"))
         return out
 

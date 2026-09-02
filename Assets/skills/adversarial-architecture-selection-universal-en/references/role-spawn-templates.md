@@ -210,7 +210,7 @@ Write to integration-assessment.md and go idle.
 # Launch Adversarial Architecture Research Agent Team
 
 ## Background
-Project research has been completed (research files under specs/research/). The candidate list document (e.g., 03-open-source-projects.md or technical solution inventory) recommends N candidate open-source projects/solutions. A decision is needed on which to fork / what to reuse / what to build from scratch.
+Project research has been completed (research files under specs/research/). The candidate list document (e.g., 03-open-source-candidates.md or technical solution inventory) recommends N candidate open-source projects/solutions. A decision is needed on which to fork / what to reuse / what to build from scratch.
 
 ## Task
 Use a courtroom-style five-role adversarial structure to help me make the architecture baseline
@@ -260,7 +260,7 @@ Detailed academic justification is in `references/anti-bias-guardrails.md`.
 
 ## Phase 3 Final Verdict (Final Output)
 
-Write to `specs/research/06-architecture-baseline-decision.md`:
+Write to `specs/research/06-architecture-baseline.md`:
 1. Decision summary: the selected architecture baseline (single fork or multi-project composite)
 2. Reuse matrix (which modules to reuse / transform / build from scratch)
 3. Rationale for rejected options (citing debate record line numbers)

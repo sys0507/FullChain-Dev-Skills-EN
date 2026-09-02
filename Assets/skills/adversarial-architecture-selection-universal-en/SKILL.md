@@ -1,6 +1,25 @@
 ---
 name: adversarial-architecture-selection-universal-en
 description: Evaluate multiple architecture, framework, library, open-source, SaaS, or vendor candidates through a five-role courtroom-style adversarial process and produce an evidence-backed architecture baseline decision. Use when a technical choice has multiple credible candidates and bias-resistant comparison is valuable. Do not use for single-candidate checks or purely product-level decisions.
+license: MIT
+metadata:
+  version: "1.0"
+  lang: en
+  stage: "1.3"
+  standalone: true
+  produces:
+    - "specs/research/06-architecture-baseline.md"
+    - "specs/research/debate/*.md"
+  requires:
+    - name: "specs/research/03-open-source-candidates.md"
+      level: orchestration
+      fallback: "Ask the user to supply the candidate list and each candidate's sources directly"
+    - name: "specs/research/04-implementation-options.md"
+      level: orchestration
+      fallback: "Same as above; when missing, fewer adversarial dimensions are covered but the process still holds"
+    - name: "Parallel agent capability"
+      level: optional
+      fallback: "Play each role serially; output structure is unchanged but it takes longer"
 ---
 
 # Adversarial Architecture Selection (Universal)
@@ -144,7 +163,7 @@ use the same templates for independent tasks or isolated role passes.
 
 **Phase 1** (Independent Deep Dive): 5 agents write papers in parallel, no inter-communication.
 **Phase 2** (Courtroom Debate): papers enter the mailbox (randomly shuffled); Red Team issues 3 challenges per paper; Integration Assessor issues 1 challenge per single-fork paper; Advocates respond to each challenge (≤ 200 words per response); 1-2 rounds.
-**Phase 3** (Lead Synthesis): write `specs/research/06-architecture-baseline-decision.md`, update `05-decision-summary.md → v2`.
+**Phase 3** (Lead Synthesis): write `specs/research/06-architecture-baseline.md`, update `05-decision-summary.md → v2`.
 
 📖 **When to read [references/anti-bias-guardrails.md](references/anti-bias-guardrails.md)**: read before Phase 2 starts to confirm all anti-bias hard constraints are enforced.
 
@@ -179,7 +198,7 @@ Final deliverables:
 - `specs/research/debate/red-team-position.md`
 - `specs/research/debate/integration-assessment.md`
 - `specs/research/debate/debate-transcript.md`
-- `specs/research/06-architecture-baseline-decision.md` ⭐ Final output
+- `specs/research/06-architecture-baseline.md` ⭐ Final output
 - `specs/research/05-decision-summary.md (v2)` ⭐ Synchronized update
 
 ---
@@ -196,3 +215,32 @@ Final deliverables:
 - **`brainstorming`** (downstream): after this Skill produces the architecture baseline decision, brainstorming converges on MVP direction
 - **`prd-writer-universal-en`** (further downstream): after brainstorming, the "Architecture Baseline" section of the PRD directly references this Skill's output
 - **Single-agent devil's advocate Skill**: a lightweight alternative to this Skill; use it for single-candidate scenarios
+
+## Upstream Artifacts
+
+| Artifact | Level | When missing |
+|---|:---:|---|
+| `specs/research/03-open-source-candidates.md` | orchestration | Ask the user to supply the candidate list directly |
+| `specs/research/04-implementation-options.md` | orchestration | Fewer adversarial dimensions are covered; the process still holds |
+| Parallel agent capability | optional | Play each role serially |
+
+## Downstream Consumers
+
+| Consumer | What it takes from this skill |
+|---|---|
+| MVP convergence Skill | `06-architecture-baseline.md` as a boundary that MUST NOT be reopened |
+| PRD writing Skill | The comparison matrix and the reasons the rejected options were rejected |
+
+## Standalone Use
+
+**What you provide**: at least 2 candidate options and their sources. With only 1 candidate this Skill does not apply — there is nothing to argue against.
+
+**What you get**: a full record of the courtroom-style adversarial process plus one architecture baseline decision, including the refutations that defeated the rejected options.
+
+**What you don't get**:
+
+- **Does not apply with fewer than 2 candidates**; the Skill says so outright instead of forcing the process through.
+- No product decisions, technology selection only.
+- Without parallel capability it takes substantially longer, though the output structure is unchanged.
+
+**Gate**: the main agent rules at the end of each debate round; when the material is insufficient or a candidate does not hold up, it **pauses explicitly** and MUST NOT guess.

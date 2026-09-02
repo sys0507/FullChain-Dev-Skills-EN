@@ -1,59 +1,58 @@
-# 需求↔测试可追溯（完整规则）
+# Requirements↔Test Traceability (Complete Rules)
 
-> 本文是 SKILL.md §二 的展开。stack-agnostic、project-agnostic。
-> 目标：让"这条需求测了没"成为一个**机械可回答**的问题，而不是靠人肉判断。
+> This document expands SKILL.md §II. Stack-agnostic, project-agnostic.
+> Goal: make "was this requirement tested" a **mechanically answerable** question rather than a human judgment call.
 
-## 为什么需要可追溯
+## Why Traceability Is Needed
 
-测试套件越大，"我们到底测全了没"越难凭感觉回答。可追溯把这个问题变成集合运算：
-把"所有验收标准 ID"和"所有测试引用到的 ID"两个集合对一对，差集立刻暴露漏洞。
-它是发布门（release-gate.md）"无孤儿需求"判据能机械执行的前提。
+The larger the test suite, the harder it is to answer "did we actually test everything" by feel. Traceability turns that question into set arithmetic: compare the set of "all acceptance criterion IDs" against the set of "all IDs referenced by tests", and the difference immediately exposes the hole.
+It is the prerequisite that makes the release gate's "no orphan requirements" criterion (release-gate.md) mechanically enforceable.
 
-## 三个要素
+## Three Elements
 
-### 1. 每条验收标准（AC）一个稳定 ID
-- 形如 `AC-<feature>.<序号>`（例：`AC-007.3`）。ID 命名规则由项目自定，蓝本只要求：**稳定**。
-- **稳定 = 一旦发布就不重排、不复用**。删除一条需求时，它的 ID 退役、永不被新需求顶替使用。
-  否则历史测试引用会"指向另一条需求"，悄悄失真。
+### 1. One stable ID per acceptance criterion (AC)
+- Shaped like `AC-<feature>.<index>` (example: `AC-007.3`). The naming rule is the project's choice; the blueprint only requires that it be **stable**.
+- **Stable = once published, never renumbered, never reused**. When a requirement is deleted, its ID retires and is never taken over by a new requirement.
+  Otherwise historical test references would "point at a different requirement" and silently go wrong.
 
-### 2. 每个测试引用它覆盖的 AC ID
-引用方式由栈/工具实例化，常见三种载体（任选其一，团队内统一即可）：
-- **测试名内嵌 ID**：测试名/用例标题包含 `AC-007.3`。
-- **注解 / 标签 / 元数据**：用该栈的测试标注机制挂 `@covers AC-007.3` 一类标记。
-- **结构化清单**：维护一份 `AC ID → 测试标识` 的映射文件。
+### 2. Each test references the AC ID it covers
+The reference mechanism is instantiated per stack / tool; three common carriers (pick one, stay consistent within the team):
+- **ID embedded in the test name**: the test name / case title contains `AC-007.3`.
+- **Annotation / tag / metadata**: use that stack's test annotation mechanism to attach a marker like `@covers AC-007.3`.
+- **Structured manifest**: maintain a mapping file of `AC ID -> test identifier`.
 
-一条 AC 可被多个测试覆盖；一个测试也可覆盖多条 AC。多对多是正常的。
+One AC may be covered by several tests; one test may cover several ACs. Many-to-many is normal.
 
-### 3. 双向机械校验
-- **无孤儿需求（no orphan requirement）**：`{所有 AC ID} - {被引用的 AC ID} = ∅`。
-  差集非空 = 有需求没人测 = 漏测。
-- **无幽灵需求（no ghost requirement）**：`{被引用的 AC ID} - {所有 AC ID} = ∅`。
-  差集非空 = 测试引用了不存在的 AC = 需求被删/号打错，测试在裸奔（它在断言一个已不存在的契约）。
+### 3. Bidirectional mechanical validation
+- **No orphan requirement**: `{all AC IDs} - {referenced AC IDs} = the empty set`.
+  A non-empty difference = a requirement nobody tests = a missed test.
+- **No ghost requirement**: `{referenced AC IDs} - {all AC IDs} = the empty set`.
+  A non-empty difference = a test references a non-existent AC = the requirement was deleted or the number was mistyped, and the test is running naked (it asserts a contract that no longer exists).
 
-## 校验思路（stack-agnostic 伪代码）
+## Validation Approach (stack-agnostic pseudocode)
 
-具体实现由调用方按栈实例化（如何枚举测试、如何抽取引用 ID 都是栈相关的）。逻辑恒定：
+The concrete implementation is instantiated by the caller per stack (how to enumerate tests and how to extract referenced IDs are both stack-specific). The logic is constant:
 
 ```
-ac_ids        = 解析需求文档 → 收集所有 AC ID 的集合
-referenced    = 扫描测试（名字/注解/映射文件）→ 收集被引用 ID 的集合
+ac_ids     = parse the requirements document -> collect the set of all AC IDs
+referenced = scan the tests (names / annotations / mapping file) -> collect the set of referenced IDs
 
-orphans = ac_ids - referenced     # 有需求无测试
-ghosts  = referenced - ac_ids     # 测试引用了不存在的需求
+orphans = ac_ids - referenced     # requirement with no test
+ghosts  = referenced - ac_ids     # test references a non-existent requirement
 
-if orphans 非空: 报告漏测的 AC 列表，发布门 no-go
-if ghosts  非空: 报告裸奔的测试列表，发布门 no-go
+if orphans is non-empty: report the list of untested ACs, release gate no-go
+if ghosts  is non-empty: report the list of naked tests, release gate no-go
 ```
 
-把这段逻辑实例化成该栈的脚本，挂进 CI（见 release-gate.md），追溯就从"文档负担"变成"自动护栏"。
+Instantiate this logic as a script for that stack and hang it in CI (see release-gate.md), and traceability turns from "a documentation burden" into "an automatic guardrail".
 
-## 常见反模式
+## Common Anti-Patterns
 
-- **事后补 ID**：先写一堆测试再回头硬塞 ID → ID 与实际断言对不上。应在写测试时就引用 AC。
-- **ID 复用**：删需求后把号给新需求 → 历史引用静默指向新含义。退役不复用。
-- **只做单向**：只查孤儿不查幽灵 → 删了需求的测试继续"绿着裸奔"，给人虚假安全感。两向都要查。
-- **把可追溯当文档**：写在 wiki 里没人对 → 必须可被脚本机械消费，才能进门禁。
+- **Adding IDs after the fact**: writing a pile of tests and then stuffing IDs in afterwards -> the IDs do not match the actual assertions. Reference the AC while writing the test.
+- **ID reuse**: giving a deleted requirement's number to a new requirement -> historical references silently point at a new meaning. Retire, never reuse.
+- **Only one direction**: checking orphans but not ghosts -> tests for deleted requirements keep "running green and naked", giving false confidence. Check both directions.
+- **Treating traceability as documentation**: written in a wiki that nobody reconciles -> it MUST be mechanically consumable by a script before it can enter a gate.
 
-## project-agnostic 提醒
+## Project-Agnostic Reminder
 
-AC 的内容是项目相关的，但"给 ID + 测试引用 + 双向校验"这套机制完全通用，不绑定任何业务领域。
+The content of an AC is project-specific, but the mechanism of "assign an ID + reference it from tests + validate bidirectionally" is entirely general and is not bound to any business domain.

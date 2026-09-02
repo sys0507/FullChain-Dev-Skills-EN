@@ -1,6 +1,26 @@
 ---
 name: claude-md-bootstrap-en
 description: Generate or refresh a project-root CLAUDE.md from existing PRD, architecture decisions, constitution, design docs, project manifests, and feature specs. Produces a concise WHAT/WHY/HOW routing map with verified commands and dependencies, @path references, anti-patterns, and Karpathy's four coding principles. Use when Claude Code needs durable project context. Do not use for empty projects without documentation or for non-Claude agent context files.
+license: MIT
+metadata:
+  version: "1.0"
+  lang: en
+  stage: "6"
+  standalone: true
+  produces:
+    - "CLAUDE.md"
+  requires:
+    - name: "At least one kind of project material (PRD / architecture doc / specs / README)"
+      level: required
+    - name: "Project constitution file"
+      level: optional
+      fallback: "Skip the constitution-reference section and label the omission in the output"
+    - name: "DESIGN.md and the design reference directory"
+      level: optional
+      fallback: "Label the visual section 'not applicable' with the reason; MUST NOT fabricate it"
+    - name: "Project manifest files"
+      level: optional
+      fallback: "Handle the tech-stack and commands sections with the placeholder strategy; **MUST NOT invent version numbers**"
 ---
 
 # CLAUDE.md Project Context Bootstrap (English)
@@ -192,3 +212,35 @@ Explain in English first: we will not copy the PRD into `CLAUDE.md`; we will pro
 routing map under 200 lines that traces back to real files. Then run the source
 inventory, pausing at source-coverage confirmation and at section-mapping confirmation.
 Before the final write, show a diff against any existing file.
+
+## Upstream Artifacts
+
+| Artifact | Level | When missing |
+|---|:---:|---|
+| At least one kind of project material | **required** | Stop — an empty project has nothing to extract from |
+| Project constitution file | optional | Skip the reference section and label the omission |
+| `DESIGN.md` and the design reference directory | optional | Label the visual section as not applicable |
+| Project manifest files | optional | Tech stack / commands follow the placeholder strategy; no invented versions |
+
+## Downstream Consumers
+
+| Consumer | What it takes from this skill |
+|---|---|
+| Every agent during implementation | `CLAUDE.md` as the project context routing map |
+
+## Standalone Use
+
+**What you provide**: any one kind of material the project already has: a PRD, an architecture doc, specs, or a README.
+
+**What you get**: a routing map under 200 lines covering WHAT/WHY/workflow/anti-patterns/behavioral guidelines and a key-file navigation table.
+
+**What you don't get**:
+
+- **It will not work on an empty project** — with no project material at all it recommends writing documentation first rather than generating empty phrases.
+- **It does not copy upstream text in full**, it only makes @path references.
+- With no project manifest, the tech-stack and commands sections state honestly that there is currently no manifest, and **MUST NOT invent dependency versions**.
+
+**Gate**: when a `CLAUDE.md` already exists, show the diff and wait for confirmation; pause once at source-coverage confirmation and once at section-mapping confirmation.
+
+⚠️ **Write-conflict ruling**: this Skill is the only writer of `CLAUDE.md`.
+When the learnings-retrospective Skill needs a reference to the learnings file injected, it **only raises a signal; this Skill performs the injection** (PRD §3.3, option B).

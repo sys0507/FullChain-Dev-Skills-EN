@@ -1,6 +1,27 @@
 ---
 name: frontend-testing-en
-description: Close frontend-only structural testing gaps after feature-level TDD by detecting the stack, establishing any missing test foundation, and configuring mature tools for lint rules, unit behavior, accessibility, responsive and cross-browser behavior, contract mocks, and visual regression. Translate project design contracts into executable checks, test only applicable gaps, and deliver isolated changes for human review. Use directly or when routed by test-routing-advisor-en.
+description: Close frontend-only structural testing gaps after feature-level TDD by detecting the stack, establishing any missing test foundation, and configuring mature tools for lint rules, unit behavior, accessibility, responsive and cross-browser behavior, contract mocks, and visual regression. Translate project design contracts into executable checks, test only applicable gaps, and deliver isolated changes for human review. Use directly or when routed by test-routing-advisor-en. Not for: backend testing, cross-feature end-to-end chains, or reinventing test tooling (this skill only assembles tools and translates rules).
+license: MIT
+metadata:
+  version: "1.0"
+  lang: en
+  stage: "9.2"
+  standalone: true
+  produces:
+    - "Frontend test code"
+    - "Evidence archive"
+  requires:
+    - name: "Routing decision report, or gaps named directly by the user"
+      level: orchestration
+      fallback: "Ask the user which frontend layer to close; with no answer, sweep all five layers"
+    - name: "Project manifest file"
+      level: required
+    - name: "Visual / interaction contract (DESIGN.md or equivalent)"
+      level: optional
+      fallback: "Token and dark-mode assertions are marked as NOT COVERED; the remaining layers proceed as usual"
+    - name: "Browser test tooling"
+      level: optional
+      fallback: "The cross-browser and responsive layer is marked as NOT COVERED"
 ---
 
 # frontend-testing-en · Frontend-Only Closed-Loop Test Executor
@@ -154,3 +175,32 @@ The purpose of these guardrails: allow the closed loop to run automatically, but
 - Blueprint: all archiving / tiering / release gates / cadence follow `testing-system-blueprint-en` (reference by name; its content is not replicated here).
 - Sibling: `backend-testing-en` handles "backend-only"; their fundamental responsibilities differ — backend **builds test code from scratch** (construction crew), frontend **assembles mature tools + translates visual contract** (assembler + inspector).
 - Methodology reuse: Fix and debug of discovered real defects reuses `superpowers:test-driven-development` and `superpowers:systematic-debugging` (this skill HALTs and returns to them).
+
+
+## Upstream Artifacts
+
+| Artifact | Level | When missing |
+|---|:---:|---|
+| Routing decision report, or gaps named by the user | orchestration | Ask the user; with no answer, sweep all five layers |
+| Project manifest file | **required** | Stop — the technology stack cannot be determined |
+| Visual / interaction contract | optional | Token and dark-mode assertions are marked NOT COVERED |
+| Browser test tooling | optional | Cross-browser and responsive coverage is marked NOT COVERED |
+
+## Downstream Consumers
+
+| Consumer | What it reads |
+|---|---|
+| The partial-fullstack seam skill | The frontend-side mock assumptions |
+| Branch wrap-up | Test results and residual risks |
+
+## Standalone Use
+
+**What you provide**: a frontend feature and the project dependency manifest. Visual assertions can only land when a design source of truth exists.
+
+**What you get**: backfill for the five layers of frontend structural gaps: lint gates, unit tests, a11y / cross-browser, frontend-backend contract mocks, visual regression.
+
+**What you don't get**:
+
+- **No visual contract means no visual assertions** — assertions such as tokens and dark mode are marked NOT COVERED; no standard is invented out of thin air.
+- No reinvented tooling; only assembly and rule translation.
+- Tests only; product code is not modified.

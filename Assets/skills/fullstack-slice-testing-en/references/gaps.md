@@ -1,166 +1,166 @@
-# 四个局部前后端接缝缺口 · 能力层 + 按栈实例化
+# Four Partial Frontend-Backend Seam Gaps · Capability Layer + Per-Stack Instantiation
 
-> 用法：先按 SKILL.md 步骤 0 识别**两侧**栈（消费者侧 + 提供者侧可能异栈），再读对应缺口下该栈那一行实例化工具。
-> 每个缺口先写**能力**（栈无关、永远成立），再给**示例实例**。示例是 lookup，**不是唯一答案**——
-> 项目用什么栈、装什么库、用什么编排，由项目自身决定；本表只做"能力 → 该栈/该生态工具"的映射。
+> How to use: first identify **both sides'** stacks per SKILL.md step 0 (consumer side + provider side may differ), then read the row for that stack under the matching gap to instantiate tools.
+> Each gap states the **capability** first (stack-agnostic, always true), then gives **instance examples**. Examples are a lookup, **not the only answer** —
+> what stack the project uses, what libraries it installs, what orchestration it picks is decided by the project itself; this table only maps "capability -> tool for that stack/ecosystem."
 >
-> **本 skill 的核心难点是缺口①"起真栈"**：前两格能把另一侧 mock 掉廉价独立跑，本格不许 mock，
-> 必须真把两侧 + 依赖拉活。等价于前端"装运行器"、后端"起测试库"——**栈起不来，后面全免谈。**
+> **The core difficulty of this skill is gap 1, "bringing up the real stack"**: the first two quadrants can mock out the other side and run cheaply in isolation; this quadrant may not mock,
+> it must actually bring both sides + dependencies alive. Equivalent to the frontend's "install the runner" and the backend's "bring up the test libraries" — **if the stack doesn't come up, nothing downstream matters.**
 >
-> **所有"项目专有"输入都是运行时现读、条件式**：编排文件长什么样、接缝走不走流式（SSE/WS/长轮询/异步回调）、
-> 接口形状、token/鉴权机制、跨域策略、健康检查地址、依赖中间件有哪些——**一律运行时现读，绝不写进本表，
-> 也绝不预设**。凡涉及契约/流式，一律"**若切片含 X，则**……"。
+> **Every "project-specific" input is read at runtime and conditional**: what the orchestration file looks like, whether the seam is streaming (SSE / WS / long-polling / async callback),
+> interface shapes, token/auth mechanism, CORS policy, health-check address, which middleware dependencies exist — **always read at runtime, never written into this table,
+> never pre-assumed**. Anything touching contracts/streaming is always written as "**if the slice contains X, then** …".
 
-## 目录
+## Contents
 
-0. [起真栈前置纪律（顺序铁律 + 数据隔离）](#0-起真栈前置纪律顺序铁律--数据隔离)
-1. [① 环境编排能力（本格核心难点，永远命中）](#1--环境编排能力本格核心难点永远命中)
-2. [② 契约真实性能力](#2--契约真实性能力)
-3. [③ 接缝粘合能力](#3--接缝粘合能力)
-4. [④ 真实时序/实时能力（条件命中）](#4--真实时序实时能力条件命中)
-5. [两层落地：黑盒冒烟 + 结构化接缝断言](#两层落地黑盒冒烟--结构化接缝断言)
-6. [跨缺口通用提醒](#跨缺口通用提醒)
-
----
-
-## 0. 起真栈前置纪律（顺序铁律 + 数据隔离）
-
-**能力**：在补任何接缝断言之前，先让"切片两侧 + 依赖中间件，一键、可复现地以真实形态起来 + 健康检查通过"先成立。
-这是本格独有的前置步骤，前两格没有（它们 mock 掉另一侧就跑了）。
-
-**为什么本格要专门有这一步**：本格的定义就是"不许 mock 被测的另一侧"。一旦 mock 回去，就退化成前两格、失去全部意义。
-所以必须真起栈——而异栈两侧（如前端 JS/TS + 后端 Python）+ 中间件（DB/缓存/队列）同时、可复现、本地=CI 地起，
-本身就是一项工程难点，是本格全部价值的入口。
-
-**⚠️ 顺序铁律（最常踩的坑）**：现成的 E2E 工具——无论是 diff-aware 的（如 gstack `/qa`）还是通用的
-（Playwright / Cypress）——**通常都不负责起栈，只探测一个已经在跑的 localhost 地址**。
-所以**起栈（缺口①）必须在跑 E2E（两层落地第一层）之前完成**；顺序反了，E2E 探到空地址，全红且红得没意义。
-
-**数据隔离纪律（接缝测试必备）**：接缝测试跑在真栈上，必须有 **seed / teardown fixture**——
-每次测试起一份**已知数据** → 测 → **清掉**，保证可控、互不污染、可重复。没有隔离，接缝测试会因脏数据假红/假绿。
-
-**拆栈纪律**：CI 与本地的节奏都是 **起栈 → 测 → 拆栈**；测完务必把真栈与数据一并清理，避免环境泄漏污染下一次。
+0. [Prerequisite discipline for bringing up the real stack (ordering iron rule + data isolation)](#0-prerequisite-discipline-for-bringing-up-the-real-stack-ordering-iron-rule--data-isolation)
+1. [1. Environment orchestration capability (core difficulty of this quadrant, always hit)](#1-environment-orchestration-capability-core-difficulty-of-this-quadrant-always-hit)
+2. [2. Contract authenticity capability](#2-contract-authenticity-capability)
+3. [3. Seam adhesion capability](#3-seam-adhesion-capability)
+4. [4. Real timing / real-time capability (conditional hit)](#4-real-timing--real-time-capability-conditional-hit)
+5. [Two-layer landing: black-box smoke + structured seam assertions](#two-layer-landing-black-box-smoke--structured-seam-assertions)
+6. [Cross-gap general reminders](#cross-gap-general-reminders)
 
 ---
 
-## 1. ① 环境编排能力（本格核心难点，永远命中）
+## 0. Prerequisite discipline for bringing up the real stack (ordering iron rule + data isolation)
 
-**能力**：让切片两侧（消费者侧 + 提供者侧）+ 它们依赖的中间件，**同时、可复现、本地与 CI 一致**地以真实形态起来，
-并以**健康检查**确认两侧真的 ready（等到 ready 才算起好，**不靠固定 `sleep`**）。
+**Capability**: before adding any seam assertion, first make "both sides of the slice + dependent middleware come up in real form with one command, reproducibly, with health checks passing" hold.
+This is a prerequisite step unique to this quadrant; the first two quadrants have none (they mock out the other side and just run).
 
-**为什么是本格的核心难点**：这是前两格从未面对的事——前两格各自只起一侧、另一侧 mock。本格要把异栈两侧 + 中间件
-拼成一个真实可跑的小系统，端口、网络、依赖启动顺序、健康检查、本地与 CI 一致性，每一项都要落地。**栈起不来，后面全免谈。**
+**Why this quadrant needs this step specifically**: the definition of this quadrant is "you may not mock the other side under test." Once you mock it back, it degrades into the first two quadrants and loses all meaning.
+So the stack must really come up — and bringing up two sides on different stacks (e.g. frontend JS/TS + backend Python) + middleware (DB/cache/queue) simultaneously, reproducibly, local == CI,
+is itself an engineering difficulty, and it is the entrance to all of this quadrant's value.
 
-| 编排形态（能力） | 示例实例（lookup，非唯一解） | 适用线索 |
+**Ordering iron rule (the most commonly stepped-in pit)**: off-the-shelf E2E tools — whether diff-aware (such as gstack `/qa`) or general-purpose
+(Playwright / Cypress) — **usually do not bring the stack up; they only probe an already-running localhost address**.
+So **bringing up the stack (gap 1) MUST be completed before running E2E (the first layer of two-layer landing)**; reverse the order and E2E probes an empty address, going all red in a way that means nothing.
+
+**Data isolation discipline (mandatory for seam testing)**: seam tests run on a real stack, so there MUST be **seed / teardown fixtures** —
+each test brings up a set of **known data** -> tests -> **clears it**, guaranteeing controllability, no cross-contamination, repeatability. Without isolation, seam tests go falsely red/green on dirty data.
+
+**Teardown discipline**: the cadence in CI and locally is **bring up -> test -> tear down**; after testing, always clean up the real stack together with its data to avoid environment leakage polluting the next run.
+
+---
+
+## 1. Environment orchestration capability (core difficulty of this quadrant, always hit)
+
+**Capability**: bring both sides of the slice (consumer side + provider side) + the middleware they depend on up in real form **simultaneously, reproducibly, and consistently between local and CI**,
+and confirm with **health checks** that both sides are genuinely ready (ready means ready, **not a fixed `sleep`**).
+
+**Why this is the core difficulty of this quadrant**: this is something the first two quadrants never faced — each of them brings up only one side and mocks the other. This quadrant must assemble two differently-stacked sides + middleware
+into a real runnable small system: ports, networking, dependency startup order, health checks, local/CI consistency — every one has to be made real. **If the stack doesn't come up, nothing downstream matters.**
+
+| Orchestration form (capability) | Instance examples (lookup, not the only solution) | Applicability clues |
 |---|---|---|
-| 容器编排 | docker-compose / 等价 compose 工具，把两侧 + 中间件定义成 services + healthcheck | 两侧已容器化、依赖中间件多 |
-| 测试容器（代码内起容器） | testcontainers（多语言均有：Java/Node/Python/Go…），在测试生命周期内起停真实依赖 | 想让起栈由测试代码托管、与 CI 解耦 |
-| 进程编排 | 进程管理脚本 / Makefile target / Procfile 类，本地拉起两侧进程 + 等健康检查 | 轻量、未容器化、依赖少 |
-| 内存/进程内测试服务器 | 该栈的内存 HTTP 测试服务器（仅当"真实形态"允许进程内时） | 提供者侧可进程内真实运行、无需独立部署 |
+| Container orchestration | docker-compose / equivalent compose tooling, defining both sides + middleware as services + healthcheck | both sides already containerized, many middleware dependencies |
+| Test containers (containers started from code) | testcontainers (available in many languages: Java/Node/Python/Go…), starting/stopping real dependencies within the test lifecycle | you want stack bring-up hosted by test code, decoupled from CI |
+| Process orchestration | process management script / Makefile target / Procfile-style, bringing up both sides' processes locally + waiting on health checks | lightweight, not containerized, few dependencies |
+| In-memory / in-process test server | that stack's in-memory HTTP test server (only when "real form" permits in-process) | provider side can run for real in-process, no separate deployment needed |
 
-**运行时现读，不预设**：项目里**现有的编排定义**（compose 文件 / 启动脚本 / CI service 段）有就复用；
-没有才按上表实例化最小编排。**依赖中间件具体有哪些（DB/缓存/队列/对象存储…）运行时现读**，不在本表写死。
+**Read at runtime, do not pre-assume**: if the project **already has orchestration definitions** (compose file / startup script / CI service block), reuse them;
+only if it has none do you instantiate a minimal orchestration per the table above. **Which middleware dependencies exist (DB/cache/queue/object storage…) is read at runtime**, not hardcoded in this table.
 
-**典型落地清单**：一条命令拉起两侧 + 依赖；健康检查等到两侧 ready；冒烟打通一条真实请求证明栈活了；
-seed/teardown 数据隔离就位；测完拆栈。**这一步绿之前，不写任何接缝断言。**
+**Typical landing checklist**: one command brings up both sides + dependencies; health checks wait until both sides are ready; a smoke request goes through end to end proving the stack is alive;
+seed/teardown data isolation is in place; tear the stack down after testing. **Write no seam assertions before this step is green.**
 
 ---
 
-## 2. ② 契约真实性能力
+## 2. Contract authenticity capability
 
-**能力**：验证**消费者侧的假设**（单前端阶段为独立开发而拿来 mock 的那份）与**提供者侧的真实行为**是否一致——
-逐项对账：**字段名 / 类型 / 必填可选 / 状态码 / 错误体结构**。这是本格的主体，专抓"假设 vs 真实"的漂移。
+**Capability**: validate whether the **consumer side's assumption** (the mock it used during the frontend-only phase in order to develop independently) matches the **provider side's real behavior** —
+reconciling item by item: **field names / types / required-vs-optional / status codes / error body structure**. This is the main body of this quadrant, hunting specifically for "assumption vs reality" drift.
 
-**为什么重要**：前端单测里那份 mock 从未与真后端碰面。字段改名、类型变化、错误体结构调整、新增必填字段，
-mock 都不会自动跟上——**单前端永远绿，上真后端必崩**。本格就是让这份谎在真栈上穿帮。
+**Why it matters**: the mock in frontend unit tests has never met the real backend. Renamed fields, changed types, restructured error bodies, newly required fields —
+the mock never follows automatically. **Frontend-only stays green forever, and collapses on the real backend.** This quadrant is where that lie is exposed on the real stack.
 
-| 对账形态（能力） | 示例实例（lookup，非唯一解） | 说明 |
+| Reconciliation form (capability) | Instance examples (lookup, not the only solution) | Notes |
 |---|---|---|
-| 消费者 mock ↔ 提供者规格比对 | 把前端那份 mock 的形状，与提供者真实响应（或其 OpenAPI/schema）逐字段比对 | 最直接，抓字段/类型/状态码漂移 |
-| 双向契约（consumer-driven contract） | Pact（多语言）/ 等价 CDC 工具：消费者发布期望，提供者侧校验满足 | 两侧 CI 各自校验，强约束、防双向漂移 |
-| OpenAPI / schema 比对 | **若提供者用 OpenAPI/JSON Schema 声明契约，则**用 schema 校验真实响应 + 比对前端假设 | 提供者有契约源时首选 |
+| Consumer mock <-> provider spec comparison | compare the shape of the frontend's mock field by field against the provider's real response (or its OpenAPI/schema) | most direct; catches field/type/status-code drift |
+| Bidirectional contracts (consumer-driven contract) | Pact (multi-language) / equivalent CDC tooling: the consumer publishes expectations, the provider side verifies it satisfies them | each side's CI verifies independently; strong constraint, prevents two-way drift |
+| OpenAPI / schema comparison | **if the provider declares contracts with OpenAPI/JSON Schema, then** validate real responses against the schema + compare with the frontend's assumption | first choice when the provider has a contract source |
 
-**运行时现读**：**契约源是否存在、是 OpenAPI 还是 Pact 还是裸 schema——运行时现读**，没有契约源就直接比对真实响应样本与前端 mock。
+**Read at runtime**: **whether a contract source exists, and whether it is OpenAPI or Pact or a bare schema — read at runtime**; with no contract source, directly compare real response samples against the frontend mock.
 
-**典型断言清单**：真实响应字段集 == 前端假设字段集（无多/无少）；类型逐字段一致；成功状态码一致；
-**错误体结构**与前端的错误处理预期一致（典型漂移点）；必填字段不在真实响应里缺位。
+**Typical assertion checklist**: real response field set == frontend assumed field set (nothing extra, nothing missing); types match field by field; success status codes match;
+**error body structure** matches the frontend's error-handling expectation (a classic drift point); required fields are not absent from the real response.
 
 ---
 
-## 3. ③ 接缝粘合能力
+## 3. Seam adhesion capability
 
-**能力**：验证两侧在真实对接处的"粘合层"对得上——**身份/凭证透传、序列化往返、错误→消费者侧处理映射、头部/跨域**。
-这些是"接口形状对了但接缝仍漏"的高发处：形状对、却因 token 没透传、日期/数字序列化往返失真、错误码没映射到正确 UI 态、
-CORS/头部没配而真实失败。
+**Capability**: validate that the "glue layer" where the two sides really meet lines up — **identity/credential pass-through, serialization round-trip, error -> consumer-side handling mapping, headers/CORS**.
+These are where "the interface shape is right but the seam still leaks": the shape matches, yet it really fails because the token was not passed through, date/number serialization round-trips lossily, error codes are not mapped to the right UI state,
+or CORS/headers are not configured.
 
-**为什么重要**：契约（缺口②）只管"形状"，粘合管"真实连起来时的那些缝"。单侧测永远碰不到——
-前端 mock 里 token 永远"有效"、序列化永远"完美"、错误永远按前端想象返回。真栈上这些缝才暴露。
+**Why it matters**: contracts (gap 2) only govern "shape"; adhesion governs "the seams that appear when things are really connected." Single-side testing never touches them —
+in the frontend mock the token is always "valid," serialization is always "perfect," errors always come back exactly as the frontend imagined. Only on a real stack do these seams show.
 
-| 粘合维度（能力） | 验证什么 | 示例实例（lookup，非唯一解） |
+| Adhesion dimension (capability) | What it validates | Instance examples (lookup, not the only solution) |
 |---|---|---|
-| 凭证透传 | 真 token/session 从消费者发出、被提供者真实校验通过；无效凭证被真实拒 | 真接口集成断言：带真凭证打真端点，断状态码 |
-| 序列化往返 | 日期/数字/枚举/嵌套结构 经真实序列化→反序列化后值不失真 | 发已知值、断真实返回值逐字段相等 |
-| 错误→处理映射 | 提供者真实错误（4xx/5xx/业务错误码）被消费者侧正确映射成对应处理/态 | 触发真实错误路径、断消费者侧落到正确兜底/错误态 |
-| 头部 / 跨域 | 真实 CORS / 内容协商 / 自定义头 在跨源对接下不被拦 | 跨源真实请求、断未被预检/头部策略挡掉 |
+| Credential pass-through | a real token/session is emitted by the consumer and genuinely validated by the provider; invalid credentials are genuinely rejected | real interface integration assertions: hit the real endpoint with real credentials, assert the status code |
+| Serialization round-trip | dates/numbers/enums/nested structures do not lose fidelity after real serialization -> deserialization | send known values, assert the real returned values are equal field by field |
+| Error -> handling mapping | real provider errors (4xx/5xx/business error codes) are correctly mapped by the consumer side to the corresponding handling/state | trigger the real error path, assert the consumer side lands in the correct fallback/error state |
+| Headers / CORS | real CORS / content negotiation / custom headers are not blocked in cross-origin integration | make a real cross-origin request, assert it is not blocked by preflight/header policy |
 
-**运行时现读**：**鉴权机制（Bearer/Cookie/签名…）、跨域策略、自定义头——运行时现读两侧实现**，不预设。
+**Read at runtime**: **the auth mechanism (Bearer/Cookie/signature…), CORS policy, custom headers — read both sides' implementations at runtime**, do not pre-assume.
 
-**典型断言清单**：带真凭证→放行、无/错凭证→真实被拒；已知日期/大数/枚举往返后相等；提供者返回业务错误码时
-消费者侧落到对应错误态（非"假装成功"）；跨源请求未被 CORS/预检挡掉。
+**Typical assertion checklist**: real credentials -> allowed, missing/wrong credentials -> genuinely rejected; known dates/large numbers/enums are equal after a round trip; when the provider returns a business error code
+the consumer side lands in the corresponding error state (not "pretending success"); cross-origin requests are not blocked by CORS/preflight.
 
 ---
 
-## 4. ④ 真实时序/实时能力（条件命中）
+## 4. Real timing / real-time capability (conditional hit)
 
-**能力**：**仅当这条切片真的含流式 / 实时 / 异步交互时才命中**——验证**时序与增量行为**：边收边处理是否正确、
-并发/竞态下顺序是否正确、最终是否一致。**运行时先确认协议**（是 SSE / WebSocket / 长轮询 / 异步回调中的哪种）再实例化。
+**Capability**: **hit only when this slice genuinely contains streaming / real-time / async interaction** — validate **timing and incremental behavior**: whether process-while-receiving is correct,
+whether ordering holds under concurrency/races, whether it converges in the end. **Confirm the protocol at runtime first** (which of SSE / WebSocket / long-polling / async callback it is), then instantiate.
 
-**为什么是条件命中、不是固定缺口**：**绝大多数切片是普通请求-响应**，根本没有时序维度——硬给它写时序断言纯属过度测。
-**流式不是固定缺口，是条件命中项**：非流式切片直接跳过缺口④。先运行时确认这条切片到底流不流式，是才测。
+**Why it is a conditional hit rather than a fixed gap**: **the vast majority of slices are ordinary request-response** with no timing dimension at all — forcing timing assertions onto them is pure over-testing.
+**Streaming is not a fixed gap, it is a conditionally hit item**: for non-streaming slices, skip gap 4 outright. Confirm at runtime whether this slice actually streams, and only then test it.
 
-| 实时形态（能力） | 示例实例（lookup，非唯一解） | 验证什么 |
+| Real-time form (capability) | Instance examples (lookup, not the only solution) | What it validates |
 |---|---|---|
-| 服务端推流观察 | 流式协议观察客户端（按真实协议——SSE/WS/长轮询等——实例化对应观察方式） | 增量分片按序到达、边收边处理、不丢不乱不重 |
-| 异步回调/事件 | 真实事件/回调通道观察 + 等待断言（轮询到最终态，不固定 sleep） | 最终一致、回调被真实投递、幂等 |
-| 并发时序 | 多消费者/多事件并发触发，观察竞态下顺序与一致性 | 无丢失更新、无乱序导致的错误态 |
+| Server push-stream observation | a streaming-protocol observing client (instantiate the matching observation method per the real protocol — SSE/WS/long-polling etc.) | incremental chunks arrive in order, processed while received, nothing lost, reordered, or duplicated |
+| Async callback/event | real event/callback channel observation + waiting assertions (poll to the final state, no fixed sleep) | eventual consistency, callbacks genuinely delivered, idempotent |
+| Concurrent timing | multiple consumers/events triggered concurrently, observing ordering and consistency under races | no lost updates, no error states caused by reordering |
 
-**运行时现读**：**协议到底是什么、分片边界、结束信号、心跳——一律运行时现读真实实现**，绝不把"SSE"等任何具体协议写死为前提。
+**Read at runtime**: **what the protocol actually is, chunk boundaries, termination signal, heartbeats — always read the real implementation at runtime**, never hardcode "SSE" or any other specific protocol as a premise.
 
-**典型断言清单（仅流式/实时切片）**：增量分片按预期顺序到达；客户端边收边渲染/处理正确；流中断/重连按预期恢复；
-异步最终态在限时内达成且幂等；并发触发下不出现乱序导致的错误。
+**Typical assertion checklist (streaming/real-time slices only)**: incremental chunks arrive in the expected order; the client renders/processes correctly while receiving; stream interruption/reconnection recovers as expected;
+the async final state is reached within the time limit and is idempotent; concurrent triggering produces no reordering-induced errors.
 
 ---
 
-## 两层落地：黑盒冒烟 + 结构化接缝断言
+## Two-layer landing: black-box smoke + structured seam assertions
 
-对每个**命中**的缺口，按"先黑盒、再结构化"两层落地（详见 SKILL.md 步骤 3）：
+For each **hit** gap, land it in two layers, "black box first, structured second" (details in SKILL.md step 3):
 
-**第一层 · 黑盒冒烟**：在已起好的真栈上跑端到端冒烟，证"整条切片通了"。
+**Layer one · black-box smoke**: run an end-to-end smoke test on the already-running real stack, proving "the whole slice connects."
 
-| E2E 形态（能力） | 示例实例（lookup，非唯一解） | 选用线索 |
+| E2E form (capability) | Instance examples (lookup, not the only solution) | Selection clues |
 |---|---|---|
-| diff-aware E2E（聚焦改动相关切片） | 若环境存在此类工具（gstack `/qa` 为其一）则优先用——能聚焦本次改动的切片，省时 | 环境里**已有**该工具；**没有就回退**，本 skill 不写其安装步骤 |
-| 通用 E2E（回退默认） | Playwright / Cypress 或该栈等价端到端驱动 | 无 diff-aware 工具时的通用回退 |
+| diff-aware E2E (focused on change-related slices) | if such a tool exists in the environment (gstack `/qa` is one) prefer it — it can focus on the slice this change touches, saving time | the tool is **already present** in the environment; **fall back if it is not**, this skill does not write its installation steps |
+| General-purpose E2E (fallback default) | Playwright / Cypress or that stack's equivalent end-to-end driver | the general fallback when no diff-aware tool exists |
 
-> ⚠️ 这些工具**只探测已跑的 localhost，不起栈**——所以**缺口①起栈必须已完成**（见 §0 顺序铁律）。
+> These tools **only probe an already-running localhost; they do not bring the stack up** — so **gap 1 stack bring-up MUST already be complete** (see the §0 ordering iron rule).
 
-**第二层 · 结构化接缝断言**：按命中能力（②③④）写可重复跑的接缝断言，把"对账"固化成回归。
-黑盒冒烟只证"通了"，结构化断言才证"字段/类型/状态码/错误体/凭证/序列化/时序**逐项对得上**"。
-断言用两侧栈的测试框架写（消费者侧或提供者侧的测试运行器，按 §0 识别的栈实例化）。
+**Layer two · structured seam assertions**: for each hit capability (2/3/4), write repeatable seam assertions that harden the "reconciliation" into a regression.
+Black-box smoke only proves "it connects"; structured assertions prove "fields/types/status codes/error bodies/credentials/serialization/timing **line up item by item**."
+Write assertions with the test frameworks of both sides' stacks (the consumer-side or provider-side test runner, instantiated per the stack identified in §0).
 
 ---
 
-## 跨缺口通用提醒
+## Cross-gap general reminders
 
-- **先起真栈**（步骤 1 / §0）：本格独有难点；栈起不来后面全免谈。**起栈在 E2E 之前**（顺序铁律）。
-- **不许 mock 被测的那一侧**：一旦把被测另一侧 mock 回去，就退化成前两格、失去全部意义（禁伪造修复）。
-- **先条件命中再补**（SKILL.md 步骤 2）：缺口①永远命中；**缺口④（流式/实时）是条件命中，非流式切片直接跳过**，
-  别硬造时序测试；缺口②③看切片真有没有漂移风险/鉴权/错误路径。
-- **单切片、不贪多、不跨 feature**：一个 feature 多条接缝就逐条来，先圈风险最高的单条；跨多 feature 属第四格。
-- **数据隔离 + 拆栈**：seed/teardown 保证可重复；CI 节奏 起栈→测→拆栈，测完清理避免泄漏。
-- **RED 必须有意义**：先确认测试因真实接缝缺陷而红（不是栈没起好、不是测试写错），再 GREEN，再固化进回归。
-- **护栏**：只写测试/编排配置、断言不弱化、禁伪造修复（含禁"偷偷 mock 回被测侧""固定 sleep 假装 ready"
-  "起假后端冒充真栈"）、有界重试（起栈/时序 flake 不靠重跑掩盖）、隔离变更 + 人审交付；发现真接缝 bug **HALT 回交
-  superpowers TDD/debugging**，不自行改产品码（见 SKILL.md 自愈护栏）。
-- **归档**：每条新增回归挂可追溯 ID、按风险分级（**越权/契约漂移=高，进发布门硬阻断**）、对齐三层节奏
-  （接缝测试起真栈，属较慢的 L2 集成层），遵循 testing-system-blueprint-en。
+- **Bring up the real stack first** (step 1 / §0): the difficulty unique to this quadrant; if the stack doesn't come up, nothing downstream matters. **Bring-up precedes E2E** (ordering iron rule).
+- **You may not mock the side under test**: once you mock the other side back in, it degrades into the first two quadrants and loses all meaning (no faked fixes).
+- **Hit conditions first, then fill** (SKILL.md step 2): gap 1 always hits; **gap 4 (streaming/real-time) is a conditional hit — non-streaming slices skip it outright**,
+  do not manufacture timing tests; gaps 2/3 depend on whether the slice genuinely carries drift risk/auth/error paths.
+- **Single slice, don't be greedy, don't cross features**: if a feature has several seams, take them one at a time, scoping the highest-risk single one first; crossing multiple features belongs to the fourth quadrant.
+- **Data isolation + teardown**: seed/teardown guarantees repeatability; the CI cadence is bring up -> test -> tear down, cleaning up after testing to avoid leakage.
+- **RED MUST be meaningful**: first confirm the test is red because of a real seam defect (not because the stack failed to come up, not because the test is wrong), then GREEN, then harden it into a regression.
+- **Guardrails**: write only tests/orchestration config, never weaken assertions, no faked fixes (including no "quietly mocking the side under test back in," no "fixed sleep pretending ready,"
+  no "standing up a fake backend to impersonate the real stack"), bounded retries (stack bring-up / timing flakes are not papered over by re-running), isolated changes + human-reviewed delivery; on finding a real seam bug **HALT and hand back to
+  superpowers TDD/debugging**, do not modify product code yourself (see the SKILL.md self-healing guardrails).
+- **Archiving**: attach a traceable ID to each new regression, tier it by risk (**privilege escalation / contract drift = high, hard-blocking at the release gate**), align with the three-layer cadence
+  (seam testing brings up a real stack, so it belongs to the slower L2 integration layer), following testing-system-blueprint-en.

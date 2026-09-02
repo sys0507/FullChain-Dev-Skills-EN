@@ -1,6 +1,26 @@
 ---
 name: test-routing-advisor-en
-description: Classify the structural testing gaps of a completed feature and route each gap to backend-testing-en, frontend-testing-en, fullstack-slice-testing-en, or full-chain-testing-en. Use during feature wrap-up after task-level TDD is green. Reads labels, dependency graphs, contracts, and acceptance criteria; reports categorization, uncovered risks, and routing only. It does not execute tests or choose stack-specific tools.
+description: Classify the structural testing gaps of a completed feature and route each gap to backend-testing-en, frontend-testing-en, fullstack-slice-testing-en, or full-chain-testing-en. Use during feature wrap-up after task-level TDD is green. Reads labels, dependency graphs, contracts, and acceptance criteria; reports categorization, uncovered risks, and routing only. It does not execute tests or choose stack-specific tools. Not for: executing the tests themselves (it only categorizes and routes), writing test code, or deciding whether a release ships.
+license: MIT
+metadata:
+  version: "1.0"
+  lang: en
+  stage: "9.1"
+  standalone: true
+  produces:
+    - "specs/<id>-<feature>/test-routing-decision.md"
+  requires:
+    - name: "Task list and artifacts of the feature that just finished"
+      level: required
+    - name: "Project manifest file"
+      level: optional
+      fallback: "Infer the technology stack from the task descriptions and mark it as inferred, so the stack determination is not verified"
+    - name: "Testing System Blueprint skill"
+      level: optional
+      fallback: "Reference its criteria by name; when it is not installed, use this skill's built-in condensed risk-tiering version, so the blueprint's full criteria are not covered"
+    - name: "Browser test tooling"
+      level: optional
+      fallback: "The UI-walkable segment is marked as NOT COVERED"
 ---
 
 # Test Routing Advisor
@@ -121,6 +141,19 @@ The report's focus is **categorize first, then route**: for each judgment dimens
 
 End the report with this boundary reminder: *This report only performs categorization and routing; specific tools are instantiated by the corresponding category skill per stack, and CI gates and guardrailed agents are responsible for verification.*
 
+### Where the Report Goes
+
+| Situation | Destination |
+|---|---|
+| `specs/<id>-<feature>/` exists | Session output **and** written to `specs/<id>-<feature>/test-routing-decision.md` (newly created) |
+| It does not exist (standalone use) | **Session output only** — do not conjure a directory out of thin air |
+
+Writing to disk exists so downstream executor skills can read the decision across sessions — session output cannot cross a skill boundary.
+But for downstream it is **always** an `orchestration` dependency: when an executor cannot obtain this report, it proceeds with its own fallback
+(a full sweep of the four gap types) and **MUST NOT** stop merely because the file is absent.
+
+**Do not** write a second copy of this path somewhere else, and do not redefine it anywhere else.
+
 ## Reference Files
 
 - `references/routing-matrix.md` — the complete category × classification signal × how to use × routing destination matrix.
@@ -132,3 +165,31 @@ End the report with this boundary reminder: *This report only performs categoriz
 - `references/self-healing-guardrails.md` — the 5 guardrails that any self-healing test agent must follow.
 
 > The methodology uniformly follows the `testing-system-blueprint-en` skill as the blueprint; actual supplementary testing for backend-only gaps is executed by the `backend-testing-en` skill per stack, frontend-only gaps by the `frontend-testing-en` skill per stack, partial fullstack gaps by the `fullstack-slice-testing-en` skill per stack, and complete feature chain gaps by the `full-chain-testing-en` skill per stack.
+
+
+## Upstream Artifacts
+
+| Artifact | Level | When missing |
+|---|:---:|---|
+| Task list and artifacts of the feature | **required** | Stop — there is nothing under test |
+| Project manifest file | optional | Infer the stack from task descriptions and mark it as inferred |
+| Testing System Blueprint skill | optional | Reference by name; when not installed, use the built-in condensed version |
+| Browser test tooling | optional | The UI-walkable segment is marked NOT COVERED |
+
+## Downstream Consumers
+
+| Consumer | What it reads |
+|---|---|
+| The 4 test executors | The routing decision and the gap checklist |
+
+## Standalone Use
+
+**What you provide**: a feature that has just wrapped up: its task list and its artifacts.
+
+**What you get**: the decision of which testing scenario categories this feature hits, the separation between what development-phase work already covered and what remains a structural gap, and the executor routing for each gap.
+
+**What you don't get**:
+
+- **It does not execute tests** — it only categorizes and routes. Backfill is the responsibility of the routed-to executor.
+- When the corresponding executor is not installed, the routing conclusion is still produced, but **that executor is marked as unavailable**.
+- When the project manifest is missing, the stack determination is an inference and is explicitly marked as such.

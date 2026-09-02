@@ -1,62 +1,59 @@
-# 发布 go/no-go 门（机械门禁，完整清单）
+# Release Go/No-Go Gate (Mechanical Gate, Complete Checklist)
 
-> 本文是 SKILL.md §五 的展开。stack-agnostic、project-agnostic。
-> 关键边界：**本蓝本给放行标准，不替你强制执行；强制必须靠 CI/hook/pre-commit。**
+> This document expands SKILL.md §V. Stack-agnostic, project-agnostic.
+> Key boundary: **the blueprint provides the release standard; it does not enforce it for you — enforcement MUST rely on CI / hook / pre-commit.**
 
-## 门是什么
+## What a Gate Is
 
-发布门是合并/发布前的一组**机械可判定**的判据。"机械"意味着每一项都能被脚本自动回答
-"通过 / 不通过"，不依赖人临场判断。任一项不通过即 **no-go**。
+A release gate is a set of **mechanically decidable** criteria applied before merge / release. "Mechanical" means every item can be answered "pass / fail" automatically by a script, without relying on an on-the-spot human judgment. Any single item failing means **no-go**.
 
-## 三项硬门（合并前必须全部满足）
+## Three Hard Gate Items (All MUST Be Satisfied Before Merge)
 
-### 1. 测试全绿
-- 相关层级的测试（至少覆盖 P0/P1 行为的部分，见 risk-tiers.md）全部通过。
-- **无 skip 掩盖**：用 skip/ignore 把失败用例藏起来不算绿。被 skip 的 P0/P1 测试视为不通过。
-- **无 flaky 放行**：时绿时红的测试不能作为"绿"的依据；要么稳定它，要么隔离它并记录，
-  绝不"重跑到绿就放行"。
+### 1. All tests green
+- The tests of the relevant layers (at minimum the part covering P0/P1 behaviors, see risk-tiers.md) all pass.
+- **No skip masking**: hiding failing cases behind skip/ignore does not count as green. A skipped P0/P1 test counts as a failure.
+- **No flaky pass-through**: a test that is sometimes green and sometimes red cannot serve as evidence of "green"; either stabilize it or isolate it and record that, but never "re-run until green and ship".
 
-### 2. 无孤儿需求
-- 追溯校验（traceability.md）通过：每条 AC 都有测试引用，且无幽灵需求。
-- 这一项让门能机械回答"这条需求测了没"——靠的是 §二 的稳定 ID + 双向校验脚本。
+### 2. No orphan requirements
+- Traceability validation (traceability.md) passes: every AC has a test referencing it, and there are no ghost requirements.
+- This item is what lets the gate mechanically answer "was this requirement tested" — it relies on the stable IDs plus the bidirectional validation script from §II.
 
-### 3. 无破坏性契约变更
-- 对外契约（接口形状、字段语义、错误码、事件 schema 等）若发生变更，必须满足其一：
-  - 是**兼容变更**（消费方无需改动即可继续工作）；或
-  - 已**显式声明为破坏性变更并被消费方确认**（有记录、有版本策略）。
-- 未声明的破坏性契约变更 = no-go。它会在消费方那里悄悄炸，是最贵的一类回归。
+### 3. No breaking contract changes
+- If an external contract (interface shape, field semantics, error codes, event schema, and so on) changes, one of the following MUST hold:
+  - It is a **compatible change** (consumers keep working without modification); or
+  - It has been **explicitly declared as a breaking change and confirmed by consumers** (recorded, with a versioning policy).
+- An undeclared breaking contract change = no-go. It detonates silently on the consumer side and is the most expensive class of regression.
 
-## "机械"的边界（务必明确，不可越界）
+## The Boundary of "Mechanical" (Be Explicit; Do Not Cross It)
 
-**本 skill 只是标准的来源，不是门本身。** 蓝本能做的：定义上面三项判据该查什么、怎么算通过。
-蓝本**不能也不应**替项目执行这些检查。
+**This skill is only the source of the standard, not the gate itself.** What the blueprint can do: define what the three criteria above check and what counts as a pass.
+The blueprint **cannot and should not** run those checks for the project.
 
-真正的强制必须落到自动化设施上：
+Real enforcement MUST land in automation:
 
-- **CI 流水线**：在合并/发布流程里跑全部三项，未通过则阻断合并。
-- **git hook / pre-commit**：在更早的本地阶段拦住明显不达标的提交。
-- **分支保护规则**：要求门状态为绿才允许合并。
+- **CI pipeline**: run all three items in the merge / release flow, and block the merge on failure.
+- **git hook / pre-commit**: catch obviously non-compliant commits at the earlier local stage.
+- **Branch protection rules**: require a green gate status before a merge is allowed.
 
-把门写进自动化的理由：**人的自觉不可靠**。只有当门由机器在每次变更上自动执行、且无法被随手绕过时，
-它才真正起作用。"我们约定发布前都会检查"不是门，"CI 红了就合不进去"才是门。
+Why write the gate into automation: **human self-discipline is unreliable**. A gate only truly works when a machine runs it automatically on every change and it cannot be casually bypassed. "We agree to check before every release" is not a gate; "you cannot merge while CI is red" is a gate.
 
-## 落地清单（交给遵循本蓝本的 skill / 项目）
+## Landing Checklist (For the Skill / Project That Follows This Blueprint)
 
-把以下逻辑实例化为项目所在栈的 CI 步骤（工具按栈选，见 capability-tool-mapping.md）：
+Instantiate the following logic as CI steps for the project's stack (tools chosen per stack, see capability-tool-mapping.md):
 
 ```
 gate:
-  - run: 跑测试套件（P0/P1 全绿；无 skip 掩盖；flaky 不放行）
-  - run: 跑追溯校验脚本（orphans == ∅ 且 ghosts == ∅）
-  - run: 跑契约 diff 检查（破坏性变更必须已声明并确认）
-  - 任一步失败 → 阻断合并（exit 非 0）
+  - run: run the test suite (P0/P1 all green; no skip masking; no flaky pass-through)
+  - run: run the traceability validation script (orphans == empty set and ghosts == empty set)
+  - run: run the contract diff check (a breaking change MUST already be declared and confirmed)
+  - any step fails -> block the merge (non-zero exit)
 ```
 
-## 与其他维度的关系
+## Relationship to the Other Dimensions
 
-- 门的输入来自风险分级（哪些是 P0/P1 必绿）、可追溯（孤儿/幽灵判定）、闭环补测（把孤儿补成绿）。
-- 门不替代这些维度，它是它们的**汇聚点和强制点**。
+- The gate's inputs come from risk tiering (which items must be green as P0/P1), traceability (orphan / ghost determination), and closed-loop backfill (turning orphans green).
+- The gate does not replace those dimensions; it is their **convergence point and enforcement point**.
 
-## project-agnostic 提醒
+## Project-Agnostic Reminder
 
-契约的具体内容、AC 的具体含义是项目相关的；"三项硬门 + 靠 CI 强制"这套结构跨项目通用。
+The specific content of a contract and the specific meaning of an AC are project-specific; the structure of "three hard gate items + enforcement by CI" is general across projects.

@@ -7,7 +7,7 @@
 ## Phase 0: Candidate Assignment
 
 ### Input
-- `specs/research/03-open-source-projects.md (or relevant research artifact)` (or a candidate list provided directly by the user)
+- `specs/research/03-open-source-candidates.md (or relevant research artifact)` (or a candidate list provided directly by the user)
 - Project definition (one sentence)
 
 > **Note**: Path names vary by project; adjust according to the actual research file location. The candidate list may reside in different files under `specs/research/` (e.g., open-source project inventory, technical solution inventory, etc.). Use the actual file as the source of truth.
@@ -216,7 +216,7 @@ Admissible bases:
 
 #### 3.3 Decision Document Format
 
-Path: `specs/research/06-architecture-baseline-decision.md`
+Path: `specs/research/06-architecture-baseline.md`
 
 ```markdown
 # 06 Architecture Baseline Decision
@@ -320,4 +320,4 @@ After Phase 3 is complete:
 | Red Team "hedges" (says "project X is actually fine too") | Lead intervenes to correct; requires Red Team to return to a fully opposing position |
 | Advocate wants to switch sides in Phase 2 and support another | Warning — Advocate position is fixed; the desire to switch can be referenced by Lead in Phase 3 synthesis |
 | Still deadlocked after Round 2 | Force entry into Phase 3; Lead rules based on surviving arguments |
-| Lead is uncertain | Write into the "Open Questions" section of `06-architecture-baseline-decision.md`; defer to the Brainstorming phase |
+| Lead is uncertain | Write into the "Open Questions" section of `06-architecture-baseline.md`; defer to the Brainstorming phase |

@@ -596,5 +596,77 @@ class TestC2CrossRoot(unittest.TestCase):
         found = C2Pairing().run(self.zh)
         self.assertEqual(len(found), 1, "同目录模式不得被跨目录改动搞坏")
 
+class TestBilingualVocabulary(unittest.TestCase):
+    """C7 / C8 按目录名后缀选用中文或英文词汇表（元数据标准 §5.0）。
+
+    英文版若沿用中文节名，C3（中文残留）会报错；若各自发挥，C7/C8 就查不了。
+    **规则一旦不可枚举，CI 就守不住**——所以词汇表必须双语定死，检查器认两套。
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+
+    def _skill(self, name, sections, questions, level="required", fallback=True):
+        d = self.root / name
+        d.mkdir()
+        fb = ('      fallback: "degrade gracefully"' + NL) if fallback else ""
+        fm = ["---", "name: " + name, "description: does a thing; do not use for other things",
+              "metadata:", "  lang: en", "  requires:", '    - name: "upstream"',
+              "      level: " + level]
+        body = NL.join(fm) + NL + fb + "---" + NL + NL
+        for s in sections:
+            body += s + NL + "content" + NL
+        body += NL.join(questions) + NL
+        (d / "SKILL.md").write_text(body, encoding="utf-8")
+        return d
+
+    EN_SECTIONS = ("## Upstream Artifacts", "## Downstream Consumers", "## Standalone Use")
+    EN_QUESTIONS = ("What you provide: a thing",
+                    "What you get: another thing",
+                    "What you don't get: the other thing")
+
+    def test_english_sections_accepted_for_en_skill(self):
+        """负样本：英文版用英文节名，不得被报缺章节。"""
+        self._skill("foo-en", self.EN_SECTIONS, self.EN_QUESTIONS)
+        self.assertEqual(C7StandaloneSection().run(self.root), [])
+
+    def test_chinese_sections_rejected_for_en_skill(self):
+        """英文版用中文节名——按英文词汇表就是缺章节。"""
+        self._skill("foo-en", ("## 上游产物", "## 下游消费者", "## 独立使用"),
+                    ("要你提供什么：x", "能得到什么：y", "得不到什么：z"))
+        self.assertTrue(C7StandaloneSection().run(self.root))
+
+    def test_chinese_sections_still_accepted_for_zh_skill(self):
+        """负样本：中文版行为不得被这次改动搞坏。"""
+        self._skill("foo", ("## 上游产物", "## 下游消费者", "## 独立使用"),
+                    ("要你提供什么：x", "能得到什么：y", "得不到什么：z"))
+        self.assertEqual(C7StandaloneSection().run(self.root), [])
+
+    def test_english_questions_required_in_standalone(self):
+        self._skill("foo-en", self.EN_SECTIONS, ("nothing useful here",))
+        found = C7StandaloneSection().run(self.root)
+        self.assertEqual(len(found), 3, "三问缺失应各报一条")
+
+    def test_english_level_enum_accepted(self):
+        """负样本：required / optional / orchestration 是合法英文取值。"""
+        for lv in ("required", "optional", "orchestration"):
+            with self.subTest(level=lv):
+                import shutil
+                if (self.root / "bar-en").exists():
+                    shutil.rmtree(self.root / "bar-en")
+                self._skill("bar-en", self.EN_SECTIONS, self.EN_QUESTIONS, level=lv)
+                self.assertEqual(C8Requires().run(self.root), [])
+
+    def test_chinese_level_rejected_for_en_skill(self):
+        self._skill("foo-en", self.EN_SECTIONS, self.EN_QUESTIONS, level="必需")
+        self.assertTrue(any("level" in f.detail for f in C8Requires().run(self.root)))
+
+    def test_non_required_without_fallback_still_caught_in_english(self):
+        self._skill("foo-en", self.EN_SECTIONS, self.EN_QUESTIONS,
+                    level="optional", fallback=False)
+        self.assertTrue(any("fallback" in f.detail for f in C8Requires().run(self.root)))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

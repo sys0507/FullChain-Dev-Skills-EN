@@ -1,6 +1,27 @@
 ---
 name: backend-testing-en
-description: Close backend-only structural testing gaps after feature-level TDD, including real-database behavior, migrations and transactions, authorization boundaries, concurrency and atomicity, and resilience or fault injection. Detect the project stack, test only applicable gaps, archive traceable evidence, and deliver isolated changes for human review. Use directly or when routed by test-routing-advisor-en. Do not modify product code to make tests pass.
+description: Close backend-only structural testing gaps after feature-level TDD, including real-database behavior, migrations and transactions, authorization boundaries, concurrency and atomicity, and resilience or fault injection. Detect the project stack, test only applicable gaps, archive traceable evidence, and deliver isolated changes for human review. Use directly or when routed by test-routing-advisor-en. Not for: frontend testing, cross-feature end-to-end chains, or modifying product code (product defects that are discovered MUST be handed back to the implementation process).
+license: MIT
+metadata:
+  version: "1.0"
+  lang: en
+  stage: "9.2"
+  standalone: true
+  produces:
+    - "Backend test code"
+    - "Evidence archive"
+  requires:
+    - name: "Routing decision report, or gaps named directly by the user"
+      level: orchestration
+      fallback: "Ask the user which class of backend gap to close; with no answer, sweep all four structural gap types"
+    - name: "Project manifest file"
+      level: required
+    - name: "Testing System Blueprint skill"
+      level: optional
+      fallback: "Reference it by name; when it is not installed, use the built-in condensed risk-ranking version, so the blueprint's full criteria are not covered"
+    - name: "External debugging capability"
+      level: optional
+      fallback: "Fall back to the built-in hypothesis-verification loop to locate failure causes, so no external debugger evidence is covered"
 ---
 
 # backend-testing-en · Backend-Only Closed-Loop Test Executor
@@ -121,3 +142,31 @@ The purpose of the guardrails: let the loop run automatically, while blocking ev
 - Upstream: `test-routing-advisor-en` calls this skill when it determines "backend-only" (can also be triggered directly by the user).
 - Blueprint: all archiving / tiering / release gates / rhythm follow `testing-system-blueprint-en` (referenced by name; its content is not duplicated here).
 - Methodology reuse: defect solidification and debugging reuse `superpowers:test-driven-development` and `superpowers:systematic-debugging`.
+
+
+## Upstream Artifacts
+
+| Artifact | Level | When missing |
+|---|:---:|---|
+| Routing decision report, or gaps named by the user | orchestration | Ask the user; with no answer, sweep all four gap types |
+| Project manifest file | **required** | Stop — with no stack determination, tools cannot be instantiated |
+| Testing System Blueprint skill | optional | Reference by name; when not installed, use the built-in condensed version |
+| External debugging capability | optional | Built-in hypothesis-verification loop |
+
+## Downstream Consumers
+
+| Consumer | What it reads |
+|---|---|
+| Branch wrap-up | Test results and residual risks |
+
+## Standalone Use
+
+**What you provide**: a backend feature, plus the project's dependency manifest file (used to determine the technology stack).
+
+**What you get**: closed-loop backfill for the four backend structural gap types: real database / migration / transaction, authorization bypass, concurrency / race conditions, resilience / fault injection.
+
+**What you don't get**:
+
+- **The project manifest MUST be readable** — if the stack cannot be determined, the corresponding tools cannot be instantiated; this is the only required dependency.
+- **Tests only**. When a product defect is found, this skill stops and hands the fix back to the implementation process; it does not modify product code itself.
+- No frontend work, no cross-feature chains.

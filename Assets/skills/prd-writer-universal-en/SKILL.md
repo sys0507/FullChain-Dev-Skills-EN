@@ -1,6 +1,25 @@
 ---
 name: prd-writer-universal-en
 description: Generate an industry-standard, domain-neutral Product Requirements Document from confirmed research and brainstorming outcomes. Supports project-level PRDs at specs/prd.md and feature-level PRDs at specs/feature-slug/prd.md, with verifiable acceptance criteria, scope boundaries, risks, and open questions. Use for PRD or product-spec writing; do not use for technical design, market research, or unconverged ideation.
+license: MIT
+metadata:
+  version: "1.0"
+  lang: en
+  stage: "3"
+  standalone: true
+  produces:
+    - "specs/prd.md"
+    - "specs/<feature-slug>/prd.md"
+  requires:
+    - name: "Upstream research or brainstorming conclusions"
+      level: orchestration
+      fallback: "Extract them on the spot through Socratic Q&A; never refuse to work just because the file is missing"
+    - name: "specs/research/00-project-input-and-assumptions.md"
+      level: orchestration
+      fallback: "Ask the user which items are confirmed; with no ledger, treat every item as unconfirmed"
+    - name: "Spec toolchain"
+      level: optional
+      fallback: "The PRD produced is still directly usable as downstream input; it simply does not trigger that toolchain's handoff"
 ---
 
 # PRD-Writer · Standard Product Requirements Document Generation Skill
@@ -76,8 +95,8 @@ First choose one output mode and generate only that mode:
 
 In project-level mode, read these sources first:
 
-1. `specs/research/00-项目输入与假设.md`
-2. `specs/research/06-架构基线决策.md`; if absent, use `05-决策汇总.md`
+1. `specs/research/00-project-input-and-assumptions.md`
+2. `specs/research/06-architecture-baseline.md`; if absent, use `05-decision-summary.md`
 3. Existing `specs/research/01-*.md` through `05-*.md`
 4. Any existing brainstorming or design document
 
@@ -247,3 +266,32 @@ Enable the following supplementary chapters as needed:
 - **Training and operations support** (B2B SaaS)
 
 Expand as needed, but don't write for the sake of writing.
+
+## Upstream Artifacts
+
+| Artifact | Level | When missing |
+|---|:---:|---|
+| Upstream research or brainstorming conclusions | orchestration | Extract on the spot through Q&A |
+| `specs/research/00-project-input-and-assumptions.md` | orchestration | Ask the user which items are confirmed; with no ledger, treat every item as unconfirmed |
+| Spec toolchain | optional | The PRD is still directly usable as downstream input |
+
+## Downstream Consumers
+
+| Consumer | What it takes from this skill |
+|---|---|
+| Feature documentation pipeline Skill | The Must-have list and acceptance criteria in `specs/prd.md` |
+| Design Skill | Target users, platforms, and non-functional requirements |
+
+## Standalone Use
+
+**What you provide**: one requirement description is enough — paste it or say it out loud. Research artifacts help, but without them I will fill in the 6 core information items through Q&A.
+
+**What you get**: a 14-chapter structured PRD with Scope/Out-of-Scope, Given/When/Then acceptance criteria, and Open Questions.
+
+**What you don't get**:
+
+- **I will not do the research for you**. With no upstream material, the factual density of the PRD depends on how much you supply during Q&A.
+- **No technical design** — technology selection belongs downstream.
+- With no ledger I cannot tell which items you have confirmed from which you mentioned in passing, so **every item is treated as unconfirmed** and listed under Open Questions.
+
+**Gate**: ask one question at a time during Q&A; when the user answers vaguely on an item, follow up — MUST NOT fill the gap by guessing.

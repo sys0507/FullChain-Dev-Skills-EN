@@ -1,6 +1,30 @@
 ---
 name: product-research-kickoff-universal-en
 description: Guide pre-launch research for a 0-to-1 product through Socratic intake, four parallel research tracks, dual-source verification, and one convergence report. Use for new-product fact finding, competitor scans, resource discovery, open-source landscape review, and implementation-option research. Do not use for post-selection implementation work, pure academic research, or routine iteration of an existing product.
+license: MIT
+metadata:
+  version: "1.0"
+  lang: en
+  stage: "1"
+  standalone: true
+  produces:
+    - "specs/research/01-product-shape.md"
+    - "specs/research/02-key-resources-and-dependencies.md"
+    - "specs/research/03-open-source-candidates.md"
+    - "specs/research/04-implementation-options.md"
+    - "specs/research/05-decision-summary.md"
+  requires:
+    - name: "The user's project idea or rough direction"
+      level: required
+    - name: "specs/research/00-project-input-and-assumptions.md"
+      level: orchestration
+      fallback: "Ask the user to supply the confirmed information directly; with none, leave the candidate section empty"
+    - name: "Parallel agent capability"
+      level: optional
+      fallback: "Run the same task boundaries serially instead; output requirements are not lowered"
+    - name: "Research retrieval MCP"
+      level: optional
+      fallback: "Degrade to single-path retrieval and label the artifacts 'single-path retrieval only, not cross-verified'"
 ---
 
 # Product Research Kickoff (Universal)
@@ -271,6 +295,33 @@ competitive research / feasibility research / help me research a new idea /
 turn idea into research plan / scout competing products / scout data sources /
 scout open-source ecosystem
 
-**Chinese (for reference)**: 新项目立项 / 立项调研 / 产品调研 / 项目可行性 /
-帮我调研一个新想法 / 我想做个 X 怎么开始调研 / 把想法变成调研计划 /
-调研同类竞品 / 摸底数据来源 / 摸底开源生态
+**Chinese (for reference)**: 新项目立项 / 立项调研 / 产品调研 / 项目可行性 / 帮我调研一个新想法 / 我想做个 X 怎么开始调研 / 把想法变成调研计划 / 调研同类竞品 / 摸底数据来源 / 摸底开源生态
+
+## Upstream Artifacts
+
+| Artifact | Level | When missing |
+|---|:---:|---|
+| The user's project idea | **required** | Stop and ask |
+| `specs/research/00-project-input-and-assumptions.md` | orchestration | Ask the user to supply the confirmed information directly |
+| Parallel agent capability | optional | Run serially; task boundaries stay the same |
+| Research retrieval MCP | optional | Single-path retrieval, explicitly labelled as not cross-verified |
+
+## Downstream Consumers
+
+| Consumer | What it takes from this skill |
+|---|---|
+| Architecture selection Skill | `03-open-source-candidates.md`, `04-implementation-options.md` |
+| MVP convergence Skill | `05-decision-summary.md` |
+| PRD writing Skill | All of 01-05 |
+
+## Standalone Use
+
+**What you provide**: a rough idea is enough. Existing competitor notes or interview transcripts can be pasted in directly.
+
+**What you get**: research artifacts for 4 themes plus 1 decision summary; dual-engine cross-verification applies whenever the second path is available.
+
+**What you don't get**:
+
+- **No ledger maintenance** — three-state status tracking belongs to the project context ledger Skill.
+- **No architecture verdict**; this skill supplies candidates and evidence only.
+- When the second retrieval path is unavailable, the conclusions are **verified through a single path only**, and the artifacts say so.

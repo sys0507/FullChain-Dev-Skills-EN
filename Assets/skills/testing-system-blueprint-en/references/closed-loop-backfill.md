@@ -1,64 +1,66 @@
-# 闭环补测法（完整流程）
+# Closed-Loop Backfill (Complete Process)
 
-> 本文是 SKILL.md §四 的展开。stack-agnostic、project-agnostic。
-> 核心：让每个被发现的缺口都变成**长期防回归的资产**，而不是"临时补一次就完"。
+> This document expands SKILL.md §IV. Stack-agnostic, project-agnostic.
+> Core: make every discovered gap a **long-term regression asset**, not a "patch it once and done" exercise.
 
-## 闭环五步
+## The Five Steps of the Loop
 
 ```
-① 检测缺口 → ② 生成测试（复现缺口，先红）→ ③ 跑 → ④ 修产品码到绿 → ⑤ 固化为回归测试
+(1) Detect gap -> (2) Generate test (reproduce the gap, start red) -> (3) Run -> (4) Fix product code to green -> (5) Solidify as a regression test
 ```
 
-1. **检测缺口**：通过追溯校验（孤儿需求）、风险分级（未被测到的 P0/P1 行为）、
-   线上/集成中暴露的真实 bug、或代码审查，找出"应该被测但没被测"的行为。
-2. **生成测试**：写一个**能复现该缺口的测试**，此刻它应当**失败（红）**。
-   "先红"很关键——它证明这个测试确实在检测真问题，而不是写完即绿的安慰剂。
-3. **跑**：确认它确实红，且红的原因正是该缺口（而非测试自身写错）。
-4. **修产品码到绿**：修改**产品代码**让测试通过。
-   注意方向——**改的是产品码，不是把测试改弱让它变绿**（见 self-heal-guardrails.md 第 2 条）。
-5. **固化为回归测试**：把这个测试并入**常驻测试套件**。这是闭环和"临时跑一次"的本质区别——
-   不固化，同一个 bug 迟早回来；固化了，它就永久挡在回归防线上。
+1. **Detect gap**: through traceability validation (orphan requirements), risk tiering (P0/P1 behaviors that were never tested),
+   real bugs surfaced in production / integration, or code review — find the behaviors that "should have been tested but were not".
+2. **Generate test**: write a test that **reproduces the gap**; at this moment it MUST **fail (red)**.
+   "Red first" is critical — it proves the test actually detects a real problem rather than being a placebo that is green the moment it is written.
+3. **Run**: confirm it really is red, and that the reason for the red is precisely that gap (not a mistake in the test itself).
+4. **Fix product code to green**: change the **product code** to make the test pass.
+   Mind the direction — **you change the product code, you do not weaken the test to make it green** (see self-heal-guardrails.md item 2).
+5. **Solidify as a regression test**: merge the test into the **permanent test suite**. This is the essential difference between the loop and "running something once" —
+   without solidification the same bug comes back sooner or later; with it, the bug is permanently blocked at the regression line.
 
-## 补测前先分类：跳过 vs 待闭环补
+## Classify Before Backfilling: Skip vs. Pending Closed-Loop Backfill
 
-不是所有候选缺口都值得补。动手前给每个候选打标，避免做无用功：
+Not every candidate gap is worth filling. Label each candidate before starting, to avoid wasted work:
 
-### ✅ 已被开发期 TDD/契约覆盖 → 跳过
-- 这条行为在 L1（每个 task 的 TDD 红绿）或契约测试里**已经有过红→绿历史**。
-- 它已经在常驻套件里防着回归了，重复补测是浪费工时，还会让套件膨胀、变慢。
-- 判定信号：能在现有测试里找到引用对应 AC ID 的、且断言到该行为的测试。
+### ✅ Already covered by development-phase TDD / contract tests -> Skip
 
-### 🔧 结构性缺口 → 待闭环补
-- **从未被任何层测到**的真实风险。这才是闭环补测要吃的目标。
-- 高发位置：
-  - **跨模块边界**：单个模块各自测了，但拼起来的交接处没人测。
-  - **错误路径 / 异常分支**：happy path 测了，失败路径没测。
-  - **并发 / 幂等**：重复提交、竞态下的扣减/写入。
-  - **权限越界（BOLA 等）**：默认 P0，常被"只测自己数据"的用例漏掉。
-  - **真实依赖下才暴露的问题**：用替身（mock）测时绿，接真库/真迁移后才错。
+- This behavior already **has a red-to-green history** at L1 (per-task TDD red-green) or in contract tests.
+- It already guards against regression in the permanent suite; re-supplementing wastes effort and bloats and slows the suite.
+- Detection signal: an existing test can be found that references the corresponding AC ID and asserts that behavior.
 
-## 分类决策表
+### 🔧 Structural gap -> Pending closed-loop backfill
 
-| 候选缺口的状态 | 处理 |
+- A real risk that has **never been tested at any layer**. This is the target closed-loop backfill should consume.
+- Hotspots:
+  - **Cross-module boundaries**: each module was tested on its own, but nobody tested the handoff where they meet.
+  - **Error paths / exception branches**: the happy path is tested, the failure path is not.
+  - **Concurrency / idempotency**: duplicate submissions, deductions / writes under a race.
+  - **Authorization bypass (BOLA and similar)**: P0 by default, and routinely missed by cases that "only test one's own data".
+  - **Problems that only surface under real dependencies**: green when tested against doubles (mocks), wrong once a real database / real migration is attached.
+
+## Classification Decision Table
+
+| State of the candidate gap | Handling |
 |---|---|
-| 已有引用该 AC、断言该行为的现存测试 | ✅ 跳过 |
-| 该行为风险为 P0/P1 但无任何测试断言 | 🔧 待闭环补（优先） |
-| 跨模块交接 / 错误路径 / 并发 / 越权 从未被测 | 🔧 待闭环补 |
-| 行为为 P2/P3 且代价低 | 记入 backlog，按节奏补，不阻塞 |
+| An existing test references that AC and asserts that behavior | ✅ Skip |
+| The behavior is P0/P1 risk but no test asserts it | 🔧 Pending closed-loop backfill (priority) |
+| Cross-module handoff / error path / concurrency / authorization bypass never tested | 🔧 Pending closed-loop backfill |
+| The behavior is P2/P3 and the cost is low | Record in the backlog, fill in on rhythm, do not block |
 
-## 与三层节奏的关系
+## Relationship to the Three-Layer Rhythm
 
-- 闭环补出的测试应**回填到它本该所属的层级**（见 SKILL.md §三），而不是一股脑塞进 E2E。
-  - 一个单元级缺口 → 回填到 L1。
-  - 一个跨模块集成缺口 → 回填到 L2（绑对应 feature 边界）。
-- 若一个缺口在 L3 才被发现，说明 L1/L2 漏了：补测时**把它下沉到 L1/L2**，让它下次更早、更便宜地被抓住。
-  L3 是补网，不该长期承担本属低层的断言。
+- A test produced by the loop should be **backfilled to the layer it actually belongs to** (see SKILL.md §III), not dumped wholesale into E2E.
+  - A unit-level gap -> backfill to L1.
+  - A cross-module integration gap -> backfill to L2 (bound to the corresponding feature boundary).
+- If a gap is only discovered at L3, L1/L2 missed it: when backfilling, **push it down to L1/L2** so that next time it is caught earlier and more cheaply.
+  L3 is a safety net; it should not permanently carry assertions that belong to lower layers.
 
-## 与发布门的关系
+## Relationship to the Release Gate
 
-- 闭环补测是"无孤儿需求"门项（release-gate.md）转绿的常规手段：追溯查出孤儿 → 走五步闭环 → 门转绿。
-- 任何"自动检测缺口 + 自动生成测试"的流程，动手前必须遵守 self-heal-guardrails.md 的 5 条护栏。
+- Closed-loop backfill is the routine way to turn the "no orphan requirements" gate item (release-gate.md) green: traceability finds an orphan -> run the five-step loop -> the gate turns green.
+- Any process that automatically detects gaps and automatically generates tests MUST obey the 5 guardrails in self-heal-guardrails.md before it starts.
 
-## stack-agnostic 提醒
+## Stack-Agnostic Reminder
 
-"怎么写一个复现缺口的测试""怎么跑"由调用方按栈实例化。闭环的五步与分类逻辑跨栈恒定。
+"How to write a test that reproduces the gap" and "how to run it" are instantiated by the caller per stack. The five steps of the loop and the classification logic are constant across stacks.

@@ -1,6 +1,16 @@
 ---
 name: testing-system-blueprint-en
-description: Define a stack- and project-agnostic testing methodology covering P0-P3 risk tiers, requirements-to-test traceability, three-layer test timing, closed-loop gap backfill, release gates, and capability-to-tool mapping. Use when designing or governing a testing strategy, or as the shared blueprint for routing and executor skills. It defines methods and standards; it does not execute tests or enforce CI gates.
+description: Define a stack- and project-agnostic testing methodology covering P0-P3 risk tiers, requirements-to-test traceability, three-layer test timing, closed-loop gap backfill, release gates, and capability-to-tool mapping. Use when designing or governing a testing strategy, or as the shared blueprint for routing and executor skills. It defines methods and standards; it does not execute tests or enforce CI gates. Not for: executing tests, producing any file, enforcing gates (gates are enforced by CI / hooks), or hard-coding the tools of a specific language or framework.
+license: MIT
+metadata:
+  version: "1.0"
+  lang: en
+  stage: "9"
+  standalone: true
+  requires:
+    - name: "Risk profile and requirement items of the project under test"
+      level: orchestration
+      fallback: "Ask the user to describe the key business flows and risk points; with none available, deliver the blueprint using the generic three-layer rhythm"
 ---
 
 # Testing System Blueprint
@@ -148,3 +158,27 @@ Library names are intentionally omitted from the table — specific libraries ar
 1. **Router (`test-routing-advisor-en`)**: use §I to tier tasks, use §III to determine which layer they fall into, use §VI to pass capabilities to the corresponding stack's category skill.
 2. **Category skills (e.g. `backend-testing-en`)**: within their responsible stack, instantiate §VI capabilities into specific tools, maintain traceability per §II, do closed-loop backfill per §IV, and ultimately align with the release gate in §V.
 3. For any "auto-generate / auto-fix tests" action, read the 5 guardrails in `references/self-heal-guardrails.md` first.
+
+
+## Upstream Artifacts
+
+| Artifact | Level | When missing |
+|---|:---:|---|
+| Risk profile and requirement items of the project under test | orchestration | Ask the user to describe the key flows; with none available, deliver the generic blueprint |
+
+## Downstream Consumers
+
+| Consumer | What it takes from this skill |
+|---|---|
+| The test routing skill | The categorization criteria |
+| The 4 test executors | The three-layer rhythm and the self-healing guardrails |
+
+This skill produces no file. Consumers follow it **by name** — there is no artifact on disk for them to read.
+
+## Standalone Use
+
+**What you provide**: the key business flows and known risk points; it also works without them, in which case you get the generic blueprint.
+
+**What you get**: a stack-agnostic testing methodology skeleton — risk tiering, traceability, three-layer rhythm, closed-loop backfill, release gate.
+
+**What you don't get**: it produces no file at all (this skill is a blueprint that is followed by name); it does not execute tests; it does not enforce gates; it does not hard-code the tools of any language or framework.

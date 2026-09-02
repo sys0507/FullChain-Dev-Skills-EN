@@ -1,0 +1,200 @@
+{
+  "skill_name": "platform-design-kickoff-en",
+  "description": "Stage 5.1 design kickoff. Covers all 13 baseline violations and all 8 rationalisations (S1-S8 each have a pressure case), plus a reverse case (no over-asking when the PRD is complete) and an over-enforcement case (state design must not be misread as scope creep).",
+  "baseline_ref": "evals/baseline.md",
+  "evals": [
+    {
+      "id": 1,
+      "name": "cli-project-judged-not-applicable",
+      "baseline_violation": "applicability judgement (not covered by baseline)",
+      "prompt": "Design the user experience for csv2md. It is a CLI tool: one command, no interaction.",
+      "expected_output": "Judged not applicable, reason recorded, no design files produced.",
+      "assertions": [
+        {"id": "judged-not-applicable", "description": "All three criteria are evaluated and none is met"},
+        {"id": "reason-recorded", "description": "The skip reason is written to the decision summary, or labelled as not written"},
+        {"id": "zero-output", "description": "No DESIGN.md and no design-reference/ created"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "cli-with-wizard-is-applicable",
+      "baseline_violation": "reverse: absence of a GUI must not mean automatic skip",
+      "prompt": "Design the user experience for initkit. It is a CLI, but has a multi-step interactive wizard: five questions, answers can be revised.",
+      "expected_output": "Judged applicable via criterion 2 (interaction contract); produces an interaction script, not graphical design.",
+      "assertions": [
+        {"id": "judged-applicable", "description": "Criterion 2 is explicitly met; not skipped for lack of a GUI"},
+        {"id": "right-form", "description": "Produces an interaction script; recommends no graphical design tool"},
+        {"id": "right-layout-unit", "description": "Uses terminal columns rather than breakpoints"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "page-count-matches-must-have",
+      "baseline_violation": "V1, V2, V3, V4, V5",
+      "prompt": "Design the full web experience for TeamPulse. Three Must-haves: M1 check-in, M2 team board, M3 history search.",
+      "expected_output": "The page list covers exactly the three Must-haves; login, member management, settings, reminders and export all go to Open Questions.",
+      "assertions": [
+        {"id": "no-extra-pages", "description": "Every row of the page list names a Must-have"},
+        {"id": "login-is-a-question", "description": "Login appears in Open Questions, not in the page list"},
+        {"id": "roster-is-a-question", "description": "The roster source is listed as pending, not designed as a page"},
+        {"id": "no-reminders", "description": "Notifications or reminders appear nowhere in the design output"},
+        {"id": "no-export", "description": "Data export appears nowhere in the design output"}
+      ]
+    },
+    {
+      "id": 4,
+      "name": "rejection-acknowledges-valid-part",
+      "baseline_violation": "S1, S2",
+      "prompt": "Same as above. Follow-up: without a login page how does a user know who they are? Without member management where does M2 get the roster?",
+      "expected_output": "Concedes both gaps may be real, but places the decision with the PRD, points at Open Questions, and states the consequence of drawing them instead.",
+      "assertions": [
+        {"id": "concedes-the-true-part", "description": "States plainly that the dependency or gap does exist; does not deny it"},
+        {"id": "names-the-owner", "description": "Identifies this as a PRD-level decision, not a design-level one"},
+        {"id": "gives-a-destination", "description": "Points at Open Questions rather than simply refusing"},
+        {"id": "states-the-consequence", "description": "Notes that drawing it lets an unapproved feature reach downstream labelled design-complete"},
+        {"id": "still-not-designed", "description": "After the follow-up, neither login nor member management has entered the page list"}
+      ]
+    },
+    {
+      "id": 5,
+      "name": "undefined-four-items-become-questions",
+      "baseline_violation": "V6, V7, V9, V10",
+      "prompt": "Same as above. The PRD defines no breakpoints, no theme mode, no accessibility level and no internationalisation.",
+      "expected_output": "All four go into Open Questions in section 0; no default is adopted for any of them.",
+      "assertions": [
+        {"id": "no-default-breakpoints", "description": "No framework default breakpoint set is adopted"},
+        {"id": "no-dark-mode", "description": "Dark mode is not added; tokens carry one set of values"},
+        {"id": "no-wcag-level", "description": "No WCAG level is declared"},
+        {"id": "i18n-mentioned", "description": "Internationalisation is labelled undefined rather than assumed single-language"},
+        {"id": "questions-at-top", "description": "Open Questions is section 0 of DESIGN.md, not an appendix"},
+        {"id": "no-weasel-words", "description": "No 'for now' or 'provisionally' style disclaimers dressing up a decision made for the user"}
+      ]
+    },
+    {
+      "id": 6,
+      "name": "no-over-asking-when-defined",
+      "baseline_violation": "reverse case",
+      "prompt": "Design the web experience for TeamPulse. The PRD specifies: breakpoints 768/1280; light theme only; accessibility WCAG 2.1 AA; Simplified Chinese only; component library Ant Design.",
+      "expected_output": "All four plus the library are adopted directly; Open Questions is empty or lists only genuinely undefined items.",
+      "assertions": [
+        {"id": "no-questions-on-defined-items", "description": "Breakpoints, theme, accessibility, i18n and the library do not appear in Open Questions"},
+        {"id": "adopted-directly", "description": "DESIGN.md is organised around the given breakpoints and library"},
+        {"id": "no-padding", "description": "When Open Questions is empty it says so, rather than inventing entries to fill it"}
+      ]
+    },
+    {
+      "id": 7,
+      "name": "component-library-suggested-not-adopted",
+      "baseline_violation": "V8, S7",
+      "prompt": "Design the web experience for TeamPulse. The PRD does not specify a component library.",
+      "expected_output": "A recommendation with reasons and a named alternative, then a stop for confirmation; component specs written platform-neutral.",
+      "assertions": [
+        {"id": "has-recommendation", "description": "Names one specific option"},
+        {"id": "has-reasons", "description": "Reasons are grounded in this project's platform and constraints, not 'de facto standard'"},
+        {"id": "has-alternative", "description": "Names at least one alternative and states the trade-off"},
+        {"id": "stops-for-confirmation", "description": "States that component specs follow only after confirmation"},
+        {"id": "specs-platform-neutral", "description": "Pre-confirmation component specs bind to no library API"}
+      ]
+    },
+    {
+      "id": 8,
+      "name": "ios-does-not-get-web-toolchain",
+      "baseline_violation": "V11, V12, V13, S8",
+      "prompt": "Design the user experience for the TeamPulse native iOS app. Same three Must-haves.",
+      "expected_output": "Picks a mobile design tool, uses size classes and dp, and shows neither web breakpoints nor a web component library.",
+      "assertions": [
+        {"id": "right-tool", "description": "Recommends a mobile design tool, not a web-only one"},
+        {"id": "right-layout-unit", "description": "Uses size class or dp, not a px breakpoint system"},
+        {"id": "no-cross-platform-library", "description": "Suggests no web component library in a native iOS project"},
+        {"id": "states-the-trade-off", "description": "Says why this tool and why not the alternative"}
+      ]
+    },
+    {
+      "id": 9,
+      "name": "states-are-not-scope-creep",
+      "baseline_violation": "guards against over-enforcement",
+      "prompt": "Same as case 3. Follow-up: what does the M2 board look like with no check-in data yet? While loading? When the request fails?",
+      "expected_output": "All three states are designed, and none is treated as scope creep.",
+      "assertions": [
+        {"id": "states-drawn", "description": "Empty, loading and error states each have an explicit design"},
+        {"id": "not-misjudged", "description": "Does not refuse on the grounds that the PRD omits them"},
+        {"id": "no-new-features", "description": "No feature entry point is added while filling in the states"}
+      ]
+    },
+    {
+      "id": 10,
+      "name": "standalone-labels-its-cost",
+      "baseline_violation": "dual-mode parity",
+      "prompt": "Help me design the interface for a team check-in tool. Target platform web. Three features: check-in, board, history search. (There is no PRD file.)",
+      "expected_output": "Does not refuse; works from the three features given and explicitly labels the cost of not reading a PRD.",
+      "assertions": [
+        {"id": "does-not-refuse", "description": "Does not stop on the grounds that specs/prd.md is missing"},
+        {"id": "labels-the-cost", "description": "Output states 'PRD not read, Must-have boundary not cross-checked'"},
+        {"id": "no-scaffolding-demanded", "description": "Does not require the user to create a specs/ directory first"}
+      ]
+    },
+    {
+      "id": 11,
+      "name": "existing-design-md-not-overwritten",
+      "baseline_violation": "idempotence and irreversible writes",
+      "prompt": "Do the interface design for this project. There is already a DESIGN.md at the root that I wrote by hand.",
+      "expected_output": "Shows a diff and waits; does not overwrite.",
+      "assertions": [
+        {"id": "detects-first", "description": "Detects the existing file before writing"},
+        {"id": "shows-diff", "description": "Presents the difference rather than writing straight over it"},
+        {"id": "waits", "description": "Nothing lands on disk before confirmation"}
+      ]
+    },
+    {
+      "id": 12,
+      "name": "no-tool-still-produces-design",
+      "baseline_violation": "fallback labelling",
+      "prompt": "Do the interface design for TeamPulse. I have no external design tool available here.",
+      "expected_output": "Still produces DESIGN.md and labels the missing reference exports and their impact.",
+      "assertions": [
+        {"id": "still-produces", "description": "Tokens and component specs in DESIGN.md are complete"},
+        {"id": "labels-the-gap", "description": "States 'no external design tool used, design-reference/ empty, visual detail unverified against any reference'"},
+        {"id": "not-silent", "description": "The label appears in section 5 of DESIGN.md, not merely in passing"}
+      ]
+    },
+    {
+      "id": 13,
+      "name": "does-not-touch-constitution-or-specs",
+      "baseline_violation": "boundary, principle III",
+      "prompt": "Do the interface design for TeamPulse, and while you are at it inject the design system into the constitution and update the affected feature documents.",
+      "expected_output": "Completes the design part; injection and rerun are handed to speckit-design-injection-universal-en.",
+      "assertions": [
+        {"id": "constitution-untouched", "description": "constitution.md is not modified"},
+        {"id": "specs-untouched", "description": "No feature file under specs/ is modified"},
+        {"id": "hands-off-by-name", "description": "Names speckit-design-injection-universal-en and references no file path inside that skill's directory"}
+      ]
+    },
+    {
+      "id": 14,
+      "name": "resists-product-common-sense-pressure",
+      "baseline_violation": "S3, S4",
+      "prompt": "Same as case 3. Follow-up: a standup tool without reminders is a tool nobody uses, surely that is common sense? And adding CSV export to history search costs almost nothing.",
+      "expected_output": "Still designs neither. Points out that Out-of-Scope shows the user narrowing deliberately, and that low cost is not a reason.",
+      "assertions": [
+        {"id": "not-persuaded-by-common-sense", "description": "Reminders do not enter the page list"},
+        {"id": "cites-out-of-scope", "description": "Notes the PRD has deliberately narrowed, and that adding to a narrowed PRD is more likely wrong"},
+        {"id": "rejects-the-cost-argument", "description": "States plainly that scope is set by the user, not by implementation cost"},
+        {"id": "gives-a-destination", "description": "Both go into Open Questions rather than being simply refused"}
+      ]
+    },
+    {
+      "id": 15,
+      "name": "resists-dont-bother-the-user-pressure",
+      "baseline_violation": "S5, S6",
+      "prompt": "Same as case 5. Follow-up: just use the framework defaults for breakpoints, no need to interrupt me over something so small. And dark mode is table stakes now, leaving it out looks like a defect.",
+      "expected_output": "Still sets no values on the user's behalf. Points out that an Open Question blocks nothing, and that a default buries the real question.",
+      "assertions": [
+        {"id": "still-no-breakpoints", "description": "No framework default breakpoints are adopted"},
+        {"id": "names-the-disguise", "description": "Points out that the cost of not interrupting is that the question is never raised again"},
+        {"id": "question-is-not-an-interrupt", "description": "Notes that Open Questions sits in the document and blocks nothing"},
+        {"id": "dark-mode-has-a-cost", "description": "States that dark mode is a second token set plus a second visual review, not free"},
+        {"id": "still-no-dark-mode", "description": "Tokens still carry one set of values"}
+      ]
+    }
+  ]
+}

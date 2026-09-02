@@ -1,83 +1,81 @@
-# 风险分级测试设计 P0–P3（完整判据）
+# Risk-Tiered Test Design P0–P3 (Complete Criteria)
 
-> 本文是 SKILL.md §一 的展开。stack-agnostic、project-agnostic。
-> 核心主张：**测试预算按"失败代价 × 失败概率"分配，而不是按覆盖率百分比分配。**
+> This document expands SKILL.md §I. Stack-agnostic, project-agnostic.
+> Core claim: **allocate the test budget by "cost of failure × probability of failure", not by coverage percentage.**
 
-## 一句话先认识 P0–P3（优先级/风险四档，P0 最高）
+## Meet P0–P3 in One Sentence (Four Priority / Risk Tiers, P0 Highest)
 
-P0–P3 是给"**测什么**"排优先级的四个档位，源自业界 Priority/Severity 约定——**P0 最高、P3 最低**，按"失败有多致命"递减：
+P0–P3 are four tiers that prioritize **what to test**, derived from the industry Priority/Severity convention — **P0 highest, P3 lowest** — descending by "how fatal a failure is":
 
-| 档 | 一句话 | 失败后果 | 测试态度 |
+| Tier | One-liner | Consequence of failure | Testing attitude |
 |----|--------|---------|---------|
-| **P0** | 安全 / 资金 / 权限 / 数据，出事即不可逆 | 数据损坏、越权、钱算错、安全击穿、不可撤销的误触发 | **必测；进发布门硬阻断；不许延后** |
-| **P1** | 核心流程走不通（但可恢复） | 主流程断、关键集成断、对外契约破坏 | 该测；发布前应全绿 |
-| **P2** | 边缘 / 非关键 | 边缘输入、降级路径、提示文案 | 可延后；进 backlog |
-| **P3** | 纯展示 / 无逻辑 | 字段透传、临时脚手架 | 可不测 |
+| **P0** | Security / money / authorization / data; irreversible once it happens | Data corruption, authorization bypass, miscalculated money, security breach, irreversible mistriggered action | **Must test; hard block in the release gate; deferral not allowed** |
+| **P1** | Core flow does not work (but is recoverable) | Main flow broken, critical integration broken, external contract violated | Should test; should be all-green before release |
+| **P2** | Edge / non-critical | Edge inputs, degradation paths, hint copy | Can defer; goes to the backlog |
+| **P3** | Pure display / no logic | Field passthrough, temporary scaffolding | Can skip testing |
 
-**"挑 P0"** = 在一堆候选（接口行为、测试点、链路旅程……）里**只挑最高档那些先测**——因为测试预算有限，先保最致命的不出事。下面是每一档的完整判据。
+**"Pick the P0s"** = out of a pile of candidates (interface behaviors, test points, chain journeys …) **test only the highest tier first** — because the test budget is limited, protect the most fatal outcomes first. The complete criteria for each tier follow.
 
-## 为什么按风险分级，而不是按覆盖率
+## Why Risk Tiering Instead of Coverage
 
-覆盖率（行覆盖、分支覆盖）衡量的是"代码被执行到没有"，**不衡量"重要的失败有没有被断言到"**。
-100% 行覆盖率里可能没有一条断言检查越权访问；50% 覆盖率里可能恰好把所有 P0 行为都钉死了。
-所以蓝本用风险分级取代覆盖率作为预算分配依据：先回答"哪些失败最贵、最可能发生"，再把工时压上去。
+Coverage (line coverage, branch coverage) measures "was this code executed", **not "was an important failure asserted against"**.
+100% line coverage may contain not a single assertion checking authorization bypass; 50% coverage may happen to pin down every P0 behavior.
+So the blueprint replaces coverage with risk tiering as the budget-allocation basis: first answer "which failures are most expensive and most likely", then push the effort there.
 
-## 定级是"行为"的属性，不是"模块/文件"的属性
+## Tiering Is a Property of "Behavior", Not of "Module / File"
 
-同一个模块里不同行为的风险天差地别。给行为定级，不要给文件定级。
+Different behaviors inside the same module differ wildly in risk. Tier behaviors, not files.
 
-- 一个处理接口里："执行核心写操作 / 扣减额度 / 校验权限" 可能是 P0，"返回提示文案 / 记录日志" 可能是 P2。
-- 不要因为"这个文件很重要"就把里面所有断言都当 P0，那会把预算浪费在低风险行为上。
+- Inside one handler: "perform the core write / deduct quota / check authorization" may be P0, while "return hint copy / write a log line" may be P2.
+- Do not treat every assertion in a file as P0 just because "this file is important" — that wastes budget on low-risk behaviors.
 
-## 四档判据
+## Criteria for the Four Tiers
 
-### P0 · 必测（失败即不可逆损害）
-触发任一即定 P0：
-- **数据损坏 / 永久丢失**：写错、删错、迁移把存量数据弄坏且不可回滚。
-- **权限越界**：任何主体拿到不属于自己的数据或操作能力。典型即 **BOLA（越权访问他人对象）**、
-  垂直越权（普通主体拿到管理能力）。**权限相关行为默认进 P0。**
-- **资金 / 额度 / 配额错算**：多扣、少扣、重复扣、绕过限额。
-- **安全边界击穿**：认证绕过、注入、敏感信息泄漏。
-- **不可逆副作用**：对外不可撤销的提交/发送被错误触发。
+### P0 · Must test (failure causes irreversible damage)
+Any one of these triggers P0:
+- **Data corruption / permanent loss**: wrong write, wrong delete, a migration that damages existing data and cannot be rolled back.
+- **Authorization bypass**: any principal obtaining data or operational capability that does not belong to it. Typical cases: **BOLA (accessing another principal's objects)** and vertical escalation (an ordinary principal obtaining admin capability). **Authorization-related behaviors default to P0.**
+- **Money / quota / allowance miscalculation**: over-deduct, under-deduct, double-deduct, bypassing a limit.
+- **Security boundary breach**: authentication bypass, injection, sensitive information leakage.
+- **Irreversible side effects**: an externally irrevocable submission / dispatch triggered by mistake.
 
-P0 纪律：**不允许"延后"**。P0 行为的测试是发布门（见 release-gate.md）的硬性输入，缺一条即 no-go。
+P0 discipline: **deferral is not allowed**. Tests for P0 behaviors are a hard input to the release gate (see release-gate.md); one missing item = no-go.
 
-### P1 · 该测（失败致核心流程不可用，但可恢复）
-- 主用例（happy path）走不通。
-- 关键集成断裂（依赖的真库 / 队列 / 下游接口在真实拼装下不工作）。
-- **对外契约破坏**：消费方依赖的接口形状/语义变了。
-- 关键错误路径：本该优雅失败的地方崩了，但不造成不可逆损害。
+### P1 · Should test (failure makes a core flow unavailable, but it is recoverable)
+- The main use case (happy path) does not work.
+- A critical integration is broken (the real database / queue / downstream interface it depends on does not work when genuinely assembled).
+- **External contract violated**: the shape / semantics of an interface consumers depend on has changed.
+- Critical error paths: a place that should fail gracefully crashes instead, without causing irreversible damage.
 
-P1 是发布门的常规输入：发布前应全绿；个别 P1 带已知缺陷放行需显式记录并由人决策。
+P1 is a routine input to the release gate: it should be all-green before release; shipping an individual P1 with a known defect requires an explicit record and a human decision.
 
-### P2 · 可延后（边缘 / 非关键）
-- 边缘输入、非关键降级路径、少见配置组合。
-- 提示文案、非核心格式化、可接受的近似行为。
+### P2 · Can defer (edge / non-critical)
+- Edge inputs, non-critical degradation paths, rare configuration combinations.
+- Hint copy, non-core formatting, acceptable approximate behavior.
 
-P2 不阻塞发布，进 backlog，按节奏补（常通过闭环补测法回填，见 closed-loop-backfill.md）。
+P2 does not block release; it goes to the backlog and is filled in on rhythm (usually backfilled via the closed-loop backfill method, see closed-loop-backfill.md).
 
-### P3 · 可不测
-- 纯展示、无逻辑的字段透传、临时脚手架/一次性脚本。
-- 为它们写测试的维护成本 > 它们出错的代价。
+### P3 · Can skip testing
+- Pure display, no-logic field passthrough, temporary scaffolding / one-off scripts.
+- The maintenance cost of writing tests for them > the cost of them being wrong.
 
-## 定级速查
+## Tiering Quick Reference
 
-| 信号 | 默认档 |
+| Signal | Default tier |
 |------|--------|
-| 涉及权限/越权/认证边界 | **P0** |
-| 涉及钱/额度/配额/不可逆提交 | **P0** |
-| 会损坏或丢失存量数据 | **P0** |
-| 核心 happy path / 关键集成 / 对外契约 | **P1** |
-| 边缘路径 / 非关键降级 / 文案 | **P2** |
-| 纯展示 / 无逻辑透传 / 临时脚手架 | **P3** |
+| Involves authorization / bypass / authentication boundary | **P0** |
+| Involves money / quota / allowance / irreversible submission | **P0** |
+| Can corrupt or lose existing data | **P0** |
+| Core happy path / critical integration / external contract | **P1** |
+| Edge path / non-critical degradation / copy | **P2** |
+| Pure display / no-logic passthrough / temporary scaffolding | **P3** |
 
-## 定级如何喂给三层节奏（见 SKILL.md §三）
+## How Tiering Feeds the Three-Layer Rhythm (see SKILL.md §III)
 
-- **P0/P1** 的核心断言应尽量在 **L1（单元/契约）** 就钉住——越靠左越便宜。
-- 需要真实拼装才暴露的 P0/P1（如真库越权、并发扣减）落 **L2 集成**。
-- **L3 E2E** 只验证"整条链路确实通"，不承担 P0 断言的首次发现职责（L3 是补网，不是首检场）。
+- The core assertions for **P0/P1** should be pinned down at **L1 (unit / contract)** wherever possible — the further left, the cheaper.
+- P0/P1 items that only surface when genuinely assembled (real-database authorization bypass, concurrent deduction) land at **L2 integration**.
+- **L3 E2E** only verifies "the whole chain actually works"; it does not carry the duty of first-discovering P0 assertions (L3 is a safety net, not the first inspection station).
 
-## stack-agnostic 提醒
+## Stack-Agnostic Reminder
 
-本文不出现任何库名/框架名/业务名。"用什么工具去断言一个 P0 行为"由调用方读项目栈后实例化
-（见 capability-tool-mapping.md）。风险分级只回答"测什么、必不必测"，不回答"用什么测"。
+No library name, framework name, or business noun appears in this document. "Which tool to use to assert a P0 behavior" is instantiated by the caller after reading the project stack (see capability-tool-mapping.md). Risk tiering only answers "what to test and whether it must be tested"; it does not answer "what to test it with".
