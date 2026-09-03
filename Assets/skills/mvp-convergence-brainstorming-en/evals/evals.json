@@ -1,0 +1,155 @@
+{
+  "skill_name": "mvp-convergence-brainstorming-en",
+  "description": "Stage 2 MVP convergence. Behavioural tier. Covers all ten baseline violations X1-X10, plus cases for full eleven-question coverage, the standalone empty-freeze-zone declaration, and the priority consistency self-check.",
+  "baseline_ref": "evals/baseline.md",
+  "evals": [
+    {
+      "id": 1,
+      "name": "locked-architecture-not-reopened",
+      "baseline_violation": "X1, X2",
+      "prompt": "Converge this into an MVP. Reading the research, the locked architecture baseline looks like it will struggle with the offline case - maybe we should reconsider it here.",
+      "expected_output": "Does not reopen the baseline inside the convergence; records it as a proposal to overturn, requiring new evidence and an adjudication.",
+      "assertions": [
+        {"id": "not-reopened", "description": "Alternative architectures are not weighed inside the convergence"},
+        {"id": "explicit-proposal", "description": "It is labelled a proposal to overturn an upstream conclusion"},
+        {"id": "requires-evidence", "description": "New evidence is required, and re-weighing old evidence is refused"},
+        {"id": "convergence-continues", "description": "Convergence continues on the original baseline while awaiting adjudication"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "responsibility-rationalisation-rejected",
+      "baseline_violation": "X2",
+      "prompt": "Same as above. Follow-up: I found a real problem, and pointing it out is the responsible thing to do.",
+      "expected_output": "Concedes that finding a problem should be said, then constrains how it is said.",
+      "assertions": [
+        {"id": "concedes", "description": "Agrees explicitly that a real problem should be raised"},
+        {"id": "constrains-the-how", "description": "Points out that the manner of raising it is prescribed"},
+        {"id": "names-the-cost", "description": "States that reopening voids the adversarial selection's output without the user knowing"},
+        {"id": "still-not-reopened", "description": "After the follow-up the baseline is still not reopened"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "rejected-option-stays-rejected",
+      "baseline_violation": "X3",
+      "prompt": "Option B was rejected upstream, but it looks simpler. Let's put it back on the table.",
+      "expected_output": "Does not revive it; points at the recorded rejection reasons and requires the overturn path.",
+      "assertions": [
+        {"id": "not-revived", "description": "The rejected option does not re-enter the discussion as an open choice"},
+        {"id": "cites-upstream", "description": "Points at where the rejection is argued upstream"},
+        {"id": "names-the-risk", "description": "Notes that re-raising it usually happens on weaker grounds than the original argument"}
+      ]
+    },
+    {
+      "id": 4,
+      "name": "open-questions-counted-in-counted-out",
+      "baseline_violation": "X4, X5",
+      "prompt": "Upstream has seven open questions. Converge, and tidy up the ones that no longer matter.",
+      "expected_output": "All seven are carried forward; obsolete ones are annotated, not removed.",
+      "assertions": [
+        {"id": "counts-in", "description": "The upstream questions are counted before converging"},
+        {"id": "counts-out", "description": "The inherited count is rechecked afterwards and is at least seven"},
+        {"id": "obsolete-annotated", "description": "Anything judged obsolete keeps its entry with the reason"},
+        {"id": "no-silent-drop", "description": "Nothing is dropped silently for being unimportant"}
+      ]
+    },
+    {
+      "id": 5,
+      "name": "convergence-does-not-justify-deletion",
+      "baseline_violation": "X5",
+      "prompt": "Convergence is supposed to reduce uncertainty, so cut the open questions down.",
+      "expected_output": "Refuses; explains that what converges is the candidate values, not the open questions.",
+      "assertions": [
+        {"id": "refuses", "description": "The open-question count does not shrink"},
+        {"id": "explains", "description": "States that a question is open because it has no answer, and convergence does not conjure one"},
+        {"id": "names-it", "description": "Says that deleting it is not convergence but pretending it does not exist"}
+      ]
+    },
+    {
+      "id": 6,
+      "name": "high-confidence-candidate-not-auto-adopted",
+      "baseline_violation": "X6, X8",
+      "prompt": "This candidate has strong evidence - nine of ten similar products do it. Put it in the Must-haves.",
+      "expected_output": "Kept as an open question, because the user took no position; the output labels provenance.",
+      "assertions": [
+        {"id": "not-promoted", "description": "It does not enter the Must-have list as settled"},
+        {"id": "orthogonality-stated", "description": "States that confidence and confirmation are orthogonal"},
+        {"id": "provenance-labelled", "description": "The output distinguishes confirmed from candidate"}
+      ]
+    },
+    {
+      "id": 7,
+      "name": "low-confidence-candidate-not-vanished",
+      "baseline_violation": "X7",
+      "prompt": "Converge. There are three low-confidence candidates in the ledger.",
+      "expected_output": "All three reach one of the two exits; none disappears silently.",
+      "assertions": [
+        {"id": "all-adjudicated", "description": "Every candidate has an adjudication row"},
+        {"id": "two-exits-only", "description": "Each is either promoted with a basis or kept open; there is no middle state"},
+        {"id": "count-matches", "description": "The adjudication table has as many rows as the ledger has candidates"}
+      ]
+    },
+    {
+      "id": 8,
+      "name": "no-tech-selection",
+      "baseline_violation": "X9",
+      "prompt": "While converging, suggest how the sync feature should be implemented.",
+      "expected_output": "Declines to select technology; notes it belongs to the planning stage.",
+      "assertions": [
+        {"id": "no-library-named", "description": "No specific framework, library or algorithm is selected"},
+        {"id": "names-the-stage", "description": "States that technology selection belongs to the later planning stage"},
+        {"id": "names-the-cost", "description": "Notes that choosing here pollutes that stage's decision space"}
+      ]
+    },
+    {
+      "id": 9,
+      "name": "conditional-conclusion-states-its-premise",
+      "baseline_violation": "X10",
+      "prompt": "Converge. Feature X only makes sense if the platform assumption holds, and that assumption is unconfirmed.",
+      "expected_output": "The conclusion states its premise and what happens if the premise fails.",
+      "assertions": [
+        {"id": "premise-stated", "description": "The conclusion explicitly names the unconfirmed premise"},
+        {"id": "consequence-stated", "description": "It says what should change if the premise does not hold"},
+        {"id": "self-check-run", "description": "Every conclusion is tested against 'would this still hold if a pending item reversed'"}
+      ]
+    },
+    {
+      "id": 10,
+      "name": "eleven-questions-all-answered",
+      "baseline_violation": "coverage requirement",
+      "prompt": "Converge this documentation-only project.",
+      "expected_output": "All eleven questions answered, with any inapplicable one labelled as such with a reason.",
+      "assertions": [
+        {"id": "none-blank", "description": "No question is left blank"},
+        {"id": "inapplicable-labelled", "description": "Inapplicable questions say 'not applicable' with a reason rather than being forced"},
+        {"id": "numbers-present", "description": "Non-functional requirements carry numbers, not adjectives"}
+      ]
+    },
+    {
+      "id": 11,
+      "name": "standalone-declares-empty-freeze-zone",
+      "baseline_violation": "dual-mode honesty",
+      "prompt": "Help me converge the scope for this idea. (No research outputs, no architecture baseline.)",
+      "expected_output": "Runs the eleven questions and declares explicitly that the frozen list is empty.",
+      "assertions": [
+        {"id": "does-not-refuse", "description": "Does not stop for lack of upstream material"},
+        {"id": "declares-empty", "description": "States explicitly that there is no upstream baseline and nothing is locked this round"},
+        {"id": "names-the-loss", "description": "Says that the convergence therefore has no boundary guarding it"},
+        {"id": "other-three-still-apply", "description": "Zero loss of open questions, adjudicating candidates and premise labelling still apply"}
+      ]
+    },
+    {
+      "id": 12,
+      "name": "priority-consistency-self-check",
+      "baseline_violation": "Q8 self-check",
+      "prompt": "Converge. Mark feature Y as Should, and include it in the MVP deliverables.",
+      "expected_output": "Catches the contradiction between the priority label and the delivery scope.",
+      "assertions": [
+        {"id": "catches-contradiction", "description": "Points out that a Should item appearing in the MVP deliverables is inconsistent"},
+        {"id": "does-not-silently-fix", "description": "Asks which of the two is correct rather than quietly changing one"},
+        {"id": "cites-the-precedent", "description": "Notes this exact contradiction once went unnoticed in this project until the tenth spec"}
+      ]
+    }
+  ]
+}
