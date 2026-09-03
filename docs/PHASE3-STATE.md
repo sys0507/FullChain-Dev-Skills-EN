@@ -1,95 +1,8 @@
-# Phase 3 断点状态
+# Phase 3 状态
 
-> 更新：2026-09-02。**七个并行执行者全部因会话速率上限中断**，重置在 3am America/New_York。
+> 更新：2026-09-02。**Phase 3 的出口已达成**：英文库 10 项检查全绿，跨目录 C2 全绿。
 
-## 一、已完成并提交
-
-| # | 内容 | 提交 |
-|:-:|---|---|
-| 1 | 重命名对齐 21 处，全库 0 断链 | `c0132ec` |
-| 2 | 宪法升 1.2.0（原则 I 加窄例外 + 审计锚点哈希） | `c0132ec` |
-| 3 | C2 跨目录能力 | `24de569` |
-| 4 | 12 个英文版搬出中文树 | `c252aa6` / EN `d4b0e41` |
-| 5 | 双语词汇表 §5.0 + C7/C8/反触发词双语化 | 中文树已提交 |
-
-## 二、本轮查出的真实债务（不是执行者造成的）
-
-**迁移过来的英文版，references 大面积仍是中文——931 行，8 个 Skill。**
-
-| Skill | 中文行 | 文件数 |
-|---|---:|---:|
-| `test-routing-advisor-en` | 552 | 7 |
-| `frontend-testing-en` | 125 | 1 |
-| `testing-system-blueprint-en` | 72 | 2 |
-| `claude-md-bootstrap-en` | 71 | 1 |
-| `backend-testing-en` | 65 | 1 |
-| `full-chain-testing-en` | 43 | 5 |
-| `speckit-design-injection-universal-en` | 2 | 2 |
-| `product-research-kickoff-universal-en` | 1 | 1 |
-
-**git 证实这些中文在 HEAD 里就有**——是 Phase 3 之前就存在的债，随迁移带过来的。
-
-### 为什么之前没发现
-
-早先跑分项检查时读到「C3 全部通过」，那是**测量错误**：
-`grep -oE '未通过：[0-9]+ 项|全部通过' | head -1` 抓到的「全部通过」
-出现在某条发现所引用的中文原文里，不是汇总行。
-
-**同类错误（匹配口径不当导致误读）在本项目第三次发生。**
-
-## 三、当前各 Skill 状态
-
-### 已完整（三节 + metadata + 零中文）
-
-- `platform-design-kickoff-en`（含 3 references + evals，手写）
-- `adversarial-architecture-selection-universal-en`（refs 5/6，缺 1 份）
-- `prd-writer-universal-en`（refs 5/7，缺 2 份）
-- `project-context-ledger-en`（refs 2/3，缺 1 份）
-- `implementation-runway-setup-en`（refs 0/3，全缺）
-
-### 三节已补但有中文残留
-
-`backend-testing-en` `claude-md-bootstrap-en` `frontend-testing-en`
-`product-research-kickoff-universal-en` `test-routing-advisor-en`
-`testing-system-blueprint-en`
-
-### 只有空壳或未开始
-
-| Skill | 状态 |
-|---|---|
-| `full-chain-testing-en` | 三节 0/3，refs 1/2 |
-| `fullstack-slice-testing-en` | 三节 0/3 |
-| `run-feature-en` | 三节 0/3，refs 0/2 |
-| `speckit-design-injection-universal-en` | 三节 0/3 |
-| `fullchain-toolchain-setup-en` | **无 SKILL.md** |
-| `learnings-retrospective-en` | **无 SKILL.md** |
-| `mvp-convergence-brainstorming-en` | **无 SKILL.md** |
-| `release-packaging-router-en` | **无 SKILL.md** |
-| `speckit-feature-pipeline-en` | **无 SKILL.md** |
-
-### 两份模板译文
-
-| 文件 | 状态 |
-|---|---|
-| `Full-Chain-Development-Prompt-Template-Skills-Edition.md` | 57057 字节，**完成度未核验** |
-| `Full-Chain-Development-Prompt-Template.md` | **未产出** |
-
-`fullchain-dev-workflow-en` 刻意不做——宪法「中文先行」，等英文版端到端验证时一并补。
-
-## 四、剩余工作
-
-| # | 内容 | 量 |
-|:-:|---|---|
-| 1 | 清 931 行中文残留（8 个 Skill 的 references） | 最大一块 |
-| 2 | 5 个 Skill 从零建 | SKILL.md + refs + evals |
-| 3 | 4 个 Skill 补三节 + metadata | — |
-| 4 | 补齐缺失的 references（adversarial 1 / prd-writer 2 / ledger 1 / runway 3） | 7 份 |
-| 5 | 翻译纯提示词模板 | 1278 行 |
-| 6 | 核验 skills 版模板译文 | 57KB |
-| 7 | 英文版 CLAUDE.md / 薄索引 / README | 3 份 |
-| 8 | 三个带 scripts 的英文版：脚本与测试移植（C5 会查） | — |
-
-## 五、出口标准
+## 一、出口标准（已达成）
 
 ```
 python tools/skill_checks/run_all.py --scope en --phase 3
@@ -97,13 +10,57 @@ python tools/skill_checks/run_all.py --check C2 --phase 3 \
   --skills-root ../全链路开发汇总/Assets/skills --en-root Assets/skills
 ```
 
-C1–C10 全绿。**C2 全绿是 Phase 3 真正的出口**——它一直被标「分期推迟」，等的就是这一期。
+| 检查 | 结果 |
+|---|:---:|
+| 英文库 C1–C10 | ✅ 全绿 |
+| **跨目录 C2** | ✅ 全绿 |
 
-## 六、恢复时怎么接
+**C2 从写出来那天起就标着「分期推迟——须到 Phase 3 才应全绿」，等的就是这一刻。**
 
-1. 先读本文件
-2. 跑上面两条命令拿到当前真实缺口，**不要相信本文件的数字是最新的**
-3. 读汇总行要看 `─────` 之后那一行，**不要用 grep 从全文抓关键词**——
-   发现条目里会引用原文，原文可能正好含有你在找的词
-4. 派执行者时**必须交代**：大文件用 Write 工具，不要用 heredoc——
-   七个执行者里有四个明确报告 heredoc 解析失败
+## 二、交付物
+
+| 项 | 状态 |
+|---|---|
+| 20 个英文 Skill | ✅ |
+| 两份模板译文 | ✅ 纯提示词版 + skills 版 |
+| 薄索引英文版 | ✅ `Full-Chain-Development-Skill-Execution-Index.md` |
+| `CLAUDE.md` | ✅ |
+| `README.md` | ✅ |
+| 检查器（10 项 + 自测） | ✅ 与中文库同步 |
+| 移植规格 | ✅ `docs/EN-PORT-SPEC.md` |
+
+## 三、刻意未做的一项
+
+**`fullchain-dev-workflow-en`（编排器）不做。**
+
+宪法「中文先行」要求新 Skill 先在真实项目跑过再做英文版。
+验证 E 的 F1 组正是编排器失败的那一组——它没能把矩阵的路径约束传导下去。
+**不做，比做一个未经验证的版本诚实。**
+
+补做条件：编排器在真实项目跑过一次且 F1 通过。
+
+## 四、本轮查出并修复的缺陷
+
+| # | 缺陷 | 性质 |
+|:-:|---|---|
+| 1 | **931 行中文残留**，8 个 Skill 的 references | Phase 3 之前就存在的债，随迁移带过来；git 证实在 HEAD 里就有 |
+| 2 | **C2 崩溃**：只判目录存在，不判 `SKILL.md` 存在 | 半成品目录直接抛 FileNotFoundError；**崩溃的检查器比会报错的更糟**，它让后面的发现全看不到 |
+| 3 | **三处单语硬编码**：三节名、依赖枚举、反触发词 | 英文版沿用中文会被 C3 抓，各自发挥则 C7/C8 查不了；已建双语词汇表 |
+
+### 三次测量错误（都是我的，不是内容的）
+
+| # | 错误 | 教训 |
+|:-:|---|---|
+| 1 | `grep -o '未通过\|全部通过' \| head -1` 从全文抓词，抓到的「全部通过」在某条发现引用的中文原文里 | **读汇总行要看 `─────` 之后那一行，不要 grep 全文** |
+| 2 | 字节区间 `[一-鿿]` 把 `—` `→` 当中文 | 用 Unicode 码点区间 |
+| 3 | 全文搜模糊词命中禁令文本本身 | 按章节切片再匹配 |
+
+## 五、工具怪癖
+
+**heredoc 吃反斜杠、撇号断 shell 解析。** 大文件一律用 Write 工具。
+七个并行执行者里有四个明确报告 heredoc 失败。
+
+## 六、C3 的一个已知盲区（未修）
+
+C3 只扫 `.md`，所以英文 Skill 里 `.py` 和 `.json` 的中文它看不见。
+本轮已人工清理，但**检查器管不住**。扩展 C3 扫描范围是后续项。
