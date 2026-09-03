@@ -31,7 +31,7 @@ class C1References(Check):
     """references 链接可解析且无孤儿。抓出过：3 处断链、1 个空 evals 目录。"""
 
     name = "C1-references"
-    rule = "SKILL.md 引用的 references 必须存在；references 下的文件必须被引用"
+    rule_key = "c1.rule"
 
     def run(self, root: Path) -> list[Finding]:
         out = []
@@ -44,14 +44,14 @@ class C1References(Check):
             rd = d / "references"
             actual = {f.name for f in rd.iterdir() if f.is_file()} if rd.is_dir() else set()
             for miss in sorted(cited - actual):
-                out.append(Finding(self.name, f"{d.name}/SKILL.md", f"断链：references/{miss}"))
+                out.append(Finding(self.name, f"{d.name}/SKILL.md", "c1.broken_link", name=miss))
             for orphan in sorted(actual - cited):
-                out.append(Finding(self.name, f"{d.name}/references/{orphan}", "孤儿：未被引用"))
+                out.append(Finding(self.name, f"{d.name}/references/{orphan}", "c1.orphan"))
             if rd.is_dir():
                 for sub in rd.iterdir():
                     if sub.is_dir():
                         out.append(Finding(self.name, f"{d.name}/references/{sub.name}",
-                                           "references 下不应有子目录（evals 应放 skill 根目录）"))
+                                           "c1.subdir"))
         return out
 
 
@@ -62,7 +62,7 @@ class C2Pairing(Check):
     """
 
     name = "C2-pairing"
-    rule = "zh 与 en 版的标题数与 references 集合必须一致"
+    rule_key = "c2.rule"
     phase = 3  # 中文版已补三节，英文版复刻属 Phase 3；此前必然不等
 
     def run(self, root: Path, en_root: Path | None = None) -> list[Finding]:
@@ -84,13 +84,13 @@ class C2Pairing(Check):
             hz = headings((d / "SKILL.md").read_text(encoding="utf-8"))
             he = headings((en / "SKILL.md").read_text(encoding="utf-8"))
             if len(hz) != len(he):
-                out.append(Finding(self.name, d.name,
-                                   f"标题数不等：zh={len(hz)} en={len(he)}"))
+                out.append(Finding(self.name, d.name, "c2.heading_count",
+                                   zh=len(hz), en=len(he)))
             rz = {f.name for f in (d / "references").iterdir()} if (d / "references").is_dir() else set()
             re_ = {f.name for f in (en / "references").iterdir()} if (en / "references").is_dir() else set()
             if rz != re_:
-                out.append(Finding(self.name, d.name,
-                                   f"references 集合不等：仅 zh={sorted(rz-re_)} 仅 en={sorted(re_-rz)}"))
+                out.append(Finding(self.name, d.name, "c2.refs_mismatch",
+                                   only_zh=sorted(rz - re_), only_en=sorted(re_ - rz)))
         return out
 
 
@@ -101,7 +101,7 @@ class C3EnPurity(Check):
     """
 
     name = "C3-en-purity"
-    rule = "英文版正文不得含中文（标注为参考用途的双语触发词除外）"
+    rule_key = "c3.rule"
 
     def run(self, root: Path) -> list[Finding]:
         out = []
@@ -116,7 +116,7 @@ class C3EnPurity(Check):
                             continue
                         out.append(Finding(self.name,
                                            f"{d.name}/{f.relative_to(d)}:{i}",
-                                           f"中文残留：{line.strip()[:50]}"))
+                                           "c3.residue", line=line.strip()[:50]))
         return out
 
 
@@ -127,7 +127,7 @@ class C4EnEvals(Check):
     """
 
     name = "C4-en-evals"
-    rule = "英文版 evals 的 skill_name 必须带 -en，且 prompt 不得含中文"
+    rule_key = "c4.rule"
 
     def run(self, root: Path) -> list[Finding]:
         out = []
@@ -138,11 +138,11 @@ class C4EnEvals(Check):
             data = json.loads(ep.read_text(encoding="utf-8"))
             if not str(data.get("skill_name", "")).endswith("-en"):
                 out.append(Finding(self.name, f"{d.name}/evals/evals.json",
-                                   f"skill_name 未带 -en：{data.get('skill_name')!r}"))
+                                   "c4.name_missing_en", actual=repr(data.get("skill_name"))))
             for item in data.get("evals", []):
                 if CJK.search(str(item.get("prompt", ""))):
                     out.append(Finding(self.name, f"{d.name}/evals/evals.json",
-                                       f"用例 {item.get('id')} 的 prompt 含中文"))
+                                       "c4.prompt_cjk", id=item.get("id")))
         return out
 
 
@@ -150,13 +150,13 @@ class C5ScriptsNeedTests(Check):
     """带 scripts 的 Skill 必须有 tests。抓出过：一个带 15 个脚本却无测试的 Skill。"""
 
     name = "C5-scripts-tests"
-    rule = "存在 scripts/ 时必须存在 tests/"
+    rule_key = "c5.rule"
 
     def run(self, root: Path) -> list[Finding]:
         out = []
         for d in sorted(p for p in root.iterdir() if p.is_dir()):
             if (d / "scripts").is_dir() and not (d / "tests").is_dir():
-                out.append(Finding(self.name, d.name, "有 scripts/ 但无 tests/"))
+                out.append(Finding(self.name, d.name, "c5.no_tests"))
         return out
 
 
@@ -167,7 +167,7 @@ class C6SelfContained(Check):
     """
 
     name = "C6-self-contained"
-    rule = "Skill 目录内不得出现跨 Skill 的文件路径引用（按名引用不受限）"
+    rule_key = "c6.rule"
 
     PAT = re.compile(r"(\.\./[A-Za-z0-9_-]+/|Assets/skills/|~/Assets/skills)")
 
@@ -178,7 +178,8 @@ class C6SelfContained(Check):
                 text = f.read_text(encoding="utf-8")
                 for m in self.PAT.finditer(text):
                     out.append(Finding(self.name, f"{d.name}/{f.relative_to(d)}",
-                                       f"跨 Skill 路径引用：{text[m.start():m.start()+40]!r}"))
+                                       "c6.cross_ref",
+                                       snippet=repr(text[m.start():m.start() + 40])))
         return out
 
 
@@ -186,7 +187,7 @@ class C7StandaloneSection(Check):
     """R2 输入可替代。三节齐全，且「独立使用」含三问。"""
 
     name = "C7-standalone"
-    rule = "SKILL.md 必须含三节，且 ## 独立使用 须回答三问"
+    rule_key = "c7.rule"
 
     #: 双语词汇表的唯一定义处是 docs/skill-metadata-standard.md §5.0。
     #: 英文版沿用中文节名会被 C3 判为中文残留；各自发挥则 C7 查不了——
@@ -209,14 +210,14 @@ class C7StandaloneSection(Check):
             body = strip_fences(text)
             for sec in sections:
                 if sec not in body:
-                    out.append(Finding(self.name, f"{d.name}/SKILL.md", f"缺章节 {sec}"))
+                    out.append(Finding(self.name, f"{d.name}/SKILL.md", "c7.missing_section", section=sec))
             # 切片后再找三问，避免命中别处
             standalone = section(text, sections[2])
             if standalone:
                 for q in questions:
                     if q not in standalone:
-                        out.append(Finding(self.name, f"{d.name}/SKILL.md",
-                                           f"{sections[2]} 缺「{q}」"))
+                        out.append(Finding(self.name, f"{d.name}/SKILL.md", "c7.missing_question",
+                                           section=sections[2], question=q))
         return out
 
 
@@ -224,7 +225,7 @@ class C8Requires(Check):
     """R3 依赖显式分级。级别取值封闭，非必需项必须有 fallback。"""
 
     name = "C8-requires"
-    rule = "依赖级别 ∈ {必需, 可选增强, 编排级}；非必需项必须有 fallback；lang 必填"
+    rule_key = "c8.rule"
 
     #: 双语枚举，定义处见 docs/skill-metadata-standard.md §5.0
     LEVELS = {"必需", "可选增强", "编排级"}
@@ -242,31 +243,31 @@ class C8Requires(Check):
             levels = self.LEVELS_EN if d.name.endswith("-en") else self.LEVELS
             fm = frontmatter(sp.read_text(encoding="utf-8"))
             if not fm:
-                out.append(Finding(self.name, f"{d.name}/SKILL.md", "无 frontmatter"))
+                out.append(Finding(self.name, f"{d.name}/SKILL.md", "c8.no_frontmatter"))
                 continue
             if not re.search(r"^\s*lang:\s*\S+", fm, re.M):
-                out.append(Finding(self.name, f"{d.name}/SKILL.md", "metadata 缺 lang"))
+                out.append(Finding(self.name, f"{d.name}/SKILL.md", "c8.no_lang"))
             if "requires:" not in fm:
-                out.append(Finding(self.name, f"{d.name}/SKILL.md", "缺 metadata.requires"))
+                out.append(Finding(self.name, f"{d.name}/SKILL.md", "c8.no_requires"))
                 continue
             block = fm.split("requires:", 1)[1]
             entries = re.split(r"\n\s*- name:", block)[1:]
             for e in entries:
                 lv = re.search(r"level:\s*(\S+)", e)
                 if not lv:
-                    out.append(Finding(self.name, f"{d.name}/SKILL.md", "某依赖缺 level"))
+                    out.append(Finding(self.name, f"{d.name}/SKILL.md", "c8.no_level"))
                     continue
                 if lv.group(1) not in levels:
                     out.append(Finding(self.name, f"{d.name}/SKILL.md",
-                                       f"level 取值非法：{lv.group(1)!r}"))
+                                       "c8.bad_level", value=repr(lv.group(1))))
                 elif lv.group(1) not in self.REQUIRED and "fallback:" not in e:
                     out.append(Finding(self.name, f"{d.name}/SKILL.md",
-                                       f"非必需依赖缺 fallback（level={lv.group(1)}）"))
+                                       "c8.no_fallback", level=lv.group(1)))
             desc = description(fm)
             anti = self.ANTI_EN if d.name.endswith("-en") else self.ANTI
             if not any(k in desc.lower() if d.name.endswith("-en") else k in desc
                        for k in anti):
-                out.append(Finding(self.name, f"{d.name}/SKILL.md", "description 缺反触发场景"))
+                out.append(Finding(self.name, f"{d.name}/SKILL.md", "c8.no_anti_trigger"))
         return out
 
 
@@ -282,7 +283,7 @@ class C9SizeBudget(Check):
     """
 
     name = "C9-size-budget"
-    rule = "SKILL.md 内容行不超上限（三节不计），单个 references ≤ 400 行"
+    rule_key = "c9.rule"
 
     CEILINGS = {"行为约束型": 200, "流程执行器型": 350}
     DEFAULT_CEILING = 350
@@ -302,12 +303,12 @@ class C9SizeBudget(Check):
             ceiling = self.CEILINGS.get(kind.group(1) if kind else "", self.DEFAULT_CEILING)
             if content > ceiling:
                 out.append(Finding(self.name, f"{d.name}/SKILL.md",
-                                   f"内容 {content} 行 > 上限 {ceiling}（三节已排除）"))
+                                   "c9.over_ceiling", lines=content, ceiling=ceiling))
             for ref in sorted((d / "references").glob("*.md")) if (d / "references").is_dir() else []:
                 n = len(ref.read_text(encoding="utf-8").splitlines())
                 if n > self.REFERENCE_CEILING:
-                    out.append(Finding(self.name, f"{d.name}/references/{ref.name}",
-                                       f"{n} 行 > 上限 {self.REFERENCE_CEILING}"))
+                    out.append(Finding(self.name, f"{d.name}/references/{ref.name}", "c9.ref_over_ceiling",
+                                       lines=n, ceiling=self.REFERENCE_CEILING))
         return out
 
 
@@ -327,7 +328,7 @@ class C10MatrixPathsInSkill(Check):
     """
 
     name = "C10-matrix-paths"
-    rule = "矩阵中的精确写入路径必须出现在对应 SKILL.md"
+    rule_key = "c10.rule"
     DEFAULT_MATRIX = Path("docs/stage-artifact-contract.md")
     #: 只查写入列里的精确文件路径
     CELL = re.compile(r"`([^`<>*]+?\.(?:md|json|yml|yaml))`")
@@ -353,8 +354,7 @@ class C10MatrixPathsInSkill(Check):
             for path in self.CELL.findall(written):
                 if path.rsplit("/", 1)[-1] in text:
                     continue
-                out.append(Finding(self.name, f"{name}/SKILL.md",
-                                   f"矩阵钉死 {path}，但 SKILL.md 未出现该文件名"))
+                out.append(Finding(self.name, f"{name}/SKILL.md", "c10.path_missing", path=path))
         return out
 
 

@@ -43,8 +43,8 @@ exactly the kind of pollution hard language isolation forbids.
 **Before finishing**
 
 ```
-python tools/skill_checks/run_all.py --scope en --phase 3
-python tools/skill_checks/run_all.py --check C2 --phase 3 \
+python tools/skill_checks/run_all.py --scope en --phase 3 --messages en
+python tools/skill_checks/run_all.py --check C2 --phase 3 --messages en \
   --skills-root ../全链路开发汇总/Assets/skills --en-root Assets/skills
 ```
 
@@ -67,10 +67,10 @@ should be invented.
 
 ```bash
 # Every check, English scope
-python tools/skill_checks/run_all.py --scope en --phase 3
+python tools/skill_checks/run_all.py --scope en --phase 3 --messages en
 
 # Cross-tree pairing check
-python tools/skill_checks/run_all.py --check C2 --phase 3 \
+python tools/skill_checks/run_all.py --check C2 --phase 3 --messages en \
   --skills-root ../全链路开发汇总/Assets/skills --en-root Assets/skills
 
 # The checker's own tests

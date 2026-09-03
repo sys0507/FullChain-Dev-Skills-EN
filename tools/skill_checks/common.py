@@ -85,10 +85,26 @@ def logical_skills(skills_root: Path) -> list[Path]:
 
 
 class Finding:
-    __slots__ = ("check", "path", "detail")
+    """一条发现。
 
-    def __init__(self, check: str, path: str, detail: str):
-        self.check, self.path, self.detail = check, path, detail
+    携带**语言无关的 key** 与渲染参数，而不是成品文案：
+
+    - 文案按当前语言在读取 `detail` 时才渲染，所以一份检查器能服务两个语言的库
+    - 测试断言 `key` 而不是散文。断言在会被翻译的文案上本来就脆——
+      改一个字就红一片，而那种红不指向任何真实缺陷
+    """
+
+    __slots__ = ("check", "path", "key", "args")
+
+    # check/path/key 声明为位置参数：否则 `path=` 这样的渲染参数会撞上字段名。
+    # 结构上堵死，比加一条运行期校验可靠。
+    def __init__(self, check: str, path: str, key: str, /, **args):
+        self.check, self.path, self.key, self.args = check, path, key, args
+
+    @property
+    def detail(self) -> str:
+        from messages import t
+        return t(self.key, **self.args)
 
     def __str__(self) -> str:
         return f"[{self.check}] {self.path}: {self.detail}"
@@ -102,11 +118,17 @@ class Check:
     """
 
     name = "unnamed"
-    rule = ""
+    #: 规则说明的消息 key（如 "c1.rule"），不是成品文案——它要按当前语言渲染。
+    rule_key = ""
     #: 本检查从哪一期起应当全绿。跨语言类检查在英文版复刻前不可能通过，
     #: 标 3 让它在 Phase 1 报「分期推迟」而非「未通过」——
     #: 否则一个永远红的检查会让人习惯性忽略整个报告。
     phase = 1
+
+    @property
+    def rule(self) -> str:
+        from messages import t
+        return t(self.rule_key)
 
     def run(self, skills_root: Path) -> list[Finding]:
         raise NotImplementedError

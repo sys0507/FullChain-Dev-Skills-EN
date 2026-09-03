@@ -124,14 +124,14 @@ Prose, answering the three questions in order. Be concrete about the third —
 Run from the English tree root:
 
 ```
-python tools/skill_checks/run_all.py --scope en --phase 3
+python tools/skill_checks/run_all.py --scope en --phase 3 --messages en
 ```
 
 C1, C3, C4, C5, C6, C7, C8, C9, C10 all clean for the skills you touched.
 C2 needs the Chinese tree:
 
 ```
-python tools/skill_checks/run_all.py --check C2 --phase 3 \
+python tools/skill_checks/run_all.py --check C2 --phase 3 --messages en \
   --skills-root ../全链路开发汇总/Assets/skills \
   --en-root Assets/skills
 ```

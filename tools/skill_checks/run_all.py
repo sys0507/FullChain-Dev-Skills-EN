@@ -24,30 +24,41 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from checks import ALL_CHECKS  # noqa: E402
+from messages import LANGS, set_language, t  # noqa: E402
+
+
+def _preselect_language(argv: list[str] | None) -> None:
+    """`--messages` 必须在构造 parser **之前**生效——help 文案在构造时就渲染了。
+
+    只认这一个参数，其余交给正式 parser。与安装器同源：
+    语言显式传入，不从环境或区域设置推断。
+    """
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument("--messages", choices=LANGS, default="zh")
+    set_language(pre.parse_known_args(argv)[0].messages)
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="Skill 资产结构检查（10 项）")
+    _preselect_language(argv)
+    ap = argparse.ArgumentParser(description=t("cli.desc"))
     ap.add_argument("--skills-root", default="Assets/skills")
-    ap.add_argument("--en-root", default=None,
-                    help="英文版 Skill 根目录。中英文拆成两个目录后，"
-                         "C2 靠它跨目录比对——不给就退回同目录找 <name>-en")
-    ap.add_argument("--check", nargs="*", default=None,
-                    help="只跑指定检查，如 C1 C6；缺省跑全部")
+    ap.add_argument("--en-root", default=None, help=t("cli.help.en_root"))
+    ap.add_argument("--check", nargs="*", default=None, help=t("cli.help.check"))
     ap.add_argument("--scope", choices=("zh", "en", "all"), default="zh",
-                    help="语言作用域，默认 zh（Phase 1 只做中文版）")
-    ap.add_argument("--phase", type=int, default=1,
-                    help="当前所处的期，默认 1。高于本期的检查报为分期推迟")
-    ap.add_argument("--quiet", action="store_true", help="只输出未通过项")
+                    help=t("cli.help.scope"))
+    ap.add_argument("--phase", type=int, default=1, help=t("cli.help.phase"))
+    ap.add_argument("--quiet", action="store_true", help=t("cli.help.quiet"))
+    ap.add_argument("--messages", choices=LANGS, default="zh",
+                    help=t("cli.help.messages"))
     args = ap.parse_args(argv)
 
     root = Path(args.skills_root)
     en_root = Path(args.en_root) if args.en_root else None
     if en_root is not None and not en_root.is_dir():
-        print(f"✗ 找不到英文版根目录 {en_root}", file=sys.stderr)
+        print(t("cli.no_en_root", path=en_root), file=sys.stderr)
         return 2
     if not root.is_dir():
-        print(f"✗ 找不到 {root}", file=sys.stderr)
+        print(t("cli.no_root", path=root), file=sys.stderr)
         return 2
 
     selected = ALL_CHECKS
@@ -55,7 +66,7 @@ def main(argv: list[str] | None = None) -> int:
         want = {c.upper() for c in args.check}
         selected = [c for c in ALL_CHECKS if c.name.split("-")[0].upper() in want]
         if not selected:
-            print(f"✗ 没有匹配的检查：{args.check}", file=sys.stderr)
+            print(t("cli.no_match", names=args.check), file=sys.stderr)
             return 2
 
     def in_scope(f) -> bool:
@@ -76,14 +87,15 @@ def main(argv: list[str] | None = None) -> int:
 
         if chk_phase > args.phase:
             if found:
-                postponed.append(
-                    f"⏳ {chk.name}：{len(found)} 项 —— 须到 Phase {chk_phase} 才应全绿")
+                postponed.append(t("cli.postponed_item", name=chk.name,
+                                   count=len(found), phase=chk_phase))
                 if not args.quiet:
                     postponed += [f"      {f}" for f in found[:3]]
                     if len(found) > 3:
-                        postponed.append(f"      …… 另 {len(found) - 3} 项")
+                        postponed.append("      " + t("cli.postponed_more",
+                                                      count=len(found) - 3))
             elif not args.quiet:
-                lines.append(f"✅ {chk.name}（提前达标）")
+                lines.append(t("cli.early_pass", name=chk.name))
             continue
 
         blocking += len(found)
@@ -97,17 +109,17 @@ def main(argv: list[str] | None = None) -> int:
         print("\n".join(lines))
     print("\n" + "─" * 62)
     if blocking:
-        print(f"未通过：{blocking} 项（作用域 {args.scope}，Phase {args.phase}）")
+        print(t("cli.failed", count=blocking, scope=args.scope, phase=args.phase))
     else:
-        print(f"全部通过：{len(selected)} 项检查，0 项阻塞"
-              f"（作用域 {args.scope}，Phase {args.phase}）")
+        print(t("cli.passed", count=len(selected), scope=args.scope,
+                phase=args.phase))
 
     if postponed:
-        print("\n分期推迟（不计入未通过）：")
+        print("\n" + t("cli.postponed_header"))
         for line in postponed:
             print("  " + line)
     if out_of_scope:
-        print(f"\n另有 {out_of_scope} 项在语言作用域之外，未计入。用 --scope all 查看。")
+        print("\n" + t("cli.out_of_scope", count=out_of_scope))
 
     return 1 if blocking else 0
 

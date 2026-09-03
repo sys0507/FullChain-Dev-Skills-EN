@@ -83,7 +83,7 @@ output says which capability was not used and what is therefore not covered. A r
 ## Verifying this tree
 
 ```bash
-python tools/skill_checks/run_all.py --scope en --phase 3
+python tools/skill_checks/run_all.py --scope en --phase 3 --messages en
 ```
 
 Ten checks: broken and orphaned references, Chinese residue, English evals identity, scripts
@@ -93,7 +93,7 @@ size budgets, and matrix path propagation.
 Cross-tree drift against the Chinese edition:
 
 ```bash
-python tools/skill_checks/run_all.py --check C2 --phase 3 \
+python tools/skill_checks/run_all.py --check C2 --phase 3 --messages en \
   --skills-root ../全链路开发汇总/Assets/skills --en-root Assets/skills
 ```
 

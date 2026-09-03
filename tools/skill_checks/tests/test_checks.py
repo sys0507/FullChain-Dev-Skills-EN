@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -19,6 +20,8 @@ from pathlib import Path
 NL = chr(10)
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from messages import LANGS, MESSAGES, current_language, set_language, t  # noqa: E402
 
 from checks import (  # noqa: E402
     C1References,
@@ -32,7 +35,7 @@ from checks import (  # noqa: E402
     C9SizeBudget,
     C10MatrixPathsInSkill,
 )
-from common import headings, normalize, section, strip_fences  # noqa: E402
+from common import CJK, headings, normalize, section, strip_fences  # noqa: E402
 
 GOOD_FM = """---
 name: demo
@@ -133,12 +136,12 @@ class TestC1References(Base):
     def test_positive_broken_link(self):
         make(self.root, "a", body=GOOD_SECTIONS + "\n见 `references/missing.md`\n")
         found = C1References().run(self.root)
-        self.assertTrue(any("断链" in f.detail for f in found))
+        self.assertTrue(any(f.key == "c1.broken_link" for f in found))
 
     def test_positive_orphan_file(self):
         make(self.root, "a", refs={"unused.md": "x"})
         found = C1References().run(self.root)
-        self.assertTrue(any("孤儿" in f.detail for f in found))
+        self.assertTrue(any(f.key == "c1.orphan" for f in found))
 
     def test_positive_subdir_under_references(self):
         """真实缺陷：evals 被放进了 references/ 下。"""
@@ -147,7 +150,7 @@ class TestC1References(Base):
         (d / "SKILL.md").write_text((d / "SKILL.md").read_text(encoding="utf-8")
                                     + "\n见 `references/used.md`\n", encoding="utf-8")
         found = C1References().run(self.root)
-        self.assertTrue(any("子目录" in f.detail for f in found))
+        self.assertTrue(any(f.key == "c1.subdir" for f in found))
 
     def test_negative_clean(self):
         make(self.root, "a", body=GOOD_SECTIONS + "\n见 `references/used.md`\n",
@@ -164,14 +167,14 @@ class TestC2Pairing(Base):
         make(self.root, "a")
         make(self.root, "a-en", body=GOOD_SECTIONS + "\n## 多出来的一节\n\n内容\n")
         found = C2Pairing().run(self.root)
-        self.assertTrue(any("标题数不等" in f.detail for f in found))
+        self.assertTrue(any(f.key == "c2.heading_count" for f in found))
 
     def test_positive_references_mismatch(self):
         make(self.root, "a", body=GOOD_SECTIONS + "\n见 `references/x.md`\n",
              refs={"x.md": "1"})
         make(self.root, "a-en")
         found = C2Pairing().run(self.root)
-        self.assertTrue(any("references 集合不等" in f.detail for f in found))
+        self.assertTrue(any(f.key == "c2.refs_mismatch" for f in found))
 
     def test_negative_matched_pair(self):
         make(self.root, "a")
@@ -205,7 +208,7 @@ class TestC3EnPurity(Base):
         make(self.root, "a-en", fm=EN_FM,
              body=EN_SECTIONS + "\nSee `specs/research/00-项目输入与假设.md`\n")
         found = C3EnPurity().run(self.root)
-        self.assertTrue(any("中文残留" in f.detail for f in found))
+        self.assertTrue(any(f.key == "c3.residue" for f in found))
 
     def test_negative_pure_english(self):
         make(self.root, "a-en", fm=EN_FM, body=EN_SECTIONS)
@@ -235,13 +238,13 @@ class TestC4EnEvals(Base):
     def test_positive_skill_name_without_en(self):
         make(self.root, "a-en", evals={"skill_name": "a", "evals": []})
         found = C4EnEvals().run(self.root)
-        self.assertTrue(any("skill_name" in f.detail for f in found))
+        self.assertTrue(any(f.key == "c4.name_missing_en" for f in found))
 
     def test_positive_chinese_prompt(self):
         make(self.root, "a-en",
              evals={"skill_name": "a-en", "evals": [{"id": 1, "prompt": "帮我生成"}]})
         found = C4EnEvals().run(self.root)
-        self.assertTrue(any("prompt 含中文" in f.detail for f in found))
+        self.assertTrue(any(f.key == "c4.prompt_cjk" for f in found))
 
     def test_negative_clean_en_evals(self):
         make(self.root, "a-en",
@@ -305,13 +308,15 @@ class TestC7StandaloneSection(Base):
     def test_positive_missing_section(self):
         make(self.root, "a", body="\n## 上游产物\n\nx\n")
         found = C7StandaloneSection().run(self.root)
-        self.assertTrue(any("缺章节 ## 独立使用" in f.detail for f in found))
+        self.assertTrue(any(f.key == "c7.missing_section" and f.args["section"] == "## 独立使用"
+                            for f in found))
 
     def test_positive_missing_question(self):
         body = GOOD_SECTIONS.replace("**得不到什么**：不做上游的事。", "")
         make(self.root, "a", body=body)
         found = C7StandaloneSection().run(self.root)
-        self.assertTrue(any("得不到什么" in f.detail for f in found))
+        self.assertTrue(any(f.key == "c7.missing_question" and f.args["question"] == "得不到什么"
+                            for f in found))
 
     def test_negative_all_present(self):
         make(self.root, "a")
@@ -337,25 +342,25 @@ class TestC8Requires(Base):
         fm = GOOD_FM.replace("level: 编排级", "level: 大概需要")
         make(self.root, "a", fm=fm)
         found = C8Requires().run(self.root)
-        self.assertTrue(any("取值非法" in f.detail for f in found))
+        self.assertTrue(any(f.key == "c8.bad_level" for f in found))
 
     def test_positive_optional_without_fallback(self):
         fm = GOOD_FM.replace('      fallback: "请用户直接提供"\n', "")
         make(self.root, "a", fm=fm)
         found = C8Requires().run(self.root)
-        self.assertTrue(any("缺 fallback" in f.detail for f in found))
+        self.assertTrue(any(f.key == "c8.no_fallback" for f in found))
 
     def test_positive_missing_lang(self):
         fm = GOOD_FM.replace("  lang: zh\n", "")
         make(self.root, "a", fm=fm)
         found = C8Requires().run(self.root)
-        self.assertTrue(any("缺 lang" in f.detail for f in found))
+        self.assertTrue(any(f.key == "c8.no_lang" for f in found))
 
     def test_positive_no_anti_trigger(self):
         fm = GOOD_FM.replace("不用于：别的事情。", "")
         make(self.root, "a", fm=fm)
         found = C8Requires().run(self.root)
-        self.assertTrue(any("反触发" in f.detail for f in found))
+        self.assertTrue(any(f.key == "c8.no_anti_trigger" for f in found))
 
     def test_negative_required_needs_no_fallback(self):
         """负样本：必需级依赖可以没有 fallback，不该报错。"""
@@ -460,7 +465,7 @@ class TestC9SizeBudget(unittest.TestCase):
         (d / "references").mkdir()
         (d / "references" / "x.md").write_text(NL.join(["行"] * 410) + NL, encoding="utf-8")
         found = C9SizeBudget().run(self.root)
-        self.assertTrue(any("references" in f.detail or "x.md" in f.path for f in found),
+        self.assertTrue(any(f.key.startswith("c1.") or "x.md" in f.path for f in found),
                         "单个 references 超 400 行必须报")
 
     def test_normal_skill_is_silent(self):
@@ -576,13 +581,13 @@ class TestC2CrossRoot(unittest.TestCase):
         self._write(self.en, "foo-en", 5)
         found = C2Pairing().run(self.zh, en_root=self.en)
         self.assertEqual(len(found), 1)
-        self.assertIn("标题数不等", found[0].detail)
+        self.assertEqual("c2.heading_count", found[0].key)
 
     def test_reference_drift_across_roots_is_caught(self):
         self._write(self.zh, "foo", 3, ("a.md", "b.md"))
         self._write(self.en, "foo-en", 3, ("a.md",))
         found = C2Pairing().run(self.zh, en_root=self.en)
-        self.assertTrue(any("references" in f.detail for f in found))
+        self.assertTrue(any(f.key == "c2.refs_mismatch" for f in found))
 
     def test_missing_en_twin_is_still_skipped(self):
         """负样本：英文版尚未复刻属预期，跨目录时同样不报。"""
@@ -661,12 +666,12 @@ class TestBilingualVocabulary(unittest.TestCase):
 
     def test_chinese_level_rejected_for_en_skill(self):
         self._skill("foo-en", self.EN_SECTIONS, self.EN_QUESTIONS, level="必需")
-        self.assertTrue(any("level" in f.detail for f in C8Requires().run(self.root)))
+        self.assertTrue(any(f.key == "c8.bad_level" for f in C8Requires().run(self.root)))
 
     def test_non_required_without_fallback_still_caught_in_english(self):
         self._skill("foo-en", self.EN_SECTIONS, self.EN_QUESTIONS,
                     level="optional", fallback=False)
-        self.assertTrue(any("fallback" in f.detail for f in C8Requires().run(self.root)))
+        self.assertTrue(any(f.key == "c8.no_fallback" for f in C8Requires().run(self.root)))
 
 class TestC2SkipsIncompleteDirs(unittest.TestCase):
     """英文版目录存在但还没有 SKILL.md 时，C2 必须跳过而不是崩溃。
@@ -708,6 +713,109 @@ class TestC2SkipsIncompleteDirs(unittest.TestCase):
         d.mkdir()
         (d / "SKILL.md").write_text("## only one" + NL, encoding="utf-8")
         self.assertEqual(len(C2Pairing().run(self.root)), 1)
+
+class TestMessageTable(unittest.TestCase):
+    """用户可见文案双语，**一份实现**。
+
+    宪法「单一实现优于双份脚本——双份必然漂移」。本项目亲眼见过：
+    12 个英文 Skill 复制出去没人同步，攒下 931 行未翻译内容。
+    而 C2 只比对 Skill、不比对工具——**工具漂移没有任何东西会喊**。
+    所以检查器只有一份，把用户可见的串抽成表。
+    """
+
+    def setUp(self):
+        self.addCleanup(set_language, "zh")
+
+    def test_every_key_has_both_languages(self):
+        missing = [k for k, v in MESSAGES.items() if set(v) != set(LANGS)]
+        self.assertEqual(missing, [], "每条消息都必须两种语言齐全")
+
+    def test_every_message_actually_renders(self):
+        """光比对占位符集合不够——它只认 {word} 这种形状。
+
+        `c8.rule` 的中文里有 `{必需, 可选增强, 编排级}`，是**字面**花括号，
+        `\w+` 匹配不到，于是两语言的占位符集合都是空集、比对通过；
+        而 `.format()` 一渲染就 KeyError。它只在「有发现要输出」时才炸，
+        全绿的跑法永远碰不到——**一个崩溃的检查器比会报错的更糟**。
+        所以这条测试真的去渲染每一条。
+        """
+        for key, v in MESSAGES.items():
+            names = set(re.findall(r"\{(\w+)\}", v["zh"]))
+            for lang, s in v.items():
+                with self.subTest(key=key, lang=lang):
+                    s.format(**{n: "x" for n in names})
+
+    def test_placeholders_match_across_languages(self):
+        """占位符必须一致，否则切语言时会 KeyError —— 那是运行期才炸的错。"""
+        bad = []
+        for k, v in MESSAGES.items():
+            names = {lang: set(re.findall(r"\{(\w+)\}", s)) for lang, s in v.items()}
+            if len(set(map(frozenset, names.values()))) != 1:
+                bad.append((k, names))
+        self.assertEqual(bad, [], "同一 key 的各语言占位符必须完全一致")
+
+    def test_no_cjk_in_english_messages(self):
+        """负样本方向：英文文案里不得残留中文。"""
+        bad = [k for k, v in MESSAGES.items() if CJK.search(v["en"])]
+        self.assertEqual(bad, [])
+
+    def test_language_switches_output(self):
+        set_language("en")
+        self.assertNotIn("断链", t("c1.broken_link", name="x.md"))
+        self.assertIn("broken link", t("c1.broken_link", name="x.md"))
+        set_language("zh")
+        self.assertIn("断链", t("c1.broken_link", name="x.md"))
+
+    def test_unknown_language_raises(self):
+        """非法语言报错，不静默回退 —— 静默回退会让人以为设置生效了。"""
+        with self.assertRaises(ValueError):
+            set_language("de")
+        self.assertEqual(current_language(), "zh", "报错后不得改变当前语言")
+
+    def test_unknown_key_returns_the_key(self):
+        """缺登记的 key 原样返回，不抛错 —— 检查器不该因一条文案没登记就跑不动。"""
+        self.assertEqual(t("no.such.key"), "no.such.key")
+
+    def test_language_is_never_inferred(self):
+        """默认永远是 zh，不看环境变量 —— 与安装器的语言硬隔离同源。"""
+        import os
+        os.environ["LANG"] = "en_US.UTF-8"
+        self.addCleanup(os.environ.pop, "LANG", None)
+        import importlib
+        import messages as m
+        importlib.reload(m)
+        self.assertEqual(m.current_language(), "zh")
+
+
+class TestFindingCarriesKey(unittest.TestCase):
+    """Finding 携带语言无关的 key，测试断言 key 而不是散文。
+
+    断言在会被翻译的文案上本来就脆：改一个字就红一片，
+    而那种红不指向任何真实缺陷。
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.addCleanup(set_language, "zh")
+        self.root = Path(self.tmp.name)
+
+    def test_finding_has_stable_key(self):
+        d = self.root / "s"
+        (d / "references").mkdir(parents=True)
+        (d / "SKILL.md").write_text("see references/gone.md" + NL, encoding="utf-8")
+        found = C1References().run(self.root)
+        self.assertTrue(any(f.key == "c1.broken_link" for f in found),
+                        "Finding 必须携带稳定的 key")
+
+    def test_detail_follows_the_language(self):
+        d = self.root / "s"
+        (d / "references").mkdir(parents=True)
+        (d / "SKILL.md").write_text("see references/gone.md" + NL, encoding="utf-8")
+        set_language("en")
+        found = C1References().run(self.root)
+        self.assertIn("broken link", found[0].detail)
+        self.assertEqual(found[0].key, "c1.broken_link", "key 不随语言变化")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
