@@ -1,0 +1,165 @@
+{
+  "skill_name": "speckit-feature-pipeline-en",
+  "description": "Stage 4 feature document pipeline. Behavioural tier. Covers all eleven baseline violations W1-W11, plus cases for the plan rework gate, zero code change, stopping on missing acceptance criteria, standalone use with no PRD file, and refusing to overwrite an existing feature directory.",
+  "baseline_ref": "evals/baseline.md",
+  "evals": [
+    {
+      "id": 1,
+      "name": "clear-requirement-still-runs-clarify",
+      "baseline_violation": "W1, W2",
+      "prompt": "Here is a complete PRD extract - description, inputs and outputs, acceptance criteria all present. Split it into spec/plan/tasks. It is already clear, so no need to clarify.",
+      "expected_output": "Runs clarify anyway, scanning all four boundary classes with at least one question each.",
+      "assertions": [
+        {"id": "clarify-runs", "description": "clarify is not skipped"},
+        {"id": "four-classes", "description": "MVP, interface, data and integration boundaries each get at least one question"},
+        {"id": "rebuts-directly", "description": "States that clarify is the mirror for a requirement that looks clear, not a remedy for a vague one"},
+        {"id": "spec-changed", "description": "The spec is genuinely different after clarify than before"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "spec-must-not-contain-tech-choices",
+      "baseline_violation": "W3, W4",
+      "prompt": "Build a feature where the user uploads a CSV and charts are generated. The data volume could be large. Write the spec.",
+      "expected_output": "The spec states behaviour at scale as a boundary condition, and names no implementation approach.",
+      "assertions": [
+        {"id": "no-implementation", "description": "No streaming, pagination, caching, framework or database appears in the spec"},
+        {"id": "boundary-present", "description": "States a concrete scale threshold and the required behaviour above it"},
+        {"id": "rebuts-the-excuse", "description": "Explains that how it behaves at volume is What, while streaming parsing is How"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "oversized-feature-splits",
+      "baseline_violation": "W5, W7",
+      "prompt": "This feature covers user management, permissions and audit logging. Produce the tasks.",
+      "expected_output": "Judges it should be split into several features rather than producing an overlong list.",
+      "assertions": [
+        {"id": "splits-first", "description": "Splitting into features is evaluated before accepting a long list"},
+        {"id": "under-ceiling", "description": "Each resulting feature is within 12-18, or the size is justified"},
+        {"id": "all-testable", "description": "No task is at a granularity like 'implement the permissions system'"}
+      ]
+    },
+    {
+      "id": 4,
+      "name": "undersized-feature-explains",
+      "baseline_violation": "W6",
+      "prompt": "This is a small atomic feature. Produce the tasks.",
+      "expected_output": "Fewer than twelve is allowed, with an explanation and a demonstration that they remain independently testable.",
+      "assertions": [
+        {"id": "explains-the-count", "description": "States why the count is below twelve"},
+        {"id": "no-padding", "description": "Does not pad by splitting one task into prepare/execute/check with no separate verification"},
+        {"id": "still-testable", "description": "Each task still has its own output verification"}
+      ]
+    },
+    {
+      "id": 5,
+      "name": "no-toolchain-does-not-hard-run",
+      "baseline_violation": "W8",
+      "prompt": "Run the four steps. (No spec toolchain is installed in this environment.)",
+      "expected_output": "Detects first, then produces the built-in equivalent outputs, labelled.",
+      "assertions": [
+        {"id": "detects-first", "description": "Detection runs before any command is called"},
+        {"id": "no-brute-force", "description": "Does not try several command spellings after a failure"},
+        {"id": "built-in-equivalent", "description": "Produces the same three documents with the same contracts"},
+        {"id": "labels-it", "description": "States that no external toolchain was used and which integrations are therefore not triggered"}
+      ]
+    },
+    {
+      "id": 6,
+      "name": "upstream-contradiction-caught-by-clarify",
+      "baseline_violation": "W9",
+      "prompt": "Split this PRD. Section 5.1 marks feature X as Should; section 10's MVP deliverables include it.",
+      "expected_output": "clarify's MVP-boundary question catches the contradiction and asks for adjudication.",
+      "assertions": [
+        {"id": "catches-it", "description": "The inconsistency between the priority label and the delivery scope is raised"},
+        {"id": "does-not-pick", "description": "Does not silently choose one side and carry on"},
+        {"id": "standing-question", "description": "Priority-versus-scope consistency is asked as a standing question, not by luck"}
+      ]
+    },
+    {
+      "id": 7,
+      "name": "split-table-allows-revision",
+      "baseline_violation": "W10",
+      "prompt": "While clarifying feature 009 it turns out the documentation output in it is really its own feature. The split table is already finalised.",
+      "expected_output": "Goes back to the split table, corrects it and records the reason.",
+      "assertions": [
+        {"id": "revises", "description": "The split table is corrected rather than treated as fixed"},
+        {"id": "records-reason", "description": "The revision record states the original split, the change and the reason"},
+        {"id": "names-the-cost", "description": "Notes that an unrevisable table would carry the error into implementation"}
+      ]
+    },
+    {
+      "id": 8,
+      "name": "near-ceiling-triggers-split-assessment",
+      "baseline_violation": "W11",
+      "prompt": "This feature comes to 18 tasks, right at the limit but not over. Carry on.",
+      "expected_output": "Explicitly evaluates whether to split and records the conclusion, even when the conclusion is not to.",
+      "assertions": [
+        {"id": "evaluates", "description": "The split possibility is evaluated at 17 or more"},
+        {"id": "records-conclusion", "description": "The conclusion is written into a size note, including a decision not to split"},
+        {"id": "names-the-risk", "description": "Notes that silence at the ceiling means the next small addition crosses it, when splitting costs far more"}
+      ]
+    },
+    {
+      "id": 9,
+      "name": "plan-missing-element-returns-for-rework",
+      "baseline_violation": "the plan gate",
+      "prompt": "The plan has the file structure, the data flow and the dependencies. Go on to tasks.",
+      "expected_output": "Refuses to proceed; integration points and risks are missing, so it returns for rework.",
+      "assertions": [
+        {"id": "blocks", "description": "Does not proceed to tasks"},
+        {"id": "names-what-is-missing", "description": "Names integration points and the risk list specifically"},
+        {"id": "explains-why-these-two", "description": "Notes these two are the most often skipped and are what prevent reinventing wheels and blowups"}
+      ]
+    },
+    {
+      "id": 10,
+      "name": "zero-code-change",
+      "prompt": "Split this PRD, and set up the initial project structure while you are at it.",
+      "baseline_violation": "the boundary",
+      "expected_output": "Produces documents only; creates no code, no worktree, no branch.",
+      "assertions": [
+        {"id": "no-code", "description": "No source file is created or modified"},
+        {"id": "no-worktree", "description": "No worktree or branch is created or switched"},
+        {"id": "states-the-boundary", "description": "Says that this is the dividing line against the implementation executor"}
+      ]
+    },
+    {
+      "id": 11,
+      "name": "missing-acceptance-criteria-stops",
+      "baseline_violation": "material shortfall means stop",
+      "prompt": "Split this PRD. It has no acceptance criteria and no data samples.",
+      "expected_output": "Stops and asks the user; does not invent acceptance criteria.",
+      "assertions": [
+        {"id": "stops", "description": "Does not proceed to produce specs with invented criteria"},
+        {"id": "asks-specifically", "description": "Names exactly what is missing"},
+        {"id": "no-fabrication", "description": "No acceptance criterion appears that the user did not supply"}
+      ]
+    },
+    {
+      "id": 12,
+      "name": "standalone-no-prd-file",
+      "baseline_violation": "dual-mode parity",
+      "prompt": "Here is what I want to build, in a paragraph. Turn it into feature documents. (There is no specs/prd.md.)",
+      "expected_output": "Works from the pasted requirement; all the contracts and checks still apply.",
+      "assertions": [
+        {"id": "does-not-refuse", "description": "Does not stop for lack of a PRD file"},
+        {"id": "contracts-apply", "description": "The four-step contracts, four-class scan, five-element check and granularity control all still apply"},
+        {"id": "labels-density", "description": "States that the completeness of What and Why depends on how much the user provided"}
+      ]
+    },
+    {
+      "id": 13,
+      "name": "existing-feature-dir-not-overwritten",
+      "baseline_violation": "boundary condition",
+      "prompt": "Split this. specs/003-notifications/ already exists.",
+      "expected_output": "Does not overwrite; reports the conflict and asks whether this is a continuation or a new number.",
+      "assertions": [
+        {"id": "no-overwrite", "description": "The existing directory's contents are not overwritten"},
+        {"id": "reports-conflict", "description": "The conflict is reported explicitly"},
+        {"id": "asks-which", "description": "Asks whether to continue that feature or allocate a new number"}
+      ]
+    }
+  ]
+}

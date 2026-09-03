@@ -1,0 +1,140 @@
+{
+  "skill_name": "release-packaging-router-en",
+  "description": "Stage 11 release channel routing. Deterministic tier: no behavioural baseline, scenarios with assertions instead. The weight is on resisting container inertia - three non-container scenarios each assert a container does not appear.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "python-cli-to-package-registry",
+      "prompt": "Help me package and release csv2md. It is a Python CLI tool; pyproject.toml has [project.scripts] and there is no network service.",
+      "expected_output": "Routes to a package registry, and the report says why a container was not chosen.",
+      "assertions": [
+        {"id": "picks-registry", "description": "The candidate channels include the package registry"},
+        {"id": "no-container", "description": "No Dockerfile, image or compose solution appears in the output"},
+        {"id": "rejection-reasoned", "description": "States why a container was rejected - a CLI tool's users install a package, they do not run a service"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "npm-library-to-package-registry",
+      "prompt": "Help me publish tinyparse. package.json has main, no bin, and it starts no service.",
+      "expected_output": "Routes to the npm registry; the clarify checklist comes from the package registry playbook and contains no container questions.",
+      "assertions": [
+        {"id": "picks-registry", "description": "The candidate channels include the package registry"},
+        {"id": "no-container", "description": "No containerisation is suggested"},
+        {"id": "right-clarify", "description": "The questions are about the registry, name availability, semver and the runtime range, not base images"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "ios-to-app-store",
+      "prompt": "Help me release the iOS version of TeamPulse. The project contains TeamPulse.xcodeproj.",
+      "expected_output": "Routes to the app store; clarify asks about the developer account, certificates and review assets.",
+      "assertions": [
+        {"id": "picks-app-store", "description": "The candidate channels include the app store"},
+        {"id": "no-container", "description": "No containerisation is suggested - the frozen template forbids it explicitly"},
+        {"id": "no-account-registration", "description": "The developer account is listed as pending; it does not claim it can register on the user's behalf"},
+        {"id": "layout-unit-warning", "description": "If the upstream DESIGN.md uses web breakpoints, it reports back to the design stage rather than converting"}
+      ]
+    },
+    {
+      "id": 4,
+      "name": "web-backend-to-container",
+      "prompt": "Help me deploy this API service. The project has a Dockerfile and docker-compose.yml with three services.",
+      "expected_output": "Routes to a container; this is where containers genuinely apply.",
+      "assertions": [
+        {"id": "picks-container", "description": "The candidate channels include the container"},
+        {"id": "clarify-complete", "description": "All seven pending items are present: base image, multi-stage, size ceiling, deployment target, CI, config isolation, health check"},
+        {"id": "no-overcorrection", "description": "Where a container is right, it is not refused out of anti-inertia"}
+      ]
+    },
+    {
+      "id": 5,
+      "name": "self-use-script-not-applicable",
+      "prompt": "I wrote a single-file script that I only run on my own machine. Help me package and release it.",
+      "expected_output": "Judged not applicable, the reason recorded, and no feature skeleton produced.",
+      "assertions": [
+        {"id": "judged-not-applicable", "description": "States clearly it does not apply, because only the author consumes the artifact"},
+        {"id": "reason-recorded", "description": "The skip reason goes into the decision summary, or is labelled as not written there"},
+        {"id": "zero-skeleton", "description": "No feature directory or spec skeleton is created"}
+      ]
+    },
+    {
+      "id": 6,
+      "name": "dual-artifact-two-channels",
+      "prompt": "This project provides an HTTP service (there is a Dockerfile) and also a CLI (pyproject has [project.scripts]). How should it be released?",
+      "expected_output": "Routes both a container and a package registry, each with its scope stated.",
+      "assertions": [
+        {"id": "two-channels", "description": "The candidates include both the container and the package registry"},
+        {"id": "scopes-stated", "description": "States explicitly that the container covers the service and the registry covers the CLI"},
+        {"id": "no-merge", "description": "Does not drop the registry channel on the grounds that the CLI is inside the image"}
+      ]
+    },
+    {
+      "id": 7,
+      "name": "report-includes-rejected-options",
+      "prompt": "Any project. Give me the release channel decision report.",
+      "expected_output": "The report includes the rejected options and their reasons, not only what was chosen.",
+      "assertions": [
+        {"id": "has-rejections", "description": "At least one rejected channel is listed"},
+        {"id": "reasons-given", "description": "Each rejection states why, grounded in this project's shape"},
+        {"id": "reviewable", "description": "The reasons are specific enough for the user to judge whether they are right, not 'unsuitable'"}
+      ]
+    },
+    {
+      "id": 8,
+      "name": "standalone-no-manifest",
+      "prompt": "Help me think about how to get this out there. (The project is not initialised; there is no manifest file at all.)",
+      "expected_output": "Does not refuse; asks the two questions; labels the report as not having read a manifest.",
+      "assertions": [
+        {"id": "does-not-refuse", "description": "Does not stop for lack of a manifest file"},
+        {"id": "asks-two-questions", "description": "Asks what the project produces and who consumes it"},
+        {"id": "labels-the-cost", "description": "The report states 'project manifest not read, shape judgement not cross-checked'"},
+        {"id": "no-guessing", "description": "No channel is guessed at before the user answers"}
+      ]
+    },
+    {
+      "id": 9,
+      "name": "idempotent-rerun",
+      "prompt": "Run this skill twice in a row on the same project.",
+      "expected_output": "The second run detects the existing decision report and skips rather than overwriting; the output is byte-identical.",
+      "assertions": [
+        {"id": "detects-first", "description": "Checks for an existing report before writing"},
+        {"id": "skips-not-overwrites", "description": "The existing report is not rewritten"},
+        {"id": "byte-identical", "description": "The two runs produce identical output"}
+      ]
+    },
+    {
+      "id": 10,
+      "name": "conflict-reported-not-decided",
+      "prompt": "This project contains both a Dockerfile and TeamPulse.podspec. How should it be released?",
+      "expected_output": "Reports the conflict and asks what the project actually produces; chooses nothing itself.",
+      "assertions": [
+        {"id": "reports-conflict", "description": "States that container and app-store signals were hit together"},
+        {"id": "does-not-choose", "description": "No channel is settled before the user clarifies"},
+        {"id": "asks-specifically", "description": "Asks what this project actually produces, not a generic 'please confirm'"}
+      ]
+    },
+    {
+      "id": 11,
+      "name": "user-override-is-labeled",
+      "prompt": "This is an npm library and I want to ship it with Docker anyway.",
+      "expected_output": "Complies, but labels it in the report as the user's instruction rather than a shape-based recommendation.",
+      "assertions": [
+        {"id": "complies", "description": "Does not refuse the user's explicit request"},
+        {"id": "labels-the-source", "description": "The report states the artifact shape is a library, that containerising it is unconventional, and that the user specified it"},
+        {"id": "detection-unchanged", "description": "The shape detection conclusion is not rewritten to match"}
+      ]
+    },
+    {
+      "id": 12,
+      "name": "does-not-run-four-steps",
+      "prompt": "Handle the packaging end to end - write the spec, clarify, plan and tasks.",
+      "expected_output": "Creates only the directory and the spec skeleton; the four steps go to speckit-feature-pipeline-en.",
+      "assertions": [
+        {"id": "skeleton-only", "description": "No complete clarify, plan or tasks content is produced"},
+        {"id": "hands-off-by-name", "description": "Names speckit-feature-pipeline-en and references no file path inside that skill's directory"},
+        {"id": "states-the-reason", "description": "Explains that the four steps' quality constraints belong to that skill and a copy here would drift"}
+      ]
+    }
+  ]
+}
