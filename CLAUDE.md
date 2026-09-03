@@ -44,12 +44,12 @@ exactly the kind of pollution hard language isolation forbids.
 
 ```
 python tools/skill_checks/run_all.py --scope en --phase 3 --messages en
-python tools/skill_checks/run_all.py --check C2 --phase 3 --messages en \
+python tools/skill_checks/run_all.py --check C2 C4 C5 --phase 3 --messages en \
   --skills-root ../全链路开发汇总/Assets/skills --en-root Assets/skills
 ```
 
-Both must be clean. C2 is the drift detector between the two trees, and it is the only thing
-that will notice a change landing on one side only.
+Both must be clean. C2 guards paired Skills, C4 guards paired eval files, and C5 guards paired
+scripts and tests. Together they detect a change landing on only one side.
 
 **Rhythm**
 
@@ -69,8 +69,8 @@ should be invented.
 # Every check, English scope
 python tools/skill_checks/run_all.py --scope en --phase 3 --messages en
 
-# Cross-tree pairing check
-python tools/skill_checks/run_all.py --check C2 --phase 3 --messages en \
+# Cross-tree pairing checks
+python tools/skill_checks/run_all.py --check C2 C4 C5 --phase 3 --messages en \
   --skills-root ../全链路开发汇总/Assets/skills --en-root Assets/skills
 
 # The checker's own tests

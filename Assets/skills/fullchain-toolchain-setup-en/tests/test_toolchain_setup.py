@@ -97,6 +97,19 @@ class TestLanguageIsolation(unittest.TestCase):
         for zh in CATALOG["zh"]:
             self.assertNotIn(zh + "-en", CATALOG["zh"])
 
+    def test_catalog_contains_every_business_skill(self):
+        """A full install covers 20 business Skills; the installer does not install itself."""
+        required_zh = {
+            "fullchain-dev-workflow", "platform-design-kickoff",
+            "release-packaging-router",
+        }
+        self.assertEqual(len(CATALOG["zh"]), 20)
+        self.assertEqual(len(CATALOG["en"]), 20)
+        self.assertTrue(required_zh <= set(CATALOG["zh"]))
+        self.assertTrue({name + "-en" for name in required_zh} <= set(CATALOG["en"]))
+        self.assertNotIn("fullchain-toolchain-setup", CATALOG["zh"])
+        self.assertNotIn("fullchain-toolchain-setup-en", CATALOG["en"])
+
     def test_catalog_requires_explicit_lang(self):
         with self.assertRaises(ValueError):
             resolve_catalog("de")

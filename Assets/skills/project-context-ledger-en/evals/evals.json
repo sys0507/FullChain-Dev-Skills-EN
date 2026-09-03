@@ -1,0 +1,119 @@
+{
+  "skill_name": "project-context-ledger-en",
+  "description": "Each assertion maps to a baseline violation (V1-V8). These behavioral evals test whether the agent still commits those errors, not merely whether an output has named sections.",
+  "baseline_ref": "evals/baseline.md",
+  "evals": [
+    {
+      "id": 1, "name": "one-sentence-cold-start", "baseline_violation": "V1, V2",
+      "prompt": "I want to build a tool that helps people manage reading notes.",
+      "expected_output": "Create the ledger. User-Confirmed contains only the user's original idea. Put audience, platform, and capabilities under Research Candidates or Open Questions. Generate a renameable temporary codename and do not block on a complete variable table.",
+      "assertions": [
+        {"id": "confirmed-only-original-words", "description": "User-Confirmed contains only PROJECT_IDEA in the user's original words."},
+        {"id": "no-inference-in-confirmed", "description": "Audience, platform, and capabilities are absent from User-Confirmed."},
+        {"id": "no-soft-hedge-as-marker", "description": "Words such as should or recommend do not substitute for an explicit state."},
+        {"id": "temp-codename-marked", "description": "The temporary codename is marked renameable."},
+        {"id": "not-blocked", "description": "An incomplete variable table does not block progress."}
+      ]
+    },
+    {
+      "id": 2, "name": "strong-evidence-must-not-promote", "baseline_violation": "V3",
+      "prompt": "Research found that 9 of 10 comparable products use local-first architecture with end-to-end encrypted sync, with complete evidence and links. Should we use that architecture?",
+      "expected_output": "Record it as a Research Candidate with evidence and confidence. Do not promote it unless the user's sentence is treated as confirmation; if promoted, add a change-log entry whose basis is the user's words.",
+      "assertions": [
+        {"id": "evidence-column-filled", "description": "The candidate includes the 9/10 evidence, sources, and confidence."},
+        {"id": "no-auto-promotion", "description": "Strong evidence alone is not described as a settled decision."},
+        {"id": "promotion-needs-record", "description": "Any promotion has a change-log record based on user words."}
+      ]
+    },
+    {
+      "id": 3, "name": "vague-answer-is-not-confirmation", "baseline_violation": "V4, V5",
+      "prompt": "[The agent asked whether the primary users are students or professionals.] About the same; either is fine.",
+      "expected_output": "Do not interpret this as requiring both. Record an ambiguous Open Question. One follow-up with concrete choices is allowed; stop asking if the answer remains vague.",
+      "assertions": [
+        {"id": "not-treated-as-approval", "description": "The answer is not unilaterally interpreted as serving both groups."},
+        {"id": "ambiguity-flagged", "description": "The ambiguity is recorded under Open Questions."},
+        {"id": "followup-has-options", "description": "Any follow-up offers concrete choices."},
+        {"id": "stop-after-one-followup", "description": "No repeated questioning after one vague follow-up."}
+      ]
+    },
+    {
+      "id": 4, "name": "sufficient-info-must-not-over-ask", "baseline_violation": "V6",
+      "prompt": "This is an internal CLI reporting tool for 30 salespeople on Windows. It fetches data, calculates metrics, and exports Excel. Budget is not a concern and it must work in two months.",
+      "expected_output": "Create the ledger and proceed. Do not ask irrelevant questions. If one question is essential, ask only one and state which stopping criterion it meets.",
+      "assertions": [
+        {"id": "no-gratuitous-questions", "description": "No detail question unrelated to research direction is asked."},
+        {"id": "at-most-one-question", "description": "At most one question appears in the turn."},
+        {"id": "question-justified", "description": "Any question cites the criterion that made it necessary."}
+      ]
+    },
+    {
+      "id": 5, "name": "tool-output-is-candidate-not-fact", "baseline_violation": "V7",
+      "prompt": "I ran a script and found that 8 of the existing 12 modules have no tests. Record that.",
+      "expected_output": "Put the result under Research Candidates, not User-Confirmed. Evidence must include the script and measurement method, not only 8/12.",
+      "assertions": [
+        {"id": "goes-to-candidate", "description": "The finding is a candidate, not a confirmed fact."},
+        {"id": "method-recorded", "description": "Evidence records the measurement method."},
+        {"id": "measurement-fallibility-noted", "description": "Tool output remains subject to validation."}
+      ]
+    },
+    {
+      "id": 6, "name": "state-transition-requires-record", "baseline_violation": "V8",
+      "prompt": "I confirm the local-first architecture we discussed. Lock it in.",
+      "expected_output": "Move it from candidate to confirmed and append a change-log entry with date, variable, direction, and the user's words as basis.",
+      "assertions": [
+        {"id": "changelog-entry-exists", "description": "A corresponding change-log entry exists."},
+        {"id": "changelog-has-three-fields", "description": "The entry includes date, transition, and basis."},
+        {"id": "basis-is-user-words", "description": "The basis quotes the user rather than citing strong evidence."}
+      ]
+    },
+    {
+      "id": 7, "name": "downgrade-also-recorded", "baseline_violation": "V8",
+      "prompt": "Wait, it also has to work offline. The local-first decision may not be enough, so unset it for now.",
+      "expected_output": "Move the confirmed item back to Open Questions and preserve the old value and reason in the change log.",
+      "assertions": [
+        {"id": "old-value-preserved-in-changelog", "description": "The old confirmed value remains in the change log."},
+        {"id": "downgrade-reason-recorded", "description": "The new offline constraint is recorded as the reason."},
+        {"id": "confirmed-section-updated", "description": "The item is removed from User-Confirmed."}
+      ]
+    },
+    {
+      "id": 8, "name": "standalone-no-research-artifacts", "baseline_violation": "none (standalone input substitution)",
+      "prompt": "[Clean project: no specs directory and no other skills.] Record this project input: I want a small tool that transcribes podcasts.",
+      "expected_output": "Create the ledger without refusing. Explicitly mark that no research artifacts are connected.",
+      "assertions": [
+        {"id": "does-not-refuse", "description": "Missing upstream files do not cause refusal."},
+        {"id": "candidate-section-marked-empty", "description": "Research Candidates explicitly says no research artifacts are connected."},
+        {"id": "no-manual-scaffold-required", "description": "The user is not asked to create directories manually."}
+      ]
+    },
+    {
+      "id": 9, "name": "placeholder-never-becomes-search-term", "baseline_violation": "search-keyword rule",
+      "prompt": "The project has no name yet. Search for comparable products first.",
+      "expected_output": "Never search with a placeholder or temporary codename. Derive neutral terms from the user's words, search broad to narrow, and preserve the convergence record.",
+      "assertions": [
+        {"id": "no-placeholder-as-query", "description": "No placeholder or codename appears in queries."},
+        {"id": "keywords-from-user-words", "description": "Keywords trace to the user's nouns and verbs."},
+        {"id": "convergence-recorded", "description": "Broad-to-narrow convergence is recorded."}
+      ]
+    },
+    {
+      "id": 10, "name": "does-not-take-over-research-dispatch", "baseline_violation": "anti-trigger",
+      "prompt": "Dispatch four agents in parallel to research product forms, resources, open source, and implementation options.",
+      "expected_output": "Do not dispatch the research. Identify the research-launch skill as owner and offer the adjacent ledger-update work.",
+      "assertions": [
+        {"id": "declines-dispatch", "description": "No parallel research is dispatched."},
+        {"id": "names-correct-owner", "description": "The research-launch skill is identified as owner."}
+      ]
+    },
+    {
+      "id": 11, "name": "existing-ledger-not-overwritten", "baseline_violation": "idempotence and boundary behavior",
+      "prompt": "[The ledger has a handwritten note and three change-log entries.] Update it with the newly confirmed CLI platform.",
+      "expected_output": "Append the update, preserve the handwritten note and all three entries byte-for-byte, and add a fourth entry.",
+      "assertions": [
+        {"id": "handwritten-preserved", "description": "The handwritten note is unchanged."},
+        {"id": "existing-changelog-intact", "description": "The original entries retain content and order."},
+        {"id": "new-entry-appended", "description": "A new entry is appended rather than rewriting the file."}
+      ]
+    }
+  ]
+}

@@ -23,9 +23,10 @@
       "prompt": "Build a feature where the user uploads a CSV and charts are generated. The data volume could be large. Write the spec.",
       "expected_output": "The spec states behaviour at scale as a boundary condition, and names no implementation approach.",
       "assertions": [
-        {"id": "no-implementation", "description": "No streaming, pagination, caching, framework or database appears in the spec"},
-        {"id": "boundary-present", "description": "States a concrete scale threshold and the required behaviour above it"},
-        {"id": "rebuts-the-excuse", "description": "Explains that how it behaves at volume is What, while streaming parsing is How"}
+        {"id": "no-framework-names", "description": "The spec names no specific framework or library"},
+        {"id": "no-implementation-means", "description": "The spec contains no implementation means such as streaming parsing, pagination, or caching"},
+        {"id": "boundary-instead-of-means", "description": "The spec contains a verifiable boundary such as 'at scale >= N, return a result within M or explicitly refuse'"},
+        {"id": "tech-deferred-to-plan", "description": "Technology decisions appear in plan.md, not spec.md"}
       ]
     },
     {
@@ -47,9 +48,8 @@
       "prompt": "This is a small atomic feature. Produce the tasks.",
       "expected_output": "Fewer than twelve is allowed, with an explanation and a demonstration that they remain independently testable.",
       "assertions": [
-        {"id": "explains-the-count", "description": "States why the count is below twelve"},
-        {"id": "no-padding", "description": "Does not pad by splitting one task into prepare/execute/check with no separate verification"},
-        {"id": "still-testable", "description": "Each task still has its own output verification"}
+        {"id": "explains-under-12", "description": "tasks.md includes a size note explaining why it has fewer than twelve tasks"},
+        {"id": "no-padding", "description": "It does not pad the count by splitting one action into prepare/execute/check without independent output verification"}
       ]
     },
     {
@@ -96,9 +96,8 @@
       "prompt": "This feature comes to 18 tasks, right at the limit but not over. Carry on.",
       "expected_output": "Explicitly evaluates whether to split and records the conclusion, even when the conclusion is not to.",
       "assertions": [
-        {"id": "evaluates", "description": "The split possibility is evaluated at 17 or more"},
-        {"id": "records-conclusion", "description": "The conclusion is written into a size note, including a decision not to split"},
-        {"id": "names-the-risk", "description": "Notes that silence at the ceiling means the next small addition crosses it, when splitting costs far more"}
+        {"id": "assessment-performed", "description": "The size note evaluates whether the feature should be split"},
+        {"id": "conclusion-recorded", "description": "It records the conclusion and rationale instead of silently passing near the ceiling"}
       ]
     },
     {
@@ -132,9 +131,8 @@
       "prompt": "Split this PRD. It has no acceptance criteria and no data samples.",
       "expected_output": "Stops and asks the user; does not invent acceptance criteria.",
       "assertions": [
-        {"id": "stops", "description": "Does not proceed to produce specs with invented criteria"},
-        {"id": "asks-specifically", "description": "Names exactly what is missing"},
-        {"id": "no-fabrication", "description": "No acceptance criterion appears that the user did not supply"}
+        {"id": "stops-and-asks", "description": "Stops and states exactly what is missing"},
+        {"id": "no-fabricated-ac", "description": "Does not produce invented Given/When/Then acceptance criteria"}
       ]
     },
     {
@@ -144,9 +142,10 @@
       "prompt": "Here is what I want to build, in a paragraph. Turn it into feature documents. (There is no specs/prd.md.)",
       "expected_output": "Works from the pasted requirement; all the contracts and checks still apply.",
       "assertions": [
-        {"id": "does-not-refuse", "description": "Does not stop for lack of a PRD file"},
-        {"id": "contracts-apply", "description": "The four-step contracts, four-class scan, five-element check and granularity control all still apply"},
-        {"id": "labels-density", "description": "States that the completeness of What and Why depends on how much the user provided"}
+        {"id": "does-not-refuse", "description": "Does not refuse solely because there is no PRD file"},
+        {"id": "uses-provided-content", "description": "Splits features from the requirement content supplied directly by the user"},
+        {"id": "no-manual-scaffold-required", "description": "Does not require the user to create the specs directory manually first"},
+        {"id": "fallback-labeled", "description": "Labels that the external toolchain was not used"}
       ]
     },
     {

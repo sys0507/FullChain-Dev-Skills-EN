@@ -8,9 +8,10 @@
       "prompt": "Feature 003 is done. Run the retrospective, and add a reference to LEARNINGS.md in CLAUDE.md while you are at it.",
       "expected_output": "Writes the learnings file; emits an injection signal only, and does not touch CLAUDE.md.",
       "assertions": [
-        {"id": "context-untouched", "description": "CLAUDE.md is not modified"},
-        {"id": "signal-only", "description": "The output contains an injection signal, not an injection"},
-        {"id": "explains-why", "description": "States that the context file is owned by the context bootstrap skill, and that this is the resolution of the chain's only write conflict"}
+        {"id": "context-byte-identical", "description": "The project context file remains byte-for-byte unchanged"},
+        {"id": "signal-emitted", "description": "The output emits an injection signal"},
+        {"id": "names-correct-owner", "description": "States that injection must be performed by the context-generation Skill"},
+        {"id": "learnings-written", "description": "The lessons file itself is written normally"}
       ]
     },
     {
@@ -41,9 +42,10 @@
       "prompt": "Add this feature's lessons. The existing LEARNINGS.md entries are in an older format.",
       "expected_output": "Writes new entries at the top in the standard format; leaves existing content and order verbatim.",
       "assertions": [
-        {"id": "top-insertion", "description": "New entries go at the very top"},
-        {"id": "no-reformat", "description": "Existing entries are not reformatted or reordered"},
-        {"id": "notes-difference", "description": "The format difference is noted rather than silently normalised"}
+        {"id": "new-on-top", "description": "The new entry is placed at the top of the file"},
+        {"id": "history-intact", "description": "The content and order of all six existing entries remain byte-for-byte unchanged"},
+        {"id": "no-reformatting", "description": "Existing entries with nonconforming formats are not rearranged"},
+        {"id": "difference-noted", "description": "The format difference is reported"}
       ]
     },
     {
@@ -84,9 +86,8 @@
       "prompt": "The same pitfall showed up in three features. Record it three times.",
       "expected_output": "Merges into one entry annotated as recurring across features.",
       "assertions": [
-        {"id": "merged", "description": "One entry, not three"},
-        {"id": "annotated", "description": "Annotated as recurring across features"},
-        {"id": "weight-not-lines", "description": "States that recurrence signals a systemic problem deserving more weight, not more lines"}
+        {"id": "merged-not-duplicated", "description": "No duplicate entry is added"},
+        {"id": "recurrence-flagged", "description": "The lesson is marked as recurring across features"}
       ]
     },
     {
@@ -95,9 +96,8 @@
       "prompt": "Record that the reviewer missed this in review.",
       "expected_output": "Rewritten as a description of the work rather than an appraisal of a person.",
       "assertions": [
-        {"id": "no-blame", "description": "The entry names no individual as at fault"},
-        {"id": "about-the-work", "description": "Rewritten as what the process missed and what to change"},
-        {"id": "explains-why", "description": "States that a retrospective has to be sustainable, and appraising people ends participation"}
+        {"id": "no-person-reference", "description": "The entry does not point to a specific person"},
+        {"id": "lesson-preserved", "description": "The substance of the lesson is preserved"}
       ]
     },
     {
@@ -107,8 +107,7 @@
       "expected_output": "Emits no signal, and does not suggest creating a context file.",
       "assertions": [
         {"id": "no-signal", "description": "No injection signal is emitted"},
-        {"id": "no-suggestion", "description": "Does not suggest creating a context file"},
-        {"id": "still-completes", "description": "The retrospective itself completes normally"}
+        {"id": "no-creation-suggested", "description": "Does not suggest creating a context file"}
       ]
     },
     {
@@ -117,9 +116,8 @@
       "prompt": "Run the retrospective. CLAUDE.md already references LEARNINGS.md.",
       "expected_output": "Detects the existing reference and emits no signal.",
       "assertions": [
-        {"id": "detects-first", "description": "Checks for the existing reference before deciding"},
-        {"id": "no-signal", "description": "No duplicate signal is emitted"},
-        {"id": "reports", "description": "Reports that the reference already exists"}
+        {"id": "reports-existing", "description": "Reports that the reference already exists"},
+        {"id": "no-duplicate-signal", "description": "Does not emit a duplicate injection signal"}
       ]
     },
     {

@@ -2,7 +2,7 @@
 // AUTO-GENERATED RED E2E SKELETON (knife5) — starts FAILING on purpose.
 // Journey J2 [P0] : component:order-page → … → external:push-channel
 // crosses features: A, B, C | hop types: ui, http, call, shared-key, cross-channel
-// P0 启发式命中: irreversible-delivery, money + cross-channel 不可撤销投递 — 需人确认 (heuristic, needs human confirm)
+// P0 heuristic match: irreversible delivery, money + cross-channel delivery — needs human confirmation.
 //
 // Hops (provenance-backed):
 // [trace-confirmed] component:order-page --http--> route:POST /api/place-order   (cid-pipeline:component:order-page->route:POST /api/place-order)

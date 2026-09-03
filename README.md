@@ -1,6 +1,6 @@
 # Full-Chain Development Skills
 
-Twenty reusable Agent Skills covering the eleven stages of full-chain development — from a
+Twenty-one reusable Agent Skills covering the eleven stages of full-chain development — from a
 project idea through research, requirements, specification, design, implementation, testing
 and retrospective, to release.
 
@@ -13,7 +13,9 @@ to work because a convention directory is missing.
 ## What is here
 
 ```
-Assets/skills/          20 skills, project-scoped
+Assets/skills/          21 skills, project-scoped
+Assets/mcp/             Shared research MCP servers referenced by the templates
+Assets/configs/         Shared editor/status configuration referenced by the templates
 tools/skill_checks/     10 structural checks, with their own tests
 docs/                   The port spec and the current state
 Full-Chain-Development-Skill-Execution-Index.md      What to call, when to stop
@@ -25,6 +27,7 @@ Full-Chain-Development-Prompt-Template-Skills-Edition.md   The skill-driven exec
 
 | Stage | Skill |
 |---|---|
+| 0-11 Orchestration | `fullchain-dev-workflow-en` |
 | 0 Toolchain setup | `fullchain-toolchain-setup-en` |
 | 1.1 Project ledger | `project-context-ledger-en` |
 | 1.2 Kickoff research | `product-research-kickoff-universal-en` |
@@ -61,6 +64,10 @@ python Assets/skills/fullchain-toolchain-setup-en/scripts/toolchain_setup.py \
 The installer is idempotent: an existing skill with identical content is skipped, and one you
 have customised is reported for your ruling rather than overwritten.
 
+The two prompt templates also reference `Assets/mcp/ml-search-mcp` and
+`Assets/configs/claude-hud-config.json`; both are included in this repository. The shared MCP
+directory additionally retains `muyu-search-mcp` for China-oriented search workflows.
+
 **Driving the chain**: read `Full-Chain-Development-Skill-Execution-Index.md`. It says what
 each step does, which skill to call, and where to stop — and nothing about design reasoning,
 which lives in the template.
@@ -93,19 +100,15 @@ size budgets, and matrix path propagation.
 Cross-tree drift against the Chinese edition:
 
 ```bash
-python tools/skill_checks/run_all.py --check C2 --phase 3 --messages en \
+python tools/skill_checks/run_all.py --check C2 C4 C5 --phase 3 --messages en \
   --skills-root ../全链路开发汇总/Assets/skills --en-root Assets/skills
 ```
 
-## What is not here
+## Orchestrating the Complete Chain
 
-**The orchestrator has no English version yet.** The project's own rule is Chinese-first: a
-skill must be stable and have run against a real project before its English edition is made.
-The orchestrator has not yet met that bar — a validation run found it did not carry the
-matrix's path constraints through — so it is deliberately unported rather than shipped
-untested.
-
-Until then, drive the English chain from the execution index.
+Use `fullchain-dev-workflow-en` to calculate the next stage, stop at gates, evaluate conditional
+stages, and maintain `specs/research/chain-state.md`. It remains deliberately thin: each stage
+Skill owns execution details, and the contract matrix owns artifact paths.
 
 ## Licence
 

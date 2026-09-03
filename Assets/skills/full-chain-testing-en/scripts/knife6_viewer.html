@@ -11,7 +11,7 @@
           (candidate = dashed grey / code-confirmed = blue / trace-confirmed = green)
         - which features the chain crosses, as colored feature tags (lanes)
         - a click on a step opens its provenance + technical node detail
-        - a collapsible "查看技术细节" panel per card lists the raw edges
+        - a collapsible "View technical details" panel per card lists the raw edges
           (engineers only — hidden by default; NO scatter graph on screen).
 
      v2 visual pass — "mission-control / observability" command center skin.
@@ -22,7 +22,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>用户旅程清单 · path-inventory viewer</title>
+<title>User Journey Inventory · path-inventory viewer</title>
 <style>
   :root {
     /* ground — deep tinted near-black, cool navy, never pure #000 */
@@ -313,19 +313,19 @@
  <div class="hero-wrap">
   <div class="hero-row">
    <div class="titleblock">
-     <div class="eyebrow"><span class="live"></span>PATH-INVENTORY · 跨 FEATURE 链路指挥台</div>
-     <h1>用户旅程清单
-       <span class="sub">系统里有哪些跨 feature 用户旅程 — 给人看的视图，不是代码散点图</span></h1>
+     <div class="eyebrow"><span class="live"></span>PATH-INVENTORY · CROSS-FEATURE JOURNEY CONSOLE</div>
+     <h1>User Journey Inventory
+       <span class="sub">Cross-feature user journeys in the system — a human-readable view, not a code scatter plot</span></h1>
    </div>
    <div class="toolbar">
      <label class="drop" id="drop">
        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-       拖入 / 选择 path-inventory.json
+       Drop / select path-inventory.json
        <input id="file" type="file" accept=".json" hidden></label>
      <div class="legend">
-       <span class="k"><i class="dot cand"></i>候选 (spec 推导)</span>
-       <span class="k"><i class="dot code"></i>代码确认</span>
-       <span class="k"><i class="dot trace"></i>运行时确认</span>
+       <span class="k"><i class="dot cand"></i>Candidate (derived from spec)</span>
+       <span class="k"><i class="dot code"></i>Code-confirmed</span>
+       <span class="k"><i class="dot trace"></i>Runtime-confirmed</span>
      </div>
    </div>
   </div>
@@ -334,19 +334,19 @@
 </header>
 
 <main>
-  <div class="section-head"><h2 id="sec-title">用户旅程</h2><span class="rule"></span></div>
+  <div class="section-head"><h2 id="sec-title">User Journeys</h2><span class="rule"></span></div>
   <div id="cards">
     <div class="empty"><span class="big">⌖</span>
-      把 <code>out/demo-path-inventory.json</code> 拖进来，<br>或用 <code>?src=out/demo-path-inventory.json</code> 自动加载。</div>
+      Drop <code>out/demo-path-inventory.json</code> here,<br>or use <code>?src=out/demo-path-inventory.json</code> to load it automatically.</div>
   </div>
 </main>
 
 <div id="scrim" onclick="closeDrawer()"></div>
 <div id="drawer">
-  <div class="dhead"><h3 id="dtitle"></h3><span class="x" onclick="closeDrawer()">关闭 ✕</span></div>
+  <div class="dhead"><h3 id="dtitle"></h3><span class="x" onclick="closeDrawer()">Close ✕</span></div>
   <div class="kv" id="dbody"></div>
-  <div class="drawer-note">证据状态是<b>坐实程度</b>（candidate=spec 推导 / code=代码确认 / trace=运行时确认），
-    与涨跌色无关。provenance 为该步骤的来源凭证，未经核实的内容不会被编造。</div>
+  <div class="drawer-note">Evidence status indicates the <b>degree of confirmation</b> (candidate=derived from spec / code=code-confirmed / trace=runtime-confirmed),
+    independently of the trend colours. Provenance records each step's source evidence; unverified content is never invented.</div>
 </div>
 
 <script>
@@ -384,20 +384,20 @@ function render(data){
 
   // ── stat tiles ──
   renderTiles([
-    { lab:"用户旅程", val:journeys.length, unit:"条", c:"var(--accent)", g:"rgba(90,208,255,.5)", pct:100 },
-    { lab:"P0 关键旅程", val:(c.P0 ?? journeys.filter(j=>j.p_level==="P0").length), unit:"条", cls:"is-p0",
+    { lab:"User journeys", val:journeys.length, unit:"", c:"var(--accent)", g:"rgba(90,208,255,.5)", pct:100 },
+    { lab:"P0 critical journeys", val:(c.P0 ?? journeys.filter(j=>j.p_level==="P0").length), unit:"", cls:"is-p0",
       c:"var(--p0)", g:"var(--p0-glow)", pct: journeys.length? Math.round((c.P0??0)/journeys.length*100):0 },
-    { lab:"候选边 (spec)", val:cand, unit:"", cls:"is-cand", c:"var(--cand)", g:"transparent", pct:Math.round(cand/total*100) },
-    { lab:"代码确认边", val:code, unit:"", cls:"is-code", c:"var(--code)", g:"var(--code-glow)", pct:Math.round(code/total*100) },
-    { lab:"运行时确认边", val:trace, unit:"", cls:"is-trace", c:"var(--trace)", g:"var(--trace-glow)", pct:Math.round(trace/total*100) },
+    { lab:"Candidate edges (spec)", val:cand, unit:"", cls:"is-cand", c:"var(--cand)", g:"transparent", pct:Math.round(cand/total*100) },
+    { lab:"Code-confirmed edges", val:code, unit:"", cls:"is-code", c:"var(--code)", g:"var(--code-glow)", pct:Math.round(code/total*100) },
+    { lab:"Runtime-confirmed edges", val:trace, unit:"", cls:"is-trace", c:"var(--trace)", g:"var(--trace-glow)", pct:Math.round(trace/total*100) },
   ]);
 
   document.getElementById("sec-title").textContent =
-    journeys.length ? `用户旅程 · ${journeys.length} 条` : "用户旅程";
+    journeys.length ? `User journeys · ${journeys.length}` : "User journeys";
 
   const root = document.getElementById("cards");
   root.innerHTML = "";
-  if(!journeys.length){ root.innerHTML = '<div class="empty"><span class="big">⌀</span>这份清单没有跨 feature 旅程。</div>'; return; }
+  if(!journeys.length){ root.innerHTML = '<div class="empty"><span class="big">⌀</span>This inventory has no cross-feature journeys.</div>'; return; }
   // P0 first, then by id, so the most important journeys lead the feed
   const order = {P0:0,P1:1,P2:2,P3:3};
   journeys.slice().sort((a,b)=>(order[a.p_level]??9)-(order[b.p_level]??9))
@@ -431,7 +431,7 @@ function journeyCard(j){
 
   // feature lanes
   const lanes = document.createElement("div"); lanes.className = "feat-lanes";
-  const ll = document.createElement("span"); ll.className="ll"; ll.textContent="穿过"; lanes.appendChild(ll);
+  const ll = document.createElement("span"); ll.className="ll"; ll.textContent="Traverses"; lanes.appendChild(ll);
   (j.crosses_features||[]).forEach((f,i) => {
     const tag = document.createElement("span"); tag.className = "feat-tag";
     tag.style.setProperty("--fc", featColor(f));
@@ -454,7 +454,7 @@ function journeyCard(j){
     });
   } else {
     const none = document.createElement("div"); none.style.cssText="color:var(--muted);font-size:12px;";
-    none.textContent = "（无可读步骤：仅含被过滤的内部/三方依赖）";
+    none.textContent = "(No readable steps: only filtered internal or third-party dependencies)";
     flow.appendChild(none);
   }
   card.appendChild(flow);
@@ -477,7 +477,7 @@ function journeyCard(j){
   return card;
 }
 
-// strip the "[P0] 跨 N 个 feature（…）：" head that summary already encodes
+// Strip the "[P0] across N features (...):" prefix already encoded by the summary.
 function stripHead(text){ const idx = text.indexOf("："); return idx>=0 ? text.slice(idx+1) : text; }
 
 function stepChip(s, num, j){
@@ -486,7 +486,7 @@ function stepChip(s, num, j){
   el.innerHTML =
     `<div class="hd"><span class="num">${num}</span>`+
     `<span class="ico" title="${esc(s.hop_type||"")}">${hopIcon(s.hop_type)}</span></div>`+
-    `<span class="lbl">${esc(s.label||"(未命名步骤)")}</span>`+
+    `<span class="lbl">${esc(s.label||"(unnamed step)")}</span>`+
     `<span class="hop"><span class="st-dot"></span>${esc(s.hop_type||"-")} · ${esc(s.status||"-")}</span>`;
   el.onclick = () => openStep(s, num, j);
   return el;
@@ -495,7 +495,7 @@ function stepChip(s, num, j){
 function techToggle(j){
   const det = document.createElement("details"); det.className = "toggle";
   const sum = document.createElement("summary");
-  sum.innerHTML = `<span class="chev">▸</span>查看技术细节（原始边 / 节点 / provenance）`;
+  sum.innerHTML = `<span class="chev">▸</span>View technical details (raw edges / nodes / provenance)`;
   det.appendChild(sum);
   const outer = document.createElement("div"); outer.className = "tech-wrap";
   const tech = document.createElement("div"); tech.className = "tech";
@@ -508,7 +508,7 @@ function techToggle(j){
            `<td class="prov">${esc(loc)}</td></tr>`;
   }).join("");
   inner.innerHTML = `<table><thead><tr><th>from</th><th>type</th><th>to</th><th>status</th><th>provenance</th></tr></thead>`+
-                    `<tbody>${rows||'<tr><td colspan=5>（无边）</td></tr>'}</tbody></table>`;
+                    `<tbody>${rows||'<tr><td colspan=5>(no edges)</td></tr>'}</tbody></table>`;
   tech.appendChild(inner); outer.appendChild(tech); det.appendChild(outer);
   return det;
 }
@@ -527,11 +527,11 @@ function openStep(s, num, j){
   document.getElementById("dtitle").innerHTML =
     `<span class="step ${STATUS_CLASS[s.status]||'cand'}" style="display:inline-flex;padding:2px 8px;margin-right:8px;vertical-align:2px;min-width:0">`+
     `<span style="font-family:var(--mono);font-size:11px;color:${statusVar(s.status)}">${num}</span></span>`+
-    esc(s.label||"(未命名步骤)");
+    esc(s.label||"(unnamed step)");
   const rows = [
-    ["hop 类型", esc(hopIcon(s.hop_type)+" "+(s.hop_type||"-")), false],
-    ["证据状态", `<span class="st-pill st-${esc(s.status)}">${esc(s.status||"-")}</span>`, true],
-    ["所在旅程", `${esc(j.id)} · <b>${esc(j.p_level||"-")}</b>`, false],
+    ["Hop type", esc(hopIcon(s.hop_type)+" "+(s.hop_type||"-")), false],
+    ["Evidence status", `<span class="st-pill st-${esc(s.status)}">${esc(s.status||"-")}</span>`, true],
+    ["Journey", `${esc(j.id)} · <b>${esc(j.p_level||"-")}</b>`, false],
     ["provenance", esc(s.provenance||"-"), true],
     ["node id", esc(s.node||"-"), true],
     ["node kind", esc(s.node_kind||node.kind||"-"), true],
@@ -550,7 +550,7 @@ document.addEventListener("keydown", e => { if(e.key==="Escape") closeDrawer(); 
 // loaders
 function load(json){ try { render(typeof json==="string"?JSON.parse(json):json); }
   catch(e){ document.getElementById("cards").innerHTML =
-    '<div class="empty"><span class="big">⚠</span>解析失败: '+esc(e.message||e)+'</div>'; } }
+    '<div class="empty"><span class="big">⚠</span>Parse failed: '+esc(e.message||e)+'</div>'; } }
 document.getElementById("file").addEventListener("change", ev => {
   const f = ev.target.files[0]; if(!f) return;
   const r = new FileReader(); r.onload = () => load(r.result); r.readAsText(f);
@@ -563,7 +563,7 @@ drop.addEventListener("drop", e => { const f=e.dataTransfer.files[0]; if(f){ con
 // auto-load via ?src=
 const src = new URLSearchParams(location.search).get("src");
 if(src){ fetch(src).then(r=>r.text()).then(load).catch(e=>{
-  document.getElementById("cards").innerHTML='<div class="empty"><span class="big">⚠</span>fetch 失败: '+esc(e.message||e)+'</div>'; }); }
+  document.getElementById("cards").innerHTML='<div class="empty"><span class="big">⚠</span>Fetch failed: '+esc(e.message||e)+'</div>'; }); }
 </script>
 </body>
 </html>

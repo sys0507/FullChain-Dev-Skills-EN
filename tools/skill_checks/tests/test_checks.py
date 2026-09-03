@@ -193,10 +193,36 @@ class TestC2Pairing(Base):
         self.assertEqual(C2Pairing().run(self.root), [],
                          "围栏内的 ## 被误计为标题")
 
-    def test_negative_no_en_version(self):
-        """英文版尚未复刻属预期，不报。"""
+    def test_negative_missing_en_without_en_root_is_out_of_scope(self):
+        """单语树未显式给 en_root 时，不猜测另一棵树的位置。"""
         make(self.root, "a")
         self.assertEqual(C2Pairing().run(self.root), [])
+
+    def test_positive_orchestrator_is_not_exempt(self):
+        """英文编排器落地后不再保留任何配对豁免。"""
+        make(self.root, "fullchain-dev-workflow")
+        en = self.root / "en"
+        en.mkdir()
+        found = C2Pairing().run(self.root, en_root=en)
+        self.assertTrue(any(f.key == "c2.missing_en_skill" for f in found))
+
+    def test_positive_assets_mismatch(self):
+        zh = make(self.root, "a")
+        make(self.root, "a-en")
+        (zh / "assets").mkdir()
+        (zh / "assets" / "template.md").write_text("x\n", encoding="utf-8")
+        found = C2Pairing().run(self.root)
+        self.assertTrue(any(f.key == "c2.assets_mismatch" for f in found))
+
+    def test_positive_produces_count_drift(self):
+        zh_fm = GOOD_FM.replace(
+            "  requires:\n", '  produces:\n    - "one"\n    - "two"\n  requires:\n')
+        en_fm = EN_FM.replace(
+            "  requires:\n", '  produces:\n    - "one"\n  requires:\n')
+        make(self.root, "a", fm=zh_fm)
+        make(self.root, "a-en", fm=en_fm)
+        found = C2Pairing().run(self.root)
+        self.assertTrue(any(f.key == "c2.produces_count" for f in found))
 
 
 # ---------------------------------------------------------------- C3
@@ -209,6 +235,23 @@ class TestC3EnPurity(Base):
              body=EN_SECTIONS + "\nSee `specs/research/00-项目输入与假设.md`\n")
         found = C3EnPurity().run(self.root)
         self.assertTrue(any(f.key == "c3.residue" for f in found))
+
+    def test_positive_chinese_in_non_markdown_text(self):
+        """HTML、脚本和 JSON 中的中文同样会进入英文 Skill 的运行产物。"""
+        d = make(self.root, "a-en", fm=EN_FM, body=EN_SECTIONS)
+        samples = {
+            "scripts/viewer.html": "<button>下单</button>\n",
+            "scripts/run.py": 'print("执行")\n',
+            "assets/example.json": '{"label": "结果"}\n',
+        }
+        for relative, content in samples.items():
+            path = d / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding="utf-8")
+        found = C3EnPurity().run(self.root)
+        paths = {f.path.replace("\\", "/") for f in found}
+        for relative in samples:
+            self.assertTrue(any(relative in path for path in paths), relative)
 
     def test_negative_pure_english(self):
         make(self.root, "a-en", fm=EN_FM, body=EN_SECTIONS)
@@ -255,6 +298,56 @@ class TestC4EnEvals(Base):
         make(self.root, "a-en")
         self.assertEqual(C4EnEvals().run(self.root), [])
 
+    def test_positive_paired_evals_file_missing(self):
+        zh = self.root / "zh"
+        en = self.root / "en"
+        zh.mkdir()
+        en.mkdir()
+        make(zh, "a", evals={"skill_name": "a", "evals": []})
+        make(en, "a-en")
+        found = C4EnEvals().run(zh, en_root=en)
+        self.assertTrue(any(f.key == "c4.files_mismatch" for f in found))
+
+    def test_positive_paired_baseline_missing(self):
+        zh = self.root / "zh"
+        en = self.root / "en"
+        zh.mkdir()
+        en.mkdir()
+        zd = make(zh, "a", evals={"skill_name": "a", "evals": []})
+        make(en, "a-en", evals={"skill_name": "a-en", "evals": []})
+        (zd / "evals" / "baseline.md").write_text("baseline\n", encoding="utf-8")
+        found = C4EnEvals().run(zh, en_root=en)
+        self.assertTrue(any(f.key == "c4.files_mismatch" for f in found))
+
+    def test_positive_paired_eval_sequence_mismatch(self):
+        zh = self.root / "zh"
+        en = self.root / "en"
+        zh.mkdir()
+        en.mkdir()
+        make(zh, "a", evals={"skill_name": "a", "evals": [
+            {"id": 1, "name": "first", "prompt": "甲", "assertions": []},
+            {"id": 2, "name": "second", "prompt": "乙", "assertions": []},
+        ]})
+        make(en, "a-en", evals={"skill_name": "a-en", "evals": [
+            {"id": 1, "name": "first", "prompt": "A", "assertions": []},
+        ]})
+        found = C4EnEvals().run(zh, en_root=en)
+        self.assertTrue(any(f.key == "c4.eval_sequence" for f in found))
+
+    def test_positive_paired_assertion_count_mismatch(self):
+        zh = self.root / "zh"
+        en = self.root / "en"
+        zh.mkdir()
+        en.mkdir()
+        make(zh, "a", evals={"skill_name": "a", "evals": [
+            {"id": 1, "name": "first", "prompt": "甲", "assertions": [{"id": "x"}, {"id": "y"}]},
+        ]})
+        make(en, "a-en", evals={"skill_name": "a-en", "evals": [
+            {"id": 1, "name": "first", "prompt": "A", "assertions": [{"id": "x"}]},
+        ]})
+        found = C4EnEvals().run(zh, en_root=en)
+        self.assertTrue(any(f.key == "c4.assertion_count" for f in found))
+
 
 # ---------------------------------------------------------------- C5
 
@@ -271,6 +364,28 @@ class TestC5ScriptsNeedTests(Base):
     def test_negative_no_scripts_at_all(self):
         make(self.root, "a")
         self.assertEqual(C5ScriptsNeedTests().run(self.root), [])
+
+    def test_positive_paired_script_and_test_files_missing(self):
+        zh = self.root / "zh"
+        en = self.root / "en"
+        zh.mkdir()
+        en.mkdir()
+        make(zh, "a", scripts=True, tests=True)
+        make(en, "a-en")
+        found = C5ScriptsNeedTests().run(zh, en_root=en)
+        self.assertTrue(any(f.key == "c5.bundle_mismatch" for f in found))
+
+    def test_negative_generated_python_cache_is_ignored(self):
+        zh = self.root / "zh"
+        en = self.root / "en"
+        zh.mkdir()
+        en.mkdir()
+        zd = make(zh, "a", scripts=True, tests=True)
+        make(en, "a-en", scripts=True, tests=True)
+        cache = zd / "scripts" / "__pycache__"
+        cache.mkdir()
+        (cache / "tool.cpython-313.pyc").write_bytes(b"generated")
+        self.assertEqual(C5ScriptsNeedTests().run(zh, en_root=en), [])
 
 
 # ---------------------------------------------------------------- C6
@@ -543,7 +658,7 @@ class TestC10MatrixPathsInSkill(unittest.TestCase):
 class TestC2CrossRoot(unittest.TestCase):
     """C2 必须能跨目录比对——这是拆分中英文目录的前置条件。
 
-    C2 是**唯一**的 zh/en 漂移探测器，靠比较同级 `foo` 与 `foo-en` 工作。
+    C2 是 Skill 结构的 zh/en 漂移探测器；C4/C5 分别守 evals 与 scripts/tests。
     Phase 3 把英文版搬到同级新目录后，同级关系消失，C2 会静默失效——
     而那恰好是漂移风险变大的时刻：两套目录、将来两个 repo、两条提交历史，
     改了一边忘了另一边**没有任何东西会喊**。
@@ -589,10 +704,11 @@ class TestC2CrossRoot(unittest.TestCase):
         found = C2Pairing().run(self.zh, en_root=self.en)
         self.assertTrue(any(f.key == "c2.refs_mismatch" for f in found))
 
-    def test_missing_en_twin_is_still_skipped(self):
-        """负样本：英文版尚未复刻属预期，跨目录时同样不报。"""
+    def test_missing_en_twin_is_caught(self):
+        """Phase 3 后，跨目录缺少整个配对 Skill 必须报错。"""
         self._write(self.zh, "foo", 3)
-        self.assertEqual(C2Pairing().run(self.zh, en_root=self.en), [])
+        found = C2Pairing().run(self.zh, en_root=self.en)
+        self.assertTrue(any(f.key == "c2.missing_en_skill" for f in found))
 
     def test_same_root_behaviour_unchanged(self):
         """负样本：不传 en_root 时，行为与从前完全一致。"""
@@ -673,8 +789,8 @@ class TestBilingualVocabulary(unittest.TestCase):
                     level="optional", fallback=False)
         self.assertTrue(any(f.key == "c8.no_fallback" for f in C8Requires().run(self.root)))
 
-class TestC2SkipsIncompleteDirs(unittest.TestCase):
-    """英文版目录存在但还没有 SKILL.md 时，C2 必须跳过而不是崩溃。
+class TestC2ReportsIncompleteDirs(unittest.TestCase):
+    """英文版目录存在但没有 SKILL.md 时，C2 必须报告而不是崩溃。
 
     真实缺陷：并行执行者中途被会话上限打断，留下 5 个只有目录没有 SKILL.md 的
     半成品。C2 只判了 `is_dir()` 就去读文件，直接抛 FileNotFoundError——
@@ -693,18 +809,20 @@ class TestC2SkipsIncompleteDirs(unittest.TestCase):
         (d / "SKILL.md").write_text(
             NL.join(["## 节 %d" % i for i in range(n)]) + NL, encoding="utf-8")
 
-    def test_en_dir_without_skill_md_is_skipped(self):
+    def test_en_dir_without_skill_md_is_reported(self):
         self._zh("foo")
         (self.root / "foo-en").mkdir()          # 空目录，无 SKILL.md
-        self.assertEqual(C2Pairing().run(self.root), [],
-                         "尚未落地的英文版应被跳过，而不是崩溃")
+        found = C2Pairing().run(self.root)
+        self.assertTrue(any(f.key == "c2.missing_en_skill" for f in found),
+                        "半成品英文目录必须报告，而不是跳过或崩溃")
 
-    def test_zh_dir_without_skill_md_is_skipped(self):
-        """反向：中文版侧缺 SKILL.md 同样不得崩溃。"""
+    def test_zh_dir_without_skill_md_is_reported(self):
+        """反向：中文版侧缺 SKILL.md 必须报告且不得崩溃。"""
         (self.root / "bar").mkdir()
         (self.root / "bar-en").mkdir()
         (self.root / "bar-en" / "SKILL.md").write_text("## x" + NL, encoding="utf-8")
-        self.assertEqual(C2Pairing().run(self.root), [])
+        found = C2Pairing().run(self.root)
+        self.assertTrue(any(f.key == "c2.missing_zh_skill" for f in found))
 
     def test_complete_pair_still_compared(self):
         """负样本：两侧齐全时照常比对，不得被这次容错顺手放过。"""
@@ -734,7 +852,7 @@ class TestMessageTable(unittest.TestCase):
         """光比对占位符集合不够——它只认 {word} 这种形状。
 
         `c8.rule` 的中文里有 `{必需, 可选增强, 编排级}`，是**字面**花括号，
-        `\w+` 匹配不到，于是两语言的占位符集合都是空集、比对通过；
+        `\\w+` 匹配不到，于是两语言的占位符集合都是空集、比对通过；
         而 `.format()` 一渲染就 KeyError。它只在「有发现要输出」时才炸，
         全绿的跑法永远碰不到——**一个崩溃的检查器比会报错的更糟**。
         所以这条测试真的去渲染每一条。

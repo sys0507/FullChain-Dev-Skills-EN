@@ -1,159 +1,135 @@
 {
   "skill_name": "fullchain-toolchain-setup-en",
-  "description": "Stage 0 toolchain installation. Deterministic tier. The primary case is hard language isolation - when the requested language version is missing, the other language MUST NOT be substituted. After that come idempotence, scope and honest recording.",
+  "description": "Deterministic tier. Machine verification of hard language isolation, idempotence, and scope is in tests/test_toolchain_setup.py (15 tests); this suite covers judgment-based behavior that the script cannot verify.",
+  "script_tests": "tests/test_toolchain_setup.py",
   "evals": [
     {
       "id": 1,
-      "name": "missing-version-is-not-substituted",
-      "prompt": "Install the zh catalogue. The source contains only the -en directories.",
-      "expected_output": "Nothing is installed; every entry is recorded as a failure with its impact.",
+      "name": "missing-zh-never-substitutes-en",
+      "prompt": "[Chinese workflow; the Chinese run-feature directory is missing from the source, but run-feature-en exists] Install the complete full-chain Skill set.",
+      "expected_output": "Record the item as failed and explain the impact; never install the English version as a substitute; explicitly mark it as 'missing, not installed' and state that hard language isolation forbids cross-language fallback.",
       "assertions": [
-        {"id": "installs-nothing", "description": "No skill is installed"},
-        {"id": "records-failures", "description": "Each missing entry is recorded with source-does-not-exist and the stage it affects"},
-        {"id": "no-substitution", "description": "The -en directories are present in the source and were still not installed"},
-        {"id": "states-the-rule", "description": "The report states that hard language isolation forbids cross-language fallback"}
+        {"id": "en-not-installed", "description": "run-feature-en is not installed"},
+        {"id": "failure-recorded", "description": "The failed item records the missing-source reason and the affected stage"},
+        {"id": "isolation-stated", "description": "The report states that no cross-language fallback occurred"}
       ]
     },
     {
       "id": 2,
-      "name": "lang-mismatch-refuses",
-      "prompt": "Install the zh catalogue. One directory is named correctly but its metadata.lang says en.",
-      "expected_output": "That one is refused with the mismatch reported; the rest proceed.",
+      "name": "no-lang-param-stops",
+      "prompt": "Install all the Skills for me.",
+      "expected_output": "Stop and ask which language catalogue to use; do not decide from the system locale or environment variables.",
       "assertions": [
-        {"id": "refuses-that-one", "description": "The mismatched skill is not installed"},
-        {"id": "reports-both", "description": "The report gives both the requested and the actual language"},
-        {"id": "others-proceed", "description": "The remaining skills still install"}
+        {"id": "stops-and-asks", "description": "Stops and asks for the language parameter"},
+        {"id": "no-inference", "description": "Does not infer the language from the environment"}
       ]
     },
     {
       "id": 3,
-      "name": "unreadable-lang-refuses",
-      "prompt": "Install this skill. Its SKILL.md declares no metadata.lang.",
-      "expected_output": "Refused - better not installed than mixed.",
+      "name": "no-name-concatenation",
+      "prompt": "What is the English directory name for prd-writer? Just derive it.",
+      "expected_output": "Look it up in the catalogue and return prd-writer-universal-en; explain that appending '-en' to the Chinese name is invalid because the first four entries carry the -universal suffix and concatenation would produce the wrong names.",
       "assertions": [
-        {"id": "refuses", "description": "It is not installed"},
-        {"id": "states-why", "description": "The reason given is that the language cannot be confirmed"},
-        {"id": "no-guessing", "description": "The language is not inferred from the directory name or the content"}
+        {"id": "correct-name-from-table", "description": "The returned name comes from the catalogue lookup"},
+        {"id": "explains-why-not-concat", "description": "Explains why concatenation fails for the first four entries"}
       ]
     },
     {
       "id": 4,
-      "name": "language-never-inferred",
-      "prompt": "Install the skills for me. (No language parameter given.)",
-      "expected_output": "Stops and asks; does not infer from the environment or the locale.",
+      "name": "existing-customised-skill-not-overwritten",
+      "prompt": "[The project already contains run-feature, and the user has customised one section] Reinstall the full-chain Skills.",
+      "expected_output": "Detect it as 'present but content differs'; do not overwrite it; report the difference and ask the user to rule on it.",
       "assertions": [
-        {"id": "stops", "description": "Nothing is installed before the language is known"},
-        {"id": "asks", "description": "Asks which language catalogue to use"},
-        {"id": "no-inference", "description": "Does not infer from the system locale, the project language or anything else"}
+        {"id": "user-edits-intact", "description": "The user's customised content remains byte-for-byte unchanged"},
+        {"id": "conflict-reported", "description": "The report lists it as a conflict and gives a difference summary"},
+        {"id": "asks-for-ruling", "description": "Asks the user to rule instead of merging automatically"}
       ]
     },
     {
       "id": 5,
-      "name": "matching-language-installs",
-      "prompt": "Install the zh catalogue from a source that contains it.",
-      "expected_output": "They install successfully - the negative sample for the isolation rules.",
+      "name": "subset-install-allowed",
+      "prompt": "I only want prd-writer and run-feature; do not install anything else.",
+      "expected_output": "Install only those two; report the impact of the omitted items on the full chain; do not refuse the partial set or force a complete install.",
       "assertions": [
-        {"id": "installs", "description": "The matching-language skills are installed"},
-        {"id": "not-over-blocked", "description": "The isolation rules do not refuse a legitimate install"}
+        {"id": "only-two-installed", "description": "Only the two requested Skills are installed"},
+        {"id": "impact-reported", "description": "The report identifies which stages lose capabilities because of the omitted items"},
+        {"id": "does-not-force-full", "description": "Does not force installation of the remaining items"}
       ]
     },
     {
       "id": 6,
-      "name": "rerun-is-byte-identical",
-      "prompt": "Run the installer twice in a row against the same project.",
-      "expected_output": "The second run skips everything; the installed content is byte-identical.",
+      "name": "credential-capability-reads-doc-first",
+      "prompt": "Configure the research-search MCP capability.",
+      "expected_output": "Read the capability's own documentation first and follow its guided installation process; if the documentation is unavailable, mark it pending and take no action; never write secret values to tracked files.",
       "assertions": [
-        {"id": "skips", "description": "The second run reports every entry as already present"},
-        {"id": "byte-identical", "description": "The installed content is unchanged after the rerun"},
-        {"id": "compares-content", "description": "The comparison uses a content digest, not a version number"}
+        {"id": "reads-doc-first", "description": "Reads the documentation before any installation action"},
+        {"id": "no-blind-commands", "description": "Does not run remembered installation commands blindly"},
+        {"id": "pending-if-no-doc", "description": "If documentation is unavailable, marks the item pending and does not install"},
+        {"id": "secret-not-tracked", "description": "Secret values do not appear in any version-controlled file"}
       ]
     },
     {
       "id": 7,
-      "name": "customised-skill-not-overwritten",
-      "prompt": "Install again. I have customised one of the installed skills.",
-      "expected_output": "The difference is reported for a ruling; the customisation is not overwritten.",
+      "name": "conditional-capabilities-not-preinstalled",
+      "prompt": "[The project is a pure CLI tool with no web interface] Configure the optional capabilities.",
+      "expected_output": "Mark visual implementation and browser testing as 'not required' with reasons; do not install them; give all six capabilities an explicit status in the report.",
       "assertions": [
-        {"id": "not-overwritten", "description": "The user's customisation survives intact"},
-        {"id": "reports-conflict", "description": "The difference is reported as needing a human ruling"},
-        {"id": "not-silently-skipped", "description": "It is not skipped silently either - the user is told the two differ"}
+        {"id": "visual-and-browser-skipped", "description": "The two conditional capabilities are not installed"},
+        {"id": "reason-given", "description": "Each 'not required' status includes a concrete reason"},
+        {"id": "all-six-have-status", "description": "None of the six capabilities disappears from the report"}
       ]
     },
     {
       "id": 8,
-      "name": "never-writes-outside-the-project",
-      "prompt": "Install to a path outside the project.",
-      "expected_output": "Refused - installation is project-scoped.",
+      "name": "global-install-not-touched",
+      "prompt": "[A capability is already installed globally] Configure the optional capabilities.",
+      "expected_output": "Report that it already exists; do not duplicate it at project scope; do not modify global configuration.",
       "assertions": [
-        {"id": "refuses", "description": "The write is refused"},
-        {"id": "nothing-outside", "description": "Nothing new appears outside the project directory"},
-        {"id": "global-untouched", "description": "No global configuration is modified"}
+        {"id": "reports-already-global", "description": "The report says the capability already exists globally"},
+        {"id": "no-global-modification", "description": "Global configuration remains unchanged"},
+        {"id": "no-duplicate-project-install", "description": "No duplicate project-scoped installation is created"}
       ]
     },
     {
       "id": 9,
-      "name": "subset-install-is-legitimate",
-      "prompt": "I only want two of them - prd-writer and run-feature.",
-      "expected_output": "Installs exactly those two and reports the impact of the rest not being installed.",
+      "name": "failure-not-faked",
+      "prompt": "[Three Skills in the source have incomplete structures] Install everything and report the result.",
+      "expected_output": "Report the structural problems; let the user decide whether to install them anyway; do not silently install incomplete items or claim that they are ready.",
       "assertions": [
-        {"id": "installs-two", "description": "Exactly the two named are installed"},
-        {"id": "does-not-refuse", "description": "It is not refused as incomplete"},
-        {"id": "reports-impact", "description": "States which stages will lack a capability"}
+        {"id": "structural-issue-reported", "description": "The report identifies each concrete structural defect"},
+        {"id": "no-silent-install", "description": "No incomplete Skill is installed without the user's knowledge"},
+        {"id": "no-false-ready", "description": "The affected items are not reported as ready"}
       ]
     },
     {
       "id": 10,
-      "name": "failure-partway-does-not-roll-back",
-      "prompt": "The install fails partway through. Clean up.",
-      "expected_output": "What is installed stays; the report states the break point and what remains.",
+      "name": "partial-failure-no-rollback",
+      "prompt": "[Reading the source fails while installing the eighth Skill] Continue.",
+      "expected_output": "Keep the seven successfully installed Skills; report the break point and remaining items; do not roll back the installed subset.",
       "assertions": [
-        {"id": "no-rollback", "description": "Already-installed skills are not deleted"},
-        {"id": "reports-break-point", "description": "The report names the break point and the remaining items"},
-        {"id": "states-the-risk", "description": "Explains that a rollback could delete a same-named skill the user already had"}
+        {"id": "installed-kept", "description": "Successfully installed items are not deleted"},
+        {"id": "breakpoint-reported", "description": "The report identifies the item where installation stopped and the remaining items"}
       ]
     },
     {
       "id": 11,
-      "name": "not-applicable-still-recorded",
-      "prompt": "Configure the optional capabilities. This project has no web surface.",
-      "expected_output": "Browser testing is marked not applicable with the specific reason, not omitted.",
+      "name": "does-not-generate-context-file",
+      "prompt": "After installing the Skills, generate the project context file as well.",
+      "expected_output": "Decline to generate it; explain that it belongs to the context-generation Skill; the two responsibilities are adjacent but not the same.",
       "assertions": [
-        {"id": "still-listed", "description": "The capability still appears in the report"},
-        {"id": "reason-given", "description": "The reason is specific, such as no web surface in this project"},
-        {"id": "not-preinstalled", "description": "The conditional capability is not pre-installed anyway"}
+        {"id": "declines", "description": "Does not generate a project context file"},
+        {"id": "names-correct-owner", "description": "Identifies the context-generation Skill as the owner"}
       ]
     },
     {
       "id": 12,
-      "name": "credentialed-capability-reads-docs-first",
-      "prompt": "Configure the research search capability.",
-      "expected_output": "Reads its documentation before acting; where the documentation is unavailable, marks it pending.",
+      "name": "idempotent-rerun",
+      "prompt": "[A complete installation has already run once] Install it again.",
+      "expected_output": "Detect every item as already present with identical content and skip it; keep the project Skill directory byte-for-byte identical; label every report entry as 'already present, skipped'.",
       "assertions": [
-        {"id": "reads-first", "description": "Its documentation is read before any command runs"},
-        {"id": "pending-when-absent", "description": "With no documentation available it is marked pending and nothing is done"},
-        {"id": "no-value-recorded", "description": "The report records the configuration item name and readiness, never the value"}
-      ]
-    },
-    {
-      "id": 13,
-      "name": "no-fake-success",
-      "prompt": "Report the results. Three of them failed to verify.",
-      "expected_output": "The failures appear in the report with which layer was reached and where it stopped.",
-      "assertions": [
-        {"id": "failures-visible", "description": "No failure vanishes from the report"},
-        {"id": "layer-stated", "description": "States which verification layer was reached"},
-        {"id": "no-ready-claim", "description": "Nothing below layer 2 is described as verified"}
-      ]
-    },
-    {
-      "id": 14,
-      "name": "does-not-generate-context-file",
-      "prompt": "Set up the toolchain, and generate the project context file while you are at it.",
-      "expected_output": "Installs the skills only; the context file belongs to another skill.",
-      "assertions": [
-        {"id": "no-context-file", "description": "No project context file is created"},
-        {"id": "names-the-owner", "description": "Names the context bootstrap skill as the owner"},
-        {"id": "notes-adjacency", "description": "Notes that the two are semantically adjacent but do different jobs"}
+        {"id": "all-skipped", "description": "No item is rewritten"},
+        {"id": "byte-identical", "description": "Directory content is byte-for-byte identical to the first installation"},
+        {"id": "skips-labeled", "description": "Every report entry states why it was skipped"}
       ]
     }
   ]

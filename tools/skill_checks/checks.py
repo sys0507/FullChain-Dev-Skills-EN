@@ -26,6 +26,33 @@ from common import (
 # 刻意保留的双语触发词白名单：标注为参考用途的中文触发词
 BILINGUAL_MARKERS = ("(for reference)", "Chinese (for reference)", "（参考）")
 
+# 这些文本格式会直接参与 Skill 运行、示例或用户界面，均受英文纯度约束。
+EN_TEXT_SUFFIXES = {
+    ".css", ".html", ".js", ".json", ".md", ".py", ".sh", ".toml",
+    ".ts", ".tsx", ".txt", ".yaml", ".yml",
+}
+
+# 当前无配对豁免。保留封闭集合，未来若有经书面批准的分期项，可显式登记。
+PAIRING_EXEMPT_ZH: set[str] = set()
+
+
+def _relative_files(directory: Path) -> set[str]:
+    """返回目录内递归文件集合；目录不存在等价于空集合。"""
+    if not directory.is_dir():
+        return set()
+    return {
+        p.relative_to(directory).as_posix()
+        for p in directory.rglob("*")
+        if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc"
+    }
+
+
+def _produces_count(text: str) -> int:
+    """统计 frontmatter 中 metadata.produces 的列表项数量。"""
+    fm = frontmatter(text)
+    match = re.search(r"^  produces:\s*\n((?:    - .*(?:\n|$))*)", fm, re.M)
+    return len(re.findall(r"^    - ", match.group(1), re.M)) if match else 0
+
 
 class C1References(Check):
     """references 链接可解析且无孤儿。抓出过：3 处断链、1 个空 evals 目录。"""
@@ -68,21 +95,31 @@ class C2Pairing(Check):
     def run(self, root: Path, en_root: Path | None = None) -> list[Finding]:
         """`en_root` 缺省时在同目录找 `<name>-en`；给定时去那个目录找。
 
-        Phase 3 把英文版搬到同级新目录后，同级关系消失。C2 是**唯一**的
-        zh/en 漂移探测器，同级关系一断它就静默失效——而那恰好是漂移
-        风险变大的时刻。跨目录能力是拆分布局的前置条件，不是可选项。
+        Phase 3 把英文版搬到同级新目录后，同级关系消失。C2 守 Skill 结构，
+        C4/C5 分别守 evals 与 scripts/tests；三者都必须显式接收第二个根目录，
+        否则会在漂移风险变大时静默失效。
         """
         out = []
         base = en_root if en_root is not None else root
-        for d in logical_skills(root):
-            en = base / (d.name + "-en")
-            # 目录在但 SKILL.md 还没写，属尚未落地——与目录不存在同等对待。
-            # 只判 is_dir() 会在半成品目录上抛 FileNotFoundError，
-            # 而一个崩溃的检查器比一个会报错的更糟：它让后面的发现全看不到。
-            if not (en / "SKILL.md").is_file() or not (d / "SKILL.md").is_file():
+        zh_dirs = logical_skills(root)
+        for d in zh_dirs:
+            if d.name in PAIRING_EXEMPT_ZH:
                 continue
-            hz = headings((d / "SKILL.md").read_text(encoding="utf-8"))
-            he = headings((en / "SKILL.md").read_text(encoding="utf-8"))
+            en = base / (d.name + "-en")
+            zh_skill = d / "SKILL.md"
+            en_skill = en / "SKILL.md"
+            if not zh_skill.is_file():
+                out.append(Finding(self.name, d.name, "c2.missing_zh_skill"))
+                continue
+            if not en_skill.is_file():
+                # 单语树不猜另一棵树的位置；显式跨树，或已经出现半成品配对目录时才报。
+                if en_root is not None or en.exists():
+                    out.append(Finding(self.name, d.name, "c2.missing_en_skill"))
+                continue
+            zh_text = zh_skill.read_text(encoding="utf-8")
+            en_text = en_skill.read_text(encoding="utf-8")
+            hz = headings(zh_text)
+            he = headings(en_text)
             if len(hz) != len(he):
                 out.append(Finding(self.name, d.name, "c2.heading_count",
                                    zh=len(hz), en=len(he)))
@@ -91,11 +128,30 @@ class C2Pairing(Check):
             if rz != re_:
                 out.append(Finding(self.name, d.name, "c2.refs_mismatch",
                                    only_zh=sorted(rz - re_), only_en=sorted(re_ - rz)))
+            az = _relative_files(d / "assets")
+            ae = _relative_files(en / "assets")
+            if az != ae:
+                out.append(Finding(self.name, d.name, "c2.assets_mismatch",
+                                   only_zh=sorted(az - ae), only_en=sorted(ae - az)))
+            pz, pe = _produces_count(zh_text), _produces_count(en_text)
+            if pz != pe:
+                out.append(Finding(self.name, d.name, "c2.produces_count", zh=pz, en=pe))
+
+        # 反向守门：英文树多出 Skill，或中文半成品目录缺 SKILL.md，也不能静默跳过。
+        en_dirs = sorted(p for p in base.iterdir() if p.is_dir() and p.name.endswith("-en"))
+        for en in en_dirs if (en_root is not None or zh_dirs) else []:
+            zh_name = en.name[:-3]
+            if zh_name in PAIRING_EXEMPT_ZH:
+                continue
+            zh = root / zh_name
+            if not (zh / "SKILL.md").is_file() and not any(
+                    f.path == zh_name and f.key == "c2.missing_zh_skill" for f in out):
+                out.append(Finding(self.name, zh_name, "c2.missing_zh_skill"))
         return out
 
 
 class C3EnPurity(Check):
-    """英文版正文无中文残留。抓出过：英文版引用中文文件名。
+    """英文版文本产物无中文残留。抓出过：英文版引用中文文件名。
 
     必须用 Unicode 码点区间 —— 字节区间会把 — 和 → 也算成中文。
     """
@@ -106,12 +162,14 @@ class C3EnPurity(Check):
     def run(self, root: Path) -> list[Finding]:
         out = []
         for d in sorted(p for p in root.iterdir() if p.is_dir() and p.name.endswith("-en")):
-            for f in sorted(d.rglob("*.md")):
+            for f in sorted(p for p in d.rglob("*")
+                            if p.is_file() and p.suffix.lower() in EN_TEXT_SUFFIXES):
                 text = f.read_text(encoding="utf-8")
-                for i, line in enumerate(text.splitlines(), 1):
+                lines = text.splitlines()
+                for i, line in enumerate(lines, 1):
                     if CJK.search(line) and not any(m in line for m in BILINGUAL_MARKERS):
                         # 白名单：紧邻上一行标注了参考用途
-                        prev = text.splitlines()[i - 2] if i >= 2 else ""
+                        prev = lines[i - 2] if i >= 2 else ""
                         if any(m in prev for m in BILINGUAL_MARKERS):
                             continue
                         out.append(Finding(self.name,
@@ -129,9 +187,41 @@ class C4EnEvals(Check):
     name = "C4-en-evals"
     rule_key = "c4.rule"
 
-    def run(self, root: Path) -> list[Finding]:
+    def run(self, root: Path, en_root: Path | None = None) -> list[Finding]:
         out = []
-        for d in sorted(p for p in root.iterdir() if p.is_dir() and p.name.endswith("-en")):
+        english_root = en_root if en_root is not None else root
+        if en_root is not None:
+            for zh in logical_skills(root):
+                if zh.name in PAIRING_EXEMPT_ZH:
+                    continue
+                en = english_root / (zh.name + "-en")
+                if not (zh / "SKILL.md").is_file() or not (en / "SKILL.md").is_file():
+                    continue  # C2 负责报告整项 Skill 缺失。
+                zf = _relative_files(zh / "evals")
+                ef = _relative_files(en / "evals")
+                if zf != ef:
+                    out.append(Finding(self.name, zh.name, "c4.files_mismatch",
+                                       only_zh=sorted(zf - ef), only_en=sorted(ef - zf)))
+                    continue
+                zh_evals = zh / "evals" / "evals.json"
+                en_evals = en / "evals" / "evals.json"
+                if zh_evals.is_file() and en_evals.is_file():
+                    zh_items = json.loads(zh_evals.read_text(encoding="utf-8")).get("evals", [])
+                    en_items = json.loads(en_evals.read_text(encoding="utf-8")).get("evals", [])
+                    zh_sequence = [(item.get("id"), item.get("name")) for item in zh_items]
+                    en_sequence = [(item.get("id"), item.get("name")) for item in en_items]
+                    if zh_sequence != en_sequence:
+                        out.append(Finding(self.name, zh.name, "c4.eval_sequence",
+                                           zh=zh_sequence, en=en_sequence))
+                        continue
+                    for zh_item, en_item in zip(zh_items, en_items):
+                        zh_count = len(zh_item.get("assertions", []))
+                        en_count = len(en_item.get("assertions", []))
+                        if zh_count != en_count:
+                            out.append(Finding(self.name, zh.name, "c4.assertion_count",
+                                               id=zh_item.get("id"), zh=zh_count, en=en_count))
+        for d in sorted(p for p in english_root.iterdir()
+                        if p.is_dir() and p.name.endswith("-en")):
             ep = d / "evals" / "evals.json"
             if not ep.is_file():
                 continue
@@ -152,11 +242,27 @@ class C5ScriptsNeedTests(Check):
     name = "C5-scripts-tests"
     rule_key = "c5.rule"
 
-    def run(self, root: Path) -> list[Finding]:
+    def run(self, root: Path, en_root: Path | None = None) -> list[Finding]:
         out = []
-        for d in sorted(p for p in root.iterdir() if p.is_dir()):
-            if (d / "scripts").is_dir() and not (d / "tests").is_dir():
-                out.append(Finding(self.name, d.name, "c5.no_tests"))
+        roots = [root] + ([en_root] if en_root is not None else [])
+        for current in roots:
+            for d in sorted(p for p in current.iterdir() if p.is_dir()):
+                if (d / "scripts").is_dir() and not (d / "tests").is_dir():
+                    out.append(Finding(self.name, d.name, "c5.no_tests"))
+        if en_root is not None:
+            for zh in logical_skills(root):
+                if zh.name in PAIRING_EXEMPT_ZH:
+                    continue
+                en = en_root / (zh.name + "-en")
+                if not (zh / "SKILL.md").is_file() or not (en / "SKILL.md").is_file():
+                    continue  # C2 负责报告整项 Skill 缺失。
+                for bundle in ("scripts", "tests"):
+                    zf = _relative_files(zh / bundle)
+                    ef = _relative_files(en / bundle)
+                    if zf != ef:
+                        out.append(Finding(self.name, zh.name, "c5.bundle_mismatch",
+                                           bundle=bundle, only_zh=sorted(zf - ef),
+                                           only_en=sorted(ef - zf)))
         return out
 
 

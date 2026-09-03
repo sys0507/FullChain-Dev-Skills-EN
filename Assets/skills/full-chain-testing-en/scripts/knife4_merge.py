@@ -41,12 +41,12 @@ from pathinv import higher_status, SOURCE_FOR_STATUS, STATUS_RANK, validate  # n
 # scans may well use Chinese identifiers, and dropping those patterns would only reduce what
 # it can find. This is not untranslated residue.
 RISK_KEYWORDS = {
-    "permission": ["auth", "login", "token", "permission", "鉴权", "登录", "权限", "越权"],
-    "money": ["order", "pay", "payment", "charge", "fund", "下单", "支付", "资金", "扣费"],
-    "data-loss": ["delete", "drop", "purge", "remove", "删除", "清空", "迁移"],
-    "core-flow": ["checkout", "core", "main", "critical", "primary", "主流程", "核心", "关键流程", "结算"],
+    "permission": ["auth", "login", "token", "permission", "鉴权", "登录", "权限", "越权"],  # Chinese (for reference)
+    "money": ["order", "pay", "payment", "charge", "fund", "下单", "支付", "资金", "扣费"],  # Chinese (for reference)
+    "data-loss": ["delete", "drop", "purge", "remove", "删除", "清空", "迁移"],  # Chinese (for reference)
+    "core-flow": ["checkout", "core", "main", "critical", "primary", "主流程", "核心", "关键流程", "结算"],  # Chinese (for reference)
     "irreversible-delivery": ["push", "send", "notify", "deliver", "cross-channel",
-                              "推送", "投递", "通知"],
+                              "推送", "投递", "通知"],  # Chinese (for reference)
 }
 
 

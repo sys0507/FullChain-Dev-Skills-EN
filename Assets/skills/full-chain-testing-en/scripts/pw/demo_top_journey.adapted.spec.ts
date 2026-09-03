@@ -14,7 +14,7 @@ import { test, expect } from "@playwright/test";
 test("journey_j2_adapted: real browser drives live demo end-to-end", async ({ page, request }) => {
   // start hop (ui): load the page and click the order button (real browser, real DOM)
   await page.goto("/");
-  await page.getByRole("button", { name: /place order|下单/i }).click();
+  await page.getByRole("button", { name: /place order/i }).click();
 
   // the app echoes its response JSON (incl. the cid it minted) into #out — read it
   // with a condition-based wait, never a fixed sleep.

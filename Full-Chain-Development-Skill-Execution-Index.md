@@ -78,18 +78,13 @@ If you would rather not track the order yourself, use the orchestrator:
 
 | Skill | It knows | It does not know |
 |---|---|---|
-| `fullchain-dev-workflow` (Chinese tree only) | The order, the gates, the conditional criteria | **How each stage is done** |
+| `fullchain-dev-workflow-en` | The order, the gates, the conditional criteria | **How each stage is done** |
 
 It works out which skill is next and whether to stop, recording "where we are, what was
 skipped and why" into the chain state file. It supports resuming from any stage.
 
 **How each step is done still comes from that stage's own skill** — the orchestrator does not
 restate it, because restating creates a second source of truth.
-
-> **The orchestrator has no English version yet.** The project's own rule is Chinese-first: a
-> skill must be stable and have run against a real project before its English version is
-> made, and the orchestrator has not yet met that bar. Until it does, drive the English chain
-> from this index.
 
 **All eleven stages have a skill.** No row's second column says "no skill yet".
 **The only remaining reason to open the frozen template is to look up design reasoning** —

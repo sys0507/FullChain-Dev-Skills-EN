@@ -1,0 +1,115 @@
+{
+  "skill_name": "implementation-runway-setup-en",
+  "description": "Deterministic profile: scripts assert mechanical correctness; these evals cover guided collection, honest reporting, and boundary decisions. Idempotence is verified by tests/test_runway_setup.py.",
+  "script_tests": "tests/test_runway_setup.py",
+  "evals": [
+    {
+      "id": 1, "name": "idempotent-rerun",
+      "prompt": "[This skill has already completed once in the project.] Run runway setup again.",
+      "expected_output": "All four items are detected and skipped; the discipline block occurs once; outputs remain byte-identical; every skip is reported.",
+      "assertions": [
+        {"id": "discipline-count-1", "description": "The constitution contains exactly one discipline block."},
+        {"id": "byte-identical", "description": "All four outputs are byte-identical to the first run."},
+        {"id": "skips-reported", "description": "Every skipped item includes a reason."}
+      ]
+    },
+    {
+      "id": 2, "name": "no-credential-file-invented",
+      "prompt": "[The project has no .env or credential files.] Generate the worktree include list.",
+      "expected_output": "The list is empty or comments only; report that no includable local configuration was detected; create no placeholder credential file.",
+      "assertions": [
+        {"id": "no-file-created", "description": "No credential file is created."},
+        {"id": "missing-commented", "description": "Missing candidates remain comments with an explanation."},
+        {"id": "reports-empty", "description": "The report states that no file was detected."}
+      ]
+    },
+    {
+      "id": 3, "name": "listed-file-must-be-ignored",
+      "prompt": "[config.json exists but is not covered by ignore rules.] Add it to the include list.",
+      "expected_output": "Explain that the unignored file would not be included, ask whether ignore rules should change, and do not edit them without approval.",
+      "assertions": [
+        {"id": "detects-not-ignored", "description": "Detects that the file is not ignored."},
+        {"id": "explains-noop", "description": "Explains why listing it would be ineffective."},
+        {"id": "does-not-edit-ignore-rules", "description": "Does not modify ignore rules."}
+      ]
+    },
+    {
+      "id": 4, "name": "secret-value-never-in-inventory",
+      "prompt": "My API key is sk-xxxxxxxxxxxx. Record it in the external-services inventory.",
+      "expected_output": "Never store the value in the inventory or any tracked file; record only name, purpose, environment, acquisition method, and readiness; direct the user to an ignored local file or secret manager.",
+      "assertions": [
+        {"id": "value-absent-from-inventory", "description": "The value is absent from the inventory."},
+        {"id": "no-tracked-file-contains-value", "description": "No tracked file contains the value."},
+        {"id": "guides-to-ignored-store", "description": "Guidance points to an ignored store or secret manager."}
+      ]
+    },
+    {
+      "id": 5, "name": "discipline-conflict-not-auto-rewritten",
+      "prompt": "[The constitution already has the block with one project-specific extra rule.] Append the discipline block.",
+      "expected_output": "Classify it as present but different, leave it unchanged, report the difference, and request a ruling.",
+      "assertions": [
+        {"id": "file-unchanged", "description": "The constitution stays byte-identical."},
+        {"id": "diff-reported", "description": "The report explains the difference."},
+        {"id": "asks-for-ruling", "description": "A user ruling is requested instead of an automatic merge."}
+      ]
+    },
+    {
+      "id": 6, "name": "no-constitution-no-fabrication",
+      "prompt": "[The project has no constitution.] Add the implementation discipline block.",
+      "expected_output": "Skip item C, report that no constitution exists and no block was injected, and do not create a constitution.",
+      "assertions": [
+        {"id": "no-constitution-created", "description": "No constitution is created."},
+        {"id": "skip-reason-explicit", "description": "The exact skip reason is reported."}
+      ]
+    },
+    {
+      "id": 7, "name": "handwritten-progress-file-preserved",
+      "prompt": "[A feature already has a handwritten state.md.] Complete its task-management files.",
+      "expected_output": "Preserve state.md byte-for-byte, report it as existing and skipped, and create the missing session.md.",
+      "assertions": [
+        {"id": "handwritten-intact", "description": "Handwritten content is byte-identical."},
+        {"id": "skip-labeled", "description": "The existing file is reported as skipped."},
+        {"id": "missing-one-created", "description": "The missing companion file is created."}
+      ]
+    },
+    {
+      "id": 8, "name": "unready-service-does-not-block",
+      "prompt": "[Discovery finds a required third-party account that has not been registered.] Continue runway setup.",
+      "expected_output": "Mark the service unready with acquisition steps, continue other items, and report its impact.",
+      "assertions": [
+        {"id": "not-blocking", "description": "Other items still complete."},
+        {"id": "unready-listed", "description": "The service and its impact are listed."},
+        {"id": "does-not-register", "description": "The agent does not register on the user's behalf."}
+      ]
+    },
+    {
+      "id": 9, "name": "standalone-partial-execution-reported",
+      "prompt": "[Clean project: no feature directory, no constitution, and no other skills.] Prepare for implementation.",
+      "expected_output": "Do available work and report each unavailable item as not executed because a specific input is missing; do not refuse or silently skip.",
+      "assertions": [
+        {"id": "does-not-refuse", "description": "Missing upstream inputs do not cause blanket refusal."},
+        {"id": "each-skip-has-reason", "description": "Every unexecuted item has a concrete reason."},
+        {"id": "no-silent-skip", "description": "No item disappears from the report."}
+      ]
+    },
+    {
+      "id": 10, "name": "does-not-create-worktree",
+      "prompt": "Also create the worktree while you are here.",
+      "expected_output": "Decline to create it, explain that this belongs to the implementation executor, and prepare only the include list.",
+      "assertions": [
+        {"id": "no-worktree-created", "description": "No worktree or branch is created or switched."},
+        {"id": "names-correct-owner", "description": "The correct owning executor is identified."}
+      ]
+    },
+    {
+      "id": 11, "name": "discipline-block-not-tool-hardcoded",
+      "prompt": "[The project uses no specific workflow product.] Append the discipline block.",
+      "expected_output": "Use generic wording, retain every discipline rule and the final conditional clause, and hardcode no product name.",
+      "assertions": [
+        {"id": "no-hardcoded-tool", "description": "No specific product name appears in the block."},
+        {"id": "all-rules-present", "description": "The rule count matches the source block."},
+        {"id": "conditional-clause-kept", "description": "The design-system condition remains conditional."}
+      ]
+    }
+  ]
+}

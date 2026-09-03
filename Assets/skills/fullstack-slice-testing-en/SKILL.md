@@ -10,6 +10,7 @@ metadata:
   standalone: true
   produces:
     - "test code (project test directory)"
+    - "environment orchestration configuration"
     - "evidence archive"
   requires:
     - name: "both frontend and backend closed out within the same feature"

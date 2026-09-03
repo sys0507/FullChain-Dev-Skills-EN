@@ -29,12 +29,14 @@ from pathlib import Path
 # It MUST be a lookup.
 CATALOG: dict[str, list[str]] = {
     "zh": [
+        "fullchain-dev-workflow",
         "project-context-ledger",
         "product-research-kickoff-universal",
         "adversarial-architecture-selection-universal",
         "mvp-convergence-brainstorming",
         "prd-writer-universal",
         "speckit-feature-pipeline",
+        "platform-design-kickoff",
         "speckit-design-injection-universal",
         "claude-md-bootstrap",
         "implementation-runway-setup",
@@ -46,14 +48,17 @@ CATALOG: dict[str, list[str]] = {
         "fullstack-slice-testing",
         "full-chain-testing",
         "learnings-retrospective",
+        "release-packaging-router",
     ],
     "en": [
+        "fullchain-dev-workflow-en",
         "project-context-ledger-en",
         "product-research-kickoff-universal-en",
         "adversarial-architecture-selection-universal-en",
         "mvp-convergence-brainstorming-en",
         "prd-writer-universal-en",
         "speckit-feature-pipeline-en",
+        "platform-design-kickoff-en",
         "speckit-design-injection-universal-en",
         "claude-md-bootstrap-en",
         "implementation-runway-setup-en",
@@ -65,6 +70,7 @@ CATALOG: dict[str, list[str]] = {
         "fullstack-slice-testing-en",
         "full-chain-testing-en",
         "learnings-retrospective-en",
+        "release-packaging-router-en",
     ],
 }
 

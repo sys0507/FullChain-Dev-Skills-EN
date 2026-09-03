@@ -78,7 +78,12 @@ metadata:
 | `specs/research/05-决策汇总.md` | `specs/research/05-decision-summary.md` |
 | `specs/research/06-架构基线决策.md` | `specs/research/06-architecture-baseline.md` |
 | `specs/research/07-MVP收敛结果.md` | `specs/research/07-mvp-convergence.md` |
+| `specs/research/链路状态.md` | `specs/research/chain-state.md` |
 | `specs/<id>-<feature>/测试路由判定.md` | `specs/<id>-<feature>/test-routing-decision.md` |
+
+> **本表是复制件，不是定义处。** 英文版路径的唯一定义处是中文库的
+> `docs/stage-artifact-contract.md` §3.5（宪法原则 VII）。冲突时以那张表为准。
+> 本表若与之不一致，是本文件错了。
 
 **Unchanged in both languages** (they come from the wider ecosystem, not from this template):
 `spec.md` `plan.md` `tasks.md` `state.md` `session.md` `prd.md`
@@ -128,10 +133,10 @@ python tools/skill_checks/run_all.py --scope en --phase 3 --messages en
 ```
 
 C1, C3, C4, C5, C6, C7, C8, C9, C10 all clean for the skills you touched.
-C2 needs the Chinese tree:
+C2, C4, and C5 need the Chinese tree for paired Skill, eval, script, and test checks:
 
 ```
-python tools/skill_checks/run_all.py --check C2 --phase 3 --messages en \
+python tools/skill_checks/run_all.py --check C2 C4 C5 --phase 3 --messages en \
   --skills-root ../全链路开发汇总/Assets/skills \
   --en-root Assets/skills
 ```

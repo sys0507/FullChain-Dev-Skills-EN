@@ -10,10 +10,9 @@
       "prompt": "Converge this into an MVP. Reading the research, the locked architecture baseline looks like it will struggle with the offline case - maybe we should reconsider it here.",
       "expected_output": "Does not reopen the baseline inside the convergence; records it as a proposal to overturn, requiring new evidence and an adjudication.",
       "assertions": [
-        {"id": "not-reopened", "description": "Alternative architectures are not weighed inside the convergence"},
-        {"id": "explicit-proposal", "description": "It is labelled a proposal to overturn an upstream conclusion"},
-        {"id": "requires-evidence", "description": "New evidence is required, and re-weighing old evidence is refused"},
-        {"id": "convergence-continues", "description": "Convergence continues on the original baseline while awaiting adjudication"}
+        {"id": "no-reopen-in-convergence", "description": "The convergence result does not reassess the locked architecture"},
+        {"id": "escalation-path-used", "description": "Any objection is explicitly labelled as a proposal to overturn the baseline and sent to the user for adjudication"},
+        {"id": "convergence-continues", "description": "Convergence neither stops for the objection nor proceeds under the proposed architecture"}
       ]
     },
     {
@@ -23,10 +22,9 @@
       "prompt": "Same as above. Follow-up: I found a real problem, and pointing it out is the responsible thing to do.",
       "expected_output": "Concedes that finding a problem should be said, then constrains how it is said.",
       "assertions": [
-        {"id": "concedes", "description": "Agrees explicitly that a real problem should be raised"},
-        {"id": "constrains-the-how", "description": "Points out that the manner of raising it is prescribed"},
-        {"id": "names-the-cost", "description": "States that reopening voids the adversarial selection's output without the user knowing"},
-        {"id": "still-not-reopened", "description": "After the follow-up the baseline is still not reopened"}
+        {"id": "acknowledges-then-redirects", "description": "Acknowledges the problem without reopening it and redirects to the overturn process"},
+        {"id": "requires-new-evidence", "description": "Explicitly requires new evidence and states what does not qualify as new evidence"},
+        {"id": "explains-cost", "description": "Explains that reopening would silently invalidate the adversarial technology-selection output"}
       ]
     },
     {
@@ -36,9 +34,8 @@
       "prompt": "Option B was rejected upstream, but it looks simpler. Let's put it back on the table.",
       "expected_output": "Does not revive it; points at the recorded rejection reasons and requires the overturn path.",
       "assertions": [
-        {"id": "not-revived", "description": "The rejected option does not re-enter the discussion as an open choice"},
-        {"id": "cites-upstream", "description": "Points at where the rejection is argued upstream"},
-        {"id": "names-the-risk", "description": "Notes that re-raising it usually happens on weaker grounds than the original argument"}
+        {"id": "not-included", "description": "The capability is not included in the MVP feature list"},
+        {"id": "cites-rejection-reason", "description": "Points to the upstream location containing the rejection rationale"}
       ]
     },
     {
@@ -48,10 +45,9 @@
       "prompt": "Upstream has seven open questions. Converge, and tidy up the ones that no longer matter.",
       "expected_output": "All seven are carried forward; obsolete ones are annotated, not removed.",
       "assertions": [
-        {"id": "counts-in", "description": "The upstream questions are counted before converging"},
-        {"id": "counts-out", "description": "The inherited count is rechecked afterwards and is at least seven"},
-        {"id": "obsolete-annotated", "description": "Anything judged obsolete keeps its entry with the reason"},
-        {"id": "no-silent-drop", "description": "Nothing is dropped silently for being unimportant"}
+        {"id": "inherited-count-preserved", "description": "Q10 retains at least seven inherited questions"},
+        {"id": "no-silent-drop", "description": "No upstream question disappears without being listed or having its disposition explained"},
+        {"id": "invalidated-still-listed", "description": "Questions judged invalid remain listed with the reason"}
       ]
     },
     {
@@ -85,9 +81,8 @@
       "prompt": "Converge. There are three low-confidence candidates in the ledger.",
       "expected_output": "All three reach one of the two exits; none disappears silently.",
       "assertions": [
-        {"id": "all-adjudicated", "description": "Every candidate has an adjudication row"},
-        {"id": "two-exits-only", "description": "Each is either promoted with a basis or kept open; there is no middle state"},
-        {"id": "count-matches", "description": "The adjudication table has as many rows as the ledger has candidates"}
+        {"id": "low-confidence-present", "description": "The low-confidence candidate appears in the adjudication table"},
+        {"id": "no-vanishing", "description": "No candidate disappears without being confirmed, kept open, or mentioned"}
       ]
     },
     {
@@ -97,9 +92,8 @@
       "prompt": "While converging, suggest how the sync feature should be implemented.",
       "expected_output": "Declines to select technology; notes it belongs to the planning stage.",
       "assertions": [
-        {"id": "no-library-named", "description": "No specific framework, library or algorithm is selected"},
-        {"id": "names-the-stage", "description": "States that technology selection belongs to the later planning stage"},
-        {"id": "names-the-cost", "description": "Notes that choosing here pollutes that stage's decision space"}
+        {"id": "declines-tech-choice", "description": "The convergence result makes no specific framework or library choice"},
+        {"id": "names-correct-stage", "description": "Identifies the stage that owns technology selection"}
       ]
     },
     {
@@ -121,9 +115,8 @@
       "prompt": "Converge this documentation-only project.",
       "expected_output": "All eleven questions answered, with any inapplicable one labelled as such with a reason.",
       "assertions": [
-        {"id": "none-blank", "description": "No question is left blank"},
-        {"id": "inapplicable-labelled", "description": "Inapplicable questions say 'not applicable' with a reason rather than being forced"},
-        {"id": "numbers-present", "description": "Non-functional requirements carry numbers, not adjectives"}
+        {"id": "all-eleven-present", "description": "All eleven questions contain an answer"},
+        {"id": "na-with-reason", "description": "Inapplicable items state the reason instead of remaining blank"}
       ]
     },
     {
@@ -146,9 +139,8 @@
       "prompt": "Converge. Mark feature Y as Should, and include it in the MVP deliverables.",
       "expected_output": "Catches the contradiction between the priority label and the delivery scope.",
       "assertions": [
-        {"id": "catches-contradiction", "description": "Points out that a Should item appearing in the MVP deliverables is inconsistent"},
-        {"id": "does-not-silently-fix", "description": "Asks which of the two is correct rather than quietly changing one"},
-        {"id": "cites-the-precedent", "description": "Notes this exact contradiction once went unnoticed in this project until the tenth spec"}
+        {"id": "inconsistency-detected", "description": "Identifies the contradiction between priority and delivery scope"},
+        {"id": "escalated", "description": "Sends the contradiction to the user for adjudication instead of resolving it unilaterally"}
       ]
     }
   ]

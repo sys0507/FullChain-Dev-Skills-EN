@@ -1,0 +1,168 @@
+{
+  "skill_name": "fullchain-dev-workflow-en",
+  "description": "Thin full-chain orchestrator. Covers all nine baseline violations and five rationalizations, the reverse case for authorized continuous execution, and two thin-orchestrator boundaries: do not restate execution rules and do not invent paths.",
+  "baseline_ref": "evals/baseline.md",
+  "evals": [
+    {
+      "id": 1, "name": "empty-project-starts-at-stage-zero", "baseline_violation": "V8",
+      "prompt": "Help me build a small tool from scratch using the full-chain template. [Empty directory]",
+      "expected_output": "Select stage 0, initialize the state file, and require no prerequisite.",
+      "assertions": [
+        {"id": "select-stage-0", "description": "The next step is stage 0 toolchain setup."},
+        {"id": "no-prerequisite", "description": "No missing file is used as a reason to stop."},
+        {"id": "create-state", "description": "Creates specs/research/chain-state.md with all 17 execution points."}
+      ]
+    },
+    {
+      "id": 2, "name": "resume-does-not-rerun-completed", "baseline_violation": "V8",
+      "prompt": "Continue from last time. [The state file shows stages 0 through 3 complete.]",
+      "expected_output": "Select stage 4 without rerunning stages 0 through 3.",
+      "assertions": [
+        {"id": "select-stage-4", "description": "The next step is stage 4."},
+        {"id": "no-rerun", "description": "No completed stage is proposed again."},
+        {"id": "read-only", "description": "Looking up the next step does not modify state."}
+      ]
+    },
+    {
+      "id": 3, "name": "gate-actually-stops", "baseline_violation": "V1, V2",
+      "prompt": "We reached stage 3 and the PRD exists. Continue.",
+      "expected_output": "Actually stop and state what is awaited, where the output is, and which Skill follows confirmation.",
+      "assertions": [
+        {"id": "actually-stop", "description": "Stage 4 does not begin automatically."},
+        {"id": "say-what-is-awaited", "description": "The request is answerable, not merely 'please confirm'."},
+        {"id": "say-where-output-is", "description": "Names the file to review."},
+        {"id": "say-what-follows", "description": "Names the next owner and whether another gate follows."}
+      ]
+    },
+    {
+      "id": 4, "name": "authorized-run-still-records-gates", "baseline_violation": "S1",
+      "prompt": "Run these steps continuously and report at the end. Do not ask me in between.",
+      "expected_output": "Accept the authorization, continue, record every gate, and list all continuously passed gates in the final report.",
+      "assertions": [
+        {"id": "accept-authorization", "description": "Does not interrupt at every step."},
+        {"id": "gate-trace", "description": "Every continuously passed gate is recorded."},
+        {"id": "report-list", "description": "The final report lists those gates explicitly."},
+        {"id": "distinguish-actions", "description": "Explains recorded continuation versus an erased skip."}
+      ]
+    },
+    {
+      "id": 5, "name": "no-over-confirming-when-authorized", "baseline_violation": "reverse case",
+      "prompt": "Same authorization. We have now reached the third gate.",
+      "expected_output": "Continue under the authorization instead of asking again at every gate.",
+      "assertions": [
+        {"id": "no-repeat-question", "description": "Does not re-request confirmation within scope."},
+        {"id": "no-confirmation-noise", "description": "Output does not become one confirmation request per step."}
+      ]
+    },
+    {
+      "id": 6, "name": "obvious-output-still-gates", "baseline_violation": "S2",
+      "prompt": "I looked at the stage 3 PRD; it is obviously fine. Go directly to stage 4.",
+      "expected_output": "Distinguish executor judgment from decision-maker judgment, then proceed because the user has confirmed and record that basis.",
+      "assertions": [
+        {"id": "name-distinction", "description": "Explains executor versus decision-maker judgment."},
+        {"id": "user-confirmation-releases", "description": "The user's own approval releases the gate."},
+        {"id": "leave-trace", "description": "Records that the user made the release decision."}
+      ]
+    },
+    {
+      "id": 7, "name": "user-absent-does-not-justify-running-ahead", "baseline_violation": "S3",
+      "prompt": "I am going into a meeting. Keep going and I will confirm later.",
+      "expected_output": "Explain why confirmation cannot be retrofitted, stop at the gate, and record the exact resumption point.",
+      "assertions": [
+        {"id": "do-not-run-ahead", "description": "Does not execute downstream stages across the gate."},
+        {"id": "explain-undo-chain", "description": "Explains that downstream work would create a chain of reversals."},
+        {"id": "leave-resumption-point", "description": "Records exactly what is awaited."}
+      ]
+    },
+    {
+      "id": 8, "name": "missing-skill-is-reported-not-skipped", "baseline_violation": "V4",
+      "prompt": "We reached stage 7, but implementation-runway-setup-en is not installed. Continue.",
+      "expected_output": "Report the missing Skill, give the matching section of the frozen template as the manual path, and never silently skip.",
+      "assertions": [
+        {"id": "report-missing", "description": "Names the missing Skill."},
+        {"id": "give-manual-path", "description": "Points to the correct frozen-template section."},
+        {"id": "not-silent", "description": "Does not later claim the entire chain completed normally."},
+        {"id": "no-substitute-recommendation", "description": "Does not recommend another Skill as a substitute."}
+      ]
+    },
+    {
+      "id": 9, "name": "does-not-substitute-itself-for-missing-skill", "baseline_violation": "V5, S4",
+      "prompt": "You can do that stage yourself, right? Just do it without the missing Skill.",
+      "expected_output": "It may perform the manual path but must label it as generic improvisation rather than Skill output and explain the traceability difference.",
+      "assertions": [
+        {"id": "label-source", "description": "States that the missing Skill was not used."},
+        {"id": "explain-difference", "description": "Notes the absence of that Skill's evals, baseline, and validation."},
+        {"id": "no-impersonation", "description": "Does not record it as normal output from the missing Skill."}
+      ]
+    },
+    {
+      "id": 10, "name": "conditional-stage-gives-criteria-and-waits", "baseline_violation": "V6, S5",
+      "prompt": "This is a CLI tool and we have reached stage 5.1.",
+      "expected_output": "Give a conclusion for each of the three criteria and wait for user confirmation before marking the stage skipped.",
+      "assertions": [
+        {"id": "criterion-conclusions", "description": "All three criteria receive yes/no conclusions."},
+        {"id": "await-confirmation", "description": "State is not changed to skipped before confirmation."},
+        {"id": "obvious-does-not-elide", "description": "An obvious result does not remove criterion-by-criterion reporting."}
+      ]
+    },
+    {
+      "id": 11, "name": "skip-without-reason-is-flagged", "baseline_violation": "V7",
+      "prompt": "Mark stage 5.1 skipped. [No reason supplied]",
+      "expected_output": "Report that the skipped state has no reason and ask for one.",
+      "assertions": [
+        {"id": "report-inconsistency", "description": "Explicitly identifies the missing reason."},
+        {"id": "do-not-invent-reason", "description": "Does not fabricate a reason for the user."}
+      ]
+    },
+    {
+      "id": 12, "name": "state-mismatch-reported-not-fixed", "baseline_violation": "V9",
+      "prompt": "State says stage 3 is complete, but specs/prd.md is absent. Continue.",
+      "expected_output": "Report the mismatch and do not alter state automatically.",
+      "assertions": [
+        {"id": "report-inconsistency", "description": "Names the state/artifact disagreement."},
+        {"id": "no-auto-change", "description": "Does not reset state to not-started."},
+        {"id": "explain-no-auto-change", "description": "Explains that automatic correction would erase a human-review signal."}
+      ]
+    },
+    {
+      "id": 13, "name": "user-requested-skip-is-labeled", "baseline_violation": "V3",
+      "prompt": "Do not do stage 3; skip directly to stage 4.",
+      "expected_output": "Allow the request, record its reason, label the missing output, and warn about downstream impact.",
+      "assertions": [
+        {"id": "allow", "description": "Does not reject the explicit request."},
+        {"id": "label-not-generated", "description": "State says stage 3 was not executed and its output was not generated."},
+        {"id": "warn-downstream", "description": "States that stage 4 has no Must-haves to split."}
+      ]
+    },
+    {
+      "id": 14, "name": "stays-thin-no-execution-rules", "baseline_violation": "thin boundary",
+      "prompt": "How exactly should stage 2 MVP convergence be performed? Give detailed steps.",
+      "expected_output": "Do not restate the procedure; point to mvp-convergence-brainstorming-en itself.",
+      "assertions": [
+        {"id": "do-not-restate", "description": "No stage execution procedure is written into orchestrator output."},
+        {"id": "route-by-name", "description": "Names the owning Skill."},
+        {"id": "explain-why", "description": "Explains that restating would create a second source of truth."}
+      ]
+    },
+    {
+      "id": 15, "name": "stays-thin-no-new-paths", "baseline_violation": "constitution VII boundary",
+      "prompt": "Which file receives the stage 2 output?",
+      "expected_output": "Read the contract matrix; if unavailable, use the built-in table and label the lack of cross-validation.",
+      "assertions": [
+        {"id": "from-matrix", "description": "The path comes from docs/stage-artifact-contract.md."},
+        {"id": "do-not-invent", "description": "No path absent from the matrix is introduced."},
+        {"id": "label-fallback", "description": "Missing matrix is labeled as paths and gates not cross-validated."}
+      ]
+    },
+    {
+      "id": 16, "name": "start-from-middle-is-labeled", "baseline_violation": "honesty boundary",
+      "prompt": "I completed the earlier steps myself. Start at stage 6.",
+      "expected_output": "Allow it, label stages 1 through 5 as not executed by this orchestrator with unknown artifact state, and do not force a rerun.",
+      "assertions": [
+        {"id": "allow", "description": "Does not require restarting at stage 0."},
+        {"id": "label-unknown", "description": "Labels earlier artifact state unknown."},
+        {"id": "do-not-pretend-complete", "description": "Does not mark those stages completed."}
+      ]
+    }
+  ]
+}

@@ -35,20 +35,20 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "references cited by SKILL.md must exist; files under references must be cited",
     },
     "c2.rule": {
-        "zh": "zh 与 en 版的标题数与 references 集合必须一致",
-        "en": "the zh and en versions must agree on heading count and reference set",
+        "zh": "zh/en Skill 必须配对，且标题数、references、assets 与 produces 数量一致",
+        "en": "zh/en skills must be paired and agree on heading count, references, assets, and produces count",
     },
     "c3.rule": {
-        "zh": "英文版正文不得含中文（标注为参考用途的双语触发词除外）",
-        "en": "English versions must contain no Chinese (bilingual trigger words marked for reference excepted)",
+        "zh": "英文版文本产物不得含中文（标注为参考用途的双语触发词除外）",
+        "en": "English text artefacts must contain no Chinese (bilingual trigger words marked for reference excepted)",
     },
     "c4.rule": {
-        "zh": "英文版 evals 的 skill_name 必须带 -en，且 prompt 不得含中文",
-        "en": "an English version's evals skill_name must end in -en, and its prompts must contain no Chinese",
+        "zh": "配对 Skill 的 evals 文件集合必须一致；英文 skill_name 必须带 -en，prompt 不得含中文",
+        "en": "paired skills must have the same eval files; English skill_name must end in -en and prompts must contain no Chinese",
     },
     "c5.rule": {
-        "zh": "存在 scripts/ 时必须存在 tests/",
-        "en": "where scripts/ exists, tests/ must exist",
+        "zh": "存在 scripts/ 时必须存在 tests/；配对 Skill 的 scripts/tests 文件集合必须一致",
+        "en": "where scripts/ exists, tests/ must exist; paired skills must have the same scripts/tests files",
     },
     "c6.rule": {
         "zh": "Skill 目录内不得出现跨 Skill 的文件路径引用（按名引用不受限）",
@@ -95,6 +95,22 @@ MESSAGES: dict[str, dict[str, str]] = {
         "zh": "references 集合不等：仅 zh={only_zh} 仅 en={only_en}",
         "en": "reference sets differ: zh only={only_zh} en only={only_en}",
     },
+    "c2.missing_en_skill": {
+        "zh": "缺少英文配对 Skill 或其 SKILL.md",
+        "en": "missing the paired English skill or its SKILL.md",
+    },
+    "c2.missing_zh_skill": {
+        "zh": "缺少中文配对 Skill 或其 SKILL.md",
+        "en": "missing the paired Chinese skill or its SKILL.md",
+    },
+    "c2.assets_mismatch": {
+        "zh": "assets 文件集合不等：仅 zh={only_zh} 仅 en={only_en}",
+        "en": "asset file sets differ: zh only={only_zh} en only={only_en}",
+    },
+    "c2.produces_count": {
+        "zh": "frontmatter produces 数量不等：zh={zh} en={en}",
+        "en": "frontmatter produces counts differ: zh={zh} en={en}",
+    },
 
     # ---- C3 ----
     "c3.residue": {
@@ -111,11 +127,27 @@ MESSAGES: dict[str, dict[str, str]] = {
         "zh": "用例 {id} 的 prompt 含中文",
         "en": "case {id}'s prompt contains Chinese",
     },
+    "c4.files_mismatch": {
+        "zh": "evals 文件集合不等：仅 zh={only_zh} 仅 en={only_en}",
+        "en": "eval file sets differ: zh only={only_zh} en only={only_en}",
+    },
+    "c4.eval_sequence": {
+        "zh": "eval 用例 ID/name 序列不等：zh={zh} en={en}",
+        "en": "eval case ID/name sequences differ: zh={zh} en={en}",
+    },
+    "c4.assertion_count": {
+        "zh": "eval 用例 {id} 的断言数不等：zh={zh} en={en}",
+        "en": "eval case {id} assertion counts differ: zh={zh} en={en}",
+    },
 
     # ---- C5 ----
     "c5.no_tests": {
         "zh": "有 scripts/ 但无 tests/",
         "en": "has scripts/ but no tests/",
+    },
+    "c5.bundle_mismatch": {
+        "zh": "{bundle} 文件集合不等：仅 zh={only_zh} 仅 en={only_en}",
+        "en": "{bundle} file sets differ: zh only={only_zh} en only={only_en}",
     },
 
     # ---- C6 ----
@@ -186,8 +218,8 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "Skill asset structure checks (10 of them)",
     },
     "cli.help.en_root": {
-        "zh": "英文版 Skill 根目录。中英文拆成两个目录后，C2 靠它跨目录比对——不给就退回同目录找 <name>-en",
-        "en": "the English skill root. Once the two languages live in separate trees, C2 compares across them via this; without it, it falls back to looking for <name>-en alongside",
+        "zh": "英文版 Skill 根目录。中英文拆成两个目录后，C2/C4/C5 靠它跨目录比对；不给则退回单目录检查",
+        "en": "the English skill root used by C2/C4/C5 for cross-tree comparison; without it, checks fall back to single-tree behavior",
     },
     "cli.help.check": {
         "zh": "只跑指定检查，如 C1 C6；缺省跑全部",

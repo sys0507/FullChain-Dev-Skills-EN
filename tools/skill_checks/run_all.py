@@ -79,8 +79,9 @@ def main(argv: list[str] | None = None) -> int:
     postponed: list[str] = []
 
     for chk in selected:
-        # C2 是唯一的 zh/en 漂移探测器，它需要知道英文版在哪
-        raw = chk.run(root, en_root) if chk.name.startswith("C2") else chk.run(root)
+        # C2/C4/C5 分别守 Skill、evals、scripts/tests 的跨语言配对。
+        paired = chk.name.split("-")[0] in {"C2", "C4", "C5"}
+        raw = chk.run(root, en_root) if paired else chk.run(root)
         found = [f for f in raw if in_scope(f)]
         out_of_scope += len(raw) - len(found)
         chk_phase = getattr(chk, "phase", 1)

@@ -31,51 +31,51 @@ suffix inconsistency cannot be removed by renaming, so it has to be enumerated.
 
 | # | Directory | Purpose | Stage called |
 |:-:|---|---|:---:|
-| 1 | `project-context-ledger` | Three-state context ledger | throughout |
-| 2 | `product-research-kickoff-universal` | Four-way parallel kickoff research | 1.1-1.2 |
-| 3 | `adversarial-architecture-selection-universal` | Adversarial architecture selection | 1.3 |
-| 4 | `mvp-convergence-brainstorming` | MVP convergence | 2 |
-| 5 | `prd-writer-universal` | The 14-chapter PRD | 3 |
-| 6 | `speckit-feature-pipeline` | Feature four-step documents | 4 |
-| 7 | `speckit-design-injection-universal` | Design system injection | 5.2-5.3 |
-| 8 | `claude-md-bootstrap` | Project context file | 6 |
-| 9 | `implementation-runway-setup` | Pre-implementation setup | 7 |
-| 10 | `run-feature` | Single-feature TDD implementation | 8 |
-| 11 | `testing-system-blueprint` | Testing system blueprint | 9 |
-| 12 | `test-routing-advisor` | Test routing decision | 9.1 |
-| 13 | `backend-testing` | Backend gap backfill | 9.2 |
-| 14 | `frontend-testing` | Frontend gap backfill | 9.2 |
-| 15 | `fullstack-slice-testing` | Local seam reconciliation | 9.2 |
-| 16 | `full-chain-testing` | Cross-feature end-to-end | 9.2 |
-| 17 | `learnings-retrospective` | Lessons retrospective | 10 |
+| 1 | `fullchain-dev-workflow` | Full-chain orchestration | 0-11 |
+| 2 | `project-context-ledger` | Three-state context ledger | throughout |
+| 3 | `product-research-kickoff-universal` | Four-way parallel kickoff research | 1.1-1.2 |
+| 4 | `adversarial-architecture-selection-universal` | Adversarial architecture selection | 1.3 |
+| 5 | `mvp-convergence-brainstorming` | MVP convergence | 2 |
+| 6 | `prd-writer-universal` | The 14-chapter PRD | 3 |
+| 7 | `speckit-feature-pipeline` | Feature four-step documents | 4 |
+| 8 | `platform-design-kickoff` | Platform design kickoff | 5.1 |
+| 9 | `speckit-design-injection-universal` | Design system injection | 5.2-5.3 |
+| 10 | `claude-md-bootstrap` | Project context file | 6 |
+| 11 | `implementation-runway-setup` | Pre-implementation setup | 7 |
+| 12 | `run-feature` | Single-feature TDD implementation | 8 |
+| 13 | `testing-system-blueprint` | Testing system blueprint | 9 |
+| 14 | `test-routing-advisor` | Test routing decision | 9.1 |
+| 15 | `backend-testing` | Backend gap backfill | 9.2 |
+| 16 | `frontend-testing` | Frontend gap backfill | 9.2 |
+| 17 | `fullstack-slice-testing` | Local seam reconciliation | 9.2 |
+| 18 | `full-chain-testing` | Cross-feature end-to-end | 9.2 |
+| 19 | `learnings-retrospective` | Lessons retrospective | 10 |
+| 20 | `release-packaging-router` | Release packaging router | 11 |
 
 ## The English catalogue (en)
 
 | # | Directory |
 |:-:|---|
-| 1 | `project-context-ledger-en` |
-| 2 | `product-research-kickoff-universal-en` |
-| 3 | `adversarial-architecture-selection-universal-en` |
-| 4 | `mvp-convergence-brainstorming-en` |
-| 5 | `prd-writer-universal-en` |
-| 6 | `speckit-feature-pipeline-en` |
-| 7 | `speckit-design-injection-universal-en` |
-| 8 | `claude-md-bootstrap-en` |
-| 9 | `implementation-runway-setup-en` |
-| 10 | `run-feature-en` |
-| 11 | `testing-system-blueprint-en` |
-| 12 | `test-routing-advisor-en` |
-| 13 | `backend-testing-en` |
-| 14 | `frontend-testing-en` |
-| 15 | `fullstack-slice-testing-en` |
-| 16 | `full-chain-testing-en` |
-| 17 | `learnings-retrospective-en` |
-
-> **The orchestrator has no English counterpart yet.** The project's own rule is
-> Chinese-first: a new skill must be stable and have run against a real project before its
-> English version is made, and the orchestrator has not yet met that bar.
-> When the en catalogue is requested, any missing entry is **reported as a failure and
-> recorded** under hard language isolation, and **the Chinese version is never substituted**.
+| 1 | `fullchain-dev-workflow-en` |
+| 2 | `project-context-ledger-en` |
+| 3 | `product-research-kickoff-universal-en` |
+| 4 | `adversarial-architecture-selection-universal-en` |
+| 5 | `mvp-convergence-brainstorming-en` |
+| 6 | `prd-writer-universal-en` |
+| 7 | `speckit-feature-pipeline-en` |
+| 8 | `platform-design-kickoff-en` |
+| 9 | `speckit-design-injection-universal-en` |
+| 10 | `claude-md-bootstrap-en` |
+| 11 | `implementation-runway-setup-en` |
+| 12 | `run-feature-en` |
+| 13 | `testing-system-blueprint-en` |
+| 14 | `test-routing-advisor-en` |
+| 15 | `backend-testing-en` |
+| 16 | `frontend-testing-en` |
+| 17 | `fullstack-slice-testing-en` |
+| 18 | `full-chain-testing-en` |
+| 19 | `learnings-retrospective-en` |
+| 20 | `release-packaging-router-en` |
 
 ---
 

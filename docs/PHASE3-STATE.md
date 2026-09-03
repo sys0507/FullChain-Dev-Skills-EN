@@ -1,19 +1,19 @@
 # Phase 3 状态
 
-> 更新：2026-09-02。**Phase 3 的出口已达成**：英文库 10 项检查全绿，跨目录 C2 全绿。
+> 更新：2026-09-02。**Phase 3 的出口已达成**：英文库 10 项检查全绿，跨目录 C2/C4/C5 全绿。
 
 ## 一、出口标准（已达成）
 
 ```
 python tools/skill_checks/run_all.py --scope en --phase 3 --messages en
-python tools/skill_checks/run_all.py --check C2 --phase 3 --messages en \
+python tools/skill_checks/run_all.py --check C2 C4 C5 --phase 3 --messages en \
   --skills-root ../全链路开发汇总/Assets/skills --en-root Assets/skills
 ```
 
 | 检查 | 结果 |
 |---|:---:|
 | 英文库 C1–C10 | ✅ 全绿 |
-| **跨目录 C2** | ✅ 全绿 |
+| **跨目录 C2/C4/C5** | ✅ 全绿 |
 
 **C2 从写出来那天起就标着「分期推迟——须到 Phase 3 才应全绿」，等的就是这一刻。**
 
@@ -21,7 +21,7 @@ python tools/skill_checks/run_all.py --check C2 --phase 3 --messages en \
 
 | 项 | 状态 |
 |---|---|
-| 20 个英文 Skill | ✅ |
+| 21 个英文 Skill | ✅ |
 | 两份模板译文 | ✅ 纯提示词版 + skills 版 |
 | 薄索引英文版 | ✅ `Full-Chain-Development-Skill-Execution-Index.md` |
 | `CLAUDE.md` | ✅ |
@@ -29,15 +29,11 @@ python tools/skill_checks/run_all.py --check C2 --phase 3 --messages en \
 | 检查器（10 项 + 自测） | ✅ 与中文库同步 |
 | 移植规格 | ✅ `docs/EN-PORT-SPEC.md` |
 
-## 三、刻意未做的一项
+## 三、编排器英文版
 
-**`fullchain-dev-workflow-en`（编排器）不做。**
-
-宪法「中文先行」要求新 Skill 先在真实项目跑过再做英文版。
-验证 E 的 F1 组正是编排器失败的那一组——它没能把矩阵的路径约束传导下去。
-**不做，比做一个未经验证的版本诚实。**
-
-补做条件：编排器在真实项目跑过一次且 F1 通过。
+`fullchain-dev-workflow-en` 已在中文版全链路跑通后按用户指令完成移植。入口、状态模板、
+两份 reference、baseline、16 条 eval、状态机脚本与 18 条脚本测试均与中文版逐项配对；
+英文状态路径按移植规格映射为 `specs/research/chain-state.md`。
 
 ## 四、本轮查出并修复的缺陷
 
