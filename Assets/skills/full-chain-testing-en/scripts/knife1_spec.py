@@ -9,9 +9,9 @@
 # deterministic tags people actually write:
 #
 #   - feature kind from task tags `[BE]` / `[FE]` / `[INT]`
-#   - cross-feature dependency `[依赖] F1, <some_service>` / `[依赖] T002, F5 <upstream_contract>`
-#   - FR provenance `[FR 来源] FR-013, FR-004`
-#   - output validation `[出参验证] ...`
+#   - cross-feature dependency `[task dependencies] F1, <some_service>`
+#   - FR provenance `[FR source] FR-013, FR-004`
+#   - output validation `[output verification] ...`
 #
 # Every emitted edge is `status=candidate, source=spec` and carries provenance
 # {file, line} pointing at the exact tasks.md line that declared the dependency.
@@ -33,11 +33,13 @@ from pathinv import Feature, Node, Edge, edge_id  # noqa: E402
 
 # --- regexes (deterministic) ----------------------------------------------------------
 RE_FOLDER = re.compile(r"^(\d{3})-(.+)$")
-RE_FALIAS = re.compile(r"\((F\d+)[^)]*\)")           # "(F5)" / "(F1, 方案 A)"
+RE_FALIAS = re.compile(r"\((F\d+)[^)]*\)")           # "(F5)" / "(F1, option A)"
 RE_TASK = re.compile(r"\*\*(T\d+)\*\*")              # **T001**
 RE_KIND = re.compile(r"`?\[(BE|FE|INT)\]`?")
-RE_DEP = re.compile(r"\[依赖\]\s*([^·\n]+)")
-RE_FR = re.compile(r"\[FR\s*来源\]\s*([^·\n]+)")
+# The labels the English feature pipeline emits. A Chinese project uses the Chinese tree,
+# whose knife1 matches its own labels - the two do not read each other's artifacts.
+RE_DEP = re.compile(r"\[task dependencies\]\s*([^\n]+)")
+RE_FR = re.compile(r"\[FR\s*source\]\s*([^\n]+)")
 RE_FREF = re.compile(r"\bF(\d+)\b")                  # references to F1..Fn inside deps
 RE_FRID = re.compile(r"(FR-\d+|§[\d.]+\w*)")
 
@@ -131,7 +133,7 @@ def parse(specs_dir: str) -> dict:
                             status="candidate",
                             provenance={"file": os.path.relpath(m["tasks_path"], specs_dir), "line": i},
                             feature_from=fid, feature_to=target_fid,
-                            notes=f"{cur_task} 依赖 {target_alias}"
+                            notes=f"{cur_task} depends on {target_alias}"
                                   + (f"; FR={','.join(fr_ids)}" if fr_ids else ""),
                         )
 

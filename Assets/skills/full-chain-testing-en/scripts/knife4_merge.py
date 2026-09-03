@@ -35,6 +35,11 @@ from pathinv import higher_status, SOURCE_FOR_STATUS, STATUS_RANK, validate  # n
 # project's business nouns here. A project that wants to add its own domain risk vocab
 # puts it in a project-side `feature-names.json` sidecar under key `risk_keywords`
 # (merged at runtime by load_sidecar_risk_keywords) — never baked into the tool.
+#
+# The lists below are deliberately bilingual. They are **match patterns applied to the
+# scanned project's identifiers**, not text this tool emits - a codebase this English tool
+# scans may well use Chinese identifiers, and dropping those patterns would only reduce what
+# it can find. This is not untranslated residue.
 RISK_KEYWORDS = {
     "permission": ["auth", "login", "token", "permission", "鉴权", "登录", "权限", "越权"],
     "money": ["order", "pay", "payment", "charge", "fund", "下单", "支付", "资金", "扣费"],
@@ -215,15 +220,15 @@ def score_risk(path, eids, nodes, risk_keywords) -> tuple[str, str]:
     high_risk = {"permission", "money", "data-loss", "irreversible-delivery"}
     has_cross_channel = any(e["type"] == "cross-channel" for e in eids)
     if (set(hits) & high_risk) or has_cross_channel:
-        reason = ("P0 启发式命中: " + ", ".join(sorted(set(hits) & high_risk) or [])
-                  + (" + cross-channel 不可撤销投递" if has_cross_channel else "")
-                  + " — 需人确认 (heuristic, needs human confirm)")
+        reason = ("P0 heuristic hit: " + ", ".join(sorted(set(hits) & high_risk) or [])
+                  + (" + cross-channel irreversible delivery" if has_cross_channel else "")
+                  + " - heuristic, needs human confirmation")
         return "P0", reason
     if "core-flow" in hits:
-        return "P1", "P1: 命中核心主流程关键字 — 需人确认"
+        return "P1", "P1: hits core-flow keywords - needs human confirmation"
     if len(path) >= 4:
-        return "P2", "P2: 长链路 (>=3 hops) 但无高危关键字"
-    return "P3", "P3: 短链路、无高危关键字"
+        return "P2", "P2: long path (>=3 hops) with no high-risk keyword"
+    return "P3", "P3: short path, no high-risk keyword"
 
 
 def main() -> int:

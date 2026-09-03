@@ -12,10 +12,10 @@
 #   - ordered_steps : the journey rebuilt as a left-to-right list of steps. Each step
 #       { label, status, hop_type, provenance, node, node_kind } where `label` is a
 #       natural-language step name DERIVED FROM REAL EVIDENCE only:
-#         * a route path  POST /api/place-order  -> "提交下单 (POST /api/place-order)"
+#         * a route path  POST /api/place-order  -> "submit order (POST /api/place-order)"
 #         * a node kind   datastore/queue/job/external/component
 #         * a feature name (spec-level feat: nodes use the feature display name)
-#       If no evidence yields a label, the step is "(未命名步骤)" — never fabricated.
+#       If no evidence yields a label, the step is "(unnamed step)" - never fabricated.
 #   - summary : ONE deterministic sentence built by stitching the ordered_steps labels
 #       with arrows. No free text, no new facts.
 #
@@ -28,7 +28,7 @@
 #
 # Anti-fabrication: every step keeps the originating edge's provenance; every label is
 # traceable to a node id, a route string, a feature name, or a spec note. Steps we cannot
-# name are labelled "(未命名步骤)" but still carry provenance — we never drop the evidence.
+# name are labelled "(unnamed step)" but still carry provenance — we never drop the evidence.
 
 from __future__ import annotations
 
@@ -91,7 +91,7 @@ def _route_label(route_path: str, verb: str, verb_hints: dict) -> str:
             hint = v
             break
     shown = f"{verb} {route_path}" if verb != "*" else route_path
-    return f"{hint} ({shown})" if hint else f"调用接口 {shown}"
+    return f"{hint} ({shown})" if hint else f"call endpoint {shown}"
 
 
 def _node_label(nid: str, node: dict, feat_names: dict, verb_hints: dict) -> str:
@@ -107,24 +107,24 @@ def _node_label(nid: str, node: dict, feat_names: dict, verb_hints: dict) -> str
         return feat_names.get(fid, label)
 
     if nid.startswith("component:"):
-        return "用户在页面操作"
+        return "user acts on the page"
     if nid.startswith(("datastore:", "datastore:kv", "datastore:redis")):
-        return f"读写共享存储 ({label})"
+        return f"read/write shared storage ({label})"
     if nid.startswith("queue:"):
-        return f"投递到异步队列 ({label})"
+        return f"enqueue asynchronously ({label})"
     if nid.startswith("worker:"):
-        return f"异步 worker 处理 ({label})"
+        return f"async worker processes ({label})"
     if nid.startswith("job:") or kind == "job":
-        return f"定时任务处理 ({label})"
+        return f"scheduled job processes ({label})"
     if nid.startswith("external:") or kind == "external":
-        return f"推送到外部通道 ({label})"
+        return f"push to external channel ({label})"
     if nid.startswith("handler:"):
-        # handler:place_order -> "服务处理: place_order"
+        # handler:place_order -> "service handles: place_order"
         name = nid.split(":", 1)[1]
-        return f"服务处理 ({name})"
+        return f"service handles ({name})"
     if nid.startswith(("scheduler",)):
-        return "调度器注册定时任务"
-    return label or "(未命名步骤)"
+        return "scheduler registers a job"
+    return label or "(unnamed step)"
 
 
 def _prov_str(p) -> str:
@@ -236,10 +236,10 @@ def narrate(inv: dict) -> dict:
 
 def _build_summary(j: dict, steps: list[dict]) -> str:
     if not steps:
-        return "（无可读步骤：本旅程仅含被过滤的内部/三方依赖跳步）"
+        return "(no readable steps: this journey contains only filtered internal or third-party hops)"
     labels = [s["label"] for s in steps]
     feats = j.get("crosses_features_named") or j.get("crosses_features", [])
-    head = f"[{j.get('p_level','?')}] 跨 {len(feats)} 个 feature（{ ' / '.join(feats) }）："
+    head = f"[{j.get('p_level','?')}] spans {len(feats)} features ({ ' / '.join(feats) }): "
     return head + " → ".join(labels)
 
 

@@ -1069,7 +1069,7 @@
         "handler:notify--cross-channel-->external:push-channel"
       ],
       "acs": [],
-      "p_reason": "P0 启发式命中: irreversible-delivery, money + cross-channel 不可撤销投递 — 需人确认 (heuristic, needs human confirm)"
+      "p_reason": "P0 heuristic hit: irreversible-delivery, money + cross-channel irreversible delivery - heuristic, needs human confirmation"
     },
     {
       "id": "J1",
@@ -1092,7 +1092,7 @@
         "queue:order-confirm--async-->worker:order-confirm"
       ],
       "acs": [],
-      "p_reason": "P0 启发式命中: money — 需人确认 (heuristic, needs human confirm)"
+      "p_reason": "P0 heuristic hit: money - heuristic, needs human confirmation"
     }
   ],
   "_meta": {
