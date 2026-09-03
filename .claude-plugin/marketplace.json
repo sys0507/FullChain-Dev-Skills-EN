@@ -1,0 +1,114 @@
+{
+  "name": "fullchain-dev-skills-en",
+  "owner": {
+    "name": "Miao"
+  },
+  "description": "The full-chain development skill set: twenty-one skills, each installable on its own",
+  "plugins": [
+    {
+      "name": "adversarial-architecture-selection-universal-en",
+      "source": "./Assets/skills/adversarial-architecture-selection-universal-en",
+      "description": "Evaluate multiple architecture, framework, library, open-source, SaaS, or vendor candidates through a five-role courtroom-style adversarial process and produce an evidence-backed a…"
+    },
+    {
+      "name": "backend-testing-en",
+      "source": "./Assets/skills/backend-testing-en",
+      "description": "Close backend-only structural testing gaps after feature-level TDD, including real-database behavior, migrations and transactions, authorization boundaries, concurrency and atomici…"
+    },
+    {
+      "name": "claude-md-bootstrap-en",
+      "source": "./Assets/skills/claude-md-bootstrap-en",
+      "description": "Generate or refresh a project-root CLAUDE.md from existing PRD, architecture decisions, constitution, design docs, project manifests, and feature specs. Produces a concise WHAT/WHY…"
+    },
+    {
+      "name": "frontend-testing-en",
+      "source": "./Assets/skills/frontend-testing-en",
+      "description": "Close frontend-only structural testing gaps after feature-level TDD by detecting the stack, establishing any missing test foundation, and configuring mature tools for lint rules, u…"
+    },
+    {
+      "name": "full-chain-testing-en",
+      "source": "./Assets/skills/full-chain-testing-en",
+      "description": "Excavate and protect a newly reachable P0 cross-feature journey using static structure, runtime traces, and spec contracts. Bring up the real system, stub only external boundaries…"
+    },
+    {
+      "name": "fullchain-dev-workflow-en",
+      "source": "./Assets/skills/fullchain-dev-workflow-en",
+      "description": "Thin orchestrator that advances the eleven full-chain stages in order: determine which Skill to call next, actually stop at gates, decide whether conditional stages apply, and reco…"
+    },
+    {
+      "name": "fullchain-toolchain-setup-en",
+      "source": "./Assets/skills/fullchain-toolchain-setup-en",
+      "description": "Install and verify, in one pass, every skill the later stages will call - project-scoped, with hard language isolation - and then selectively configure six optional capabilities as…"
+    },
+    {
+      "name": "fullstack-slice-testing-en",
+      "source": "./Assets/skills/fullstack-slice-testing-en",
+      "description": "Validate one real consumer-provider seam within a single feature after frontend and backend work are ready. Bring up both sides and required dependencies, reconcile mocked consumer…"
+    },
+    {
+      "name": "implementation-runway-setup-en",
+      "source": "./Assets/skills/implementation-runway-setup-en",
+      "description": "Finish the four deterministic preparation items before entering the implementation phase — the include list of files for isolated runs, the external services and credentials invent…"
+    },
+    {
+      "name": "learnings-retrospective-en",
+      "source": "./Assets/skills/learnings-retrospective-en",
+      "description": "Run a pitfall-avoidance retrospective after each feature closes, working through six questions and writing the lessons worth keeping into the top of the learnings file in a uniform…"
+    },
+    {
+      "name": "mvp-convergence-brainstorming-en",
+      "source": "./Assets/skills/mvp-convergence-brainstorming-en",
+      "description": "Converge the direction into an MVP resolution once the research outputs are read - answer eleven questions, adjudicate every research candidate value one by one, and carry every up…"
+    },
+    {
+      "name": "platform-design-kickoff-en",
+      "source": "./Assets/skills/platform-design-kickoff-en",
+      "description": "Produce the design source of truth before implementation — decide whether this project needs interface design at all, choose a design tool that fits the target platform, and produc…"
+    },
+    {
+      "name": "prd-writer-universal-en",
+      "source": "./Assets/skills/prd-writer-universal-en",
+      "description": "Generate an industry-standard, domain-neutral Product Requirements Document from confirmed research and brainstorming outcomes. Supports project-level PRDs at specs/prd.md and feat…"
+    },
+    {
+      "name": "product-research-kickoff-universal-en",
+      "source": "./Assets/skills/product-research-kickoff-universal-en",
+      "description": "Guide pre-launch research for a 0-to-1 product through Socratic intake, four parallel research tracks, dual-source verification, and one convergence report. Use for new-product fac…"
+    },
+    {
+      "name": "project-context-ledger-en",
+      "source": "./Assets/skills/project-context-ledger-en",
+      "description": "Maintain the project's three-state context ledger: record and treat separately what the user confirmed in their own words, what research derived as a candidate, and what is still u…"
+    },
+    {
+      "name": "release-packaging-router-en",
+      "source": "./Assets/skills/release-packaging-router-en",
+      "description": "Decide whether a project needs packaging and release at all, and route it by artifact shape to the right release channel - container, package registry, app store, installer, firmwa…"
+    },
+    {
+      "name": "run-feature-en",
+      "source": "./Assets/skills/run-feature-en",
+      "description": "Implement one ready Spec-Kit feature directory containing spec.md, plan.md, and tasks.md through worktree isolation, project-rule loading, task-by-task TDD, label-aware execution…"
+    },
+    {
+      "name": "speckit-design-injection-universal-en",
+      "source": "./Assets/skills/speckit-design-injection-universal-en",
+      "description": "Inject DESIGN.md and visual reference artifacts into an existing Spec-Kit project without redoing specify or clarify. Use when plan.md and tasks.md already exist and a Stitch, Figm…"
+    },
+    {
+      "name": "speckit-feature-pipeline-en",
+      "source": "./Assets/skills/speckit-feature-pipeline-en",
+      "description": "Split a project-level PRD into individual features, and take each one through the complete four steps producing spec.md, a clarify write-back, plan.md and tasks.md. Documents only…"
+    },
+    {
+      "name": "test-routing-advisor-en",
+      "source": "./Assets/skills/test-routing-advisor-en",
+      "description": "Classify the structural testing gaps of a completed feature and route each gap to backend-testing-en, frontend-testing-en, fullstack-slice-testing-en, or full-chain-testing-en. Use…"
+    },
+    {
+      "name": "testing-system-blueprint-en",
+      "source": "./Assets/skills/testing-system-blueprint-en",
+      "description": "Define a stack- and project-agnostic testing methodology covering P0-P3 risk tiers, requirements-to-test traceability, three-layer test timing, closed-loop gap backfill, release ga…"
+    }
+  ]
+}
