@@ -48,6 +48,7 @@ def main(argv: list[str] | None = None) -> int:
                     help=t("cli.help.scope"))
     ap.add_argument("--phase", type=int, default=1, help=t("cli.help.phase"))
     ap.add_argument("--quiet", action="store_true", help=t("cli.help.quiet"))
+    ap.add_argument("--matrix", default=None, help=t("cli.help.matrix"))
     ap.add_argument("--messages", choices=LANGS, default="zh",
                     help=t("cli.help.messages"))
     args = ap.parse_args(argv)
@@ -69,7 +70,13 @@ def main(argv: list[str] | None = None) -> int:
             print(t("cli.no_match", names=args.check), file=sys.stderr)
             return 2
 
+    #: 「这项检查没跑成」不是某个语言的内容问题，语言作用域不适用于它。
+    #: 不豁免的话，--scope en 会把它过滤掉，于是「未执行」又变回一片绿。
+    NOT_RUN = {"c10.no_matrix"}
+
     def in_scope(f) -> bool:
+        if f.key in NOT_RUN:
+            return True
         is_en = "-en/" in f.path or f.path.endswith("-en")
         return {"zh": not is_en, "en": is_en, "all": True}[args.scope]
 
@@ -80,8 +87,14 @@ def main(argv: list[str] | None = None) -> int:
 
     for chk in selected:
         # C2/C4/C5 分别守 Skill、evals、scripts/tests 的跨语言配对。
-        paired = chk.name.split("-")[0] in {"C2", "C4", "C5"}
-        raw = chk.run(root, en_root) if paired else chk.run(root)
+        head = chk.name.split("-")[0]
+        if head in {"C2", "C4", "C5"}:
+            raw = chk.run(root, en_root)
+        elif head == "C10":
+            # 英文库没有矩阵副本，须显式指向中文库那份；不给就报「未执行」。
+            raw = chk.run(root, Path(args.matrix) if args.matrix else None)
+        else:
+            raw = chk.run(root)
         found = [f for f in raw if in_scope(f)]
         out_of_scope += len(raw) - len(found)
         chk_phase = getattr(chk, "phase", 1)

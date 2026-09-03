@@ -129,7 +129,7 @@ Prose, answering the three questions in order. Be concrete about the third —
 Run from the English tree root:
 
 ```
-python tools/skill_checks/run_all.py --scope en --phase 3 --messages en
+python tools/skill_checks/run_all.py --scope en --phase 3 --messages en \n  --matrix ../全链路开发汇总/docs/stage-artifact-contract.md
 ```
 
 C1, C3, C4, C5, C6, C7, C8, C9, C10 all clean for the skills you touched.

@@ -641,6 +641,49 @@ class TestC10MatrixPathsInSkill(unittest.TestCase):
         self.assertTrue(
             C10MatrixPathsInSkill().run(self.root / "skills", self.matrix))
 
+    def _matrix_with_mapping(self, row):
+        """§3.5 的中→英映射也在矩阵里——C10 要靠它认识英文树。"""
+        self.matrix.write_text(
+            NL.join(["| Skill | 读取 | 写入 | 门禁 | 幂等 | 置信度 |",
+                     "|---|---|---|---|---|---|", row, "",
+                     "| 中文版 | 英文版 |", "|---|---|",
+                     "| `specs/research/07-MVP收敛结果.md` | `specs/research/07-mvp-convergence.md` |",
+                     ]) + NL,
+            encoding="utf-8")
+
+    def test_missing_matrix_is_reported_not_silently_passed(self):
+        """矩阵不在时必须报「未执行」。
+
+        真实缺陷：英文库没有矩阵副本，C10 一路 `return []`——
+        **整个 Phase 3 它在英文树里都是空绿的**，和真通过长得一模一样。
+        宪法原则 IV：走了兜底路径必须显式标注，不得静默降级。
+        """
+        found = C10MatrixPathsInSkill().run(self.root / "skills",
+                                            self.root / "does-not-exist.md")
+        self.assertEqual([f.key for f in found], ["c10.no_matrix"])
+
+    def test_english_skill_is_checked_against_english_path(self):
+        """正样本：英文 Skill 该写英文名却写了通配符——必须报。
+
+        不做「Skill 名加 -en」与「路径查 §3.5 右列」这两步映射，
+        每一行都会因目录不存在而 continue，于是空绿。
+        """
+        self._skill("convergence-en", "specs/research/07-*.md")
+        self._matrix_with_mapping(
+            "| `convergence` | x | `specs/research/07-MVP收敛结果.md`（新建） | 无 | 幂等 | 实测 |")
+        found = C10MatrixPathsInSkill().run(self.root / "skills", self.matrix)
+        self.assertTrue(any(f.key == "c10.path_missing"
+                            and "07-mvp-convergence.md" in f.args["path"]
+                            for f in found), [str(f) for f in found])
+
+    def test_english_skill_with_english_name_is_clean(self):
+        """负样本：英文 Skill 写了 §3.5 右列的英文名——不得报。"""
+        self._skill("convergence-en", "specs/research/07-mvp-convergence.md")
+        self._matrix_with_mapping(
+            "| `convergence` | x | `specs/research/07-MVP收敛结果.md`（新建） | 无 | 幂等 | 实测 |")
+        self.assertEqual(
+            C10MatrixPathsInSkill().run(self.root / "skills", self.matrix), [])
+
     def test_placeholder_paths_are_skipped(self):
         """负样本：含 <占位符> 的路径无法逐字比对，不得报。"""
         self._skill("runner", "源码")

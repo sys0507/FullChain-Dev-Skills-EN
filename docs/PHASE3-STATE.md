@@ -5,7 +5,7 @@
 ## 一、出口标准（已达成）
 
 ```
-python tools/skill_checks/run_all.py --scope en --phase 3 --messages en
+python tools/skill_checks/run_all.py --scope en --phase 3 --messages en \n  --matrix ../全链路开发汇总/docs/stage-artifact-contract.md
 python tools/skill_checks/run_all.py --check C2 C4 C5 --phase 3 --messages en \
   --skills-root ../全链路开发汇总/Assets/skills --en-root Assets/skills
 ```

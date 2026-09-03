@@ -442,25 +442,44 @@ class C10MatrixPathsInSkill(Check):
     def run(self, root: Path, matrix: Path | None = None) -> list[Finding]:
         mp = matrix or self.DEFAULT_MATRIX
         if not mp.is_file():
-            return []
+            # 静默返回空等于「本项通过」——而它其实一次都没跑。
+            # 英文库没有矩阵副本，这个分支让 C10 在那边空绿了整个 Phase 3。
+            # 宪法原则 IV：走了兜底路径必须显式标注，不得静默降级。
+            return [Finding(self.name, str(mp), "c10.no_matrix", path=mp)]
+        text_all = mp.read_text(encoding="utf-8")
+        #: §3.5 的中→英路径映射，矩阵是它的唯一定义处（宪法 VII）
+        _pairs = re.findall(r"^\| `(specs/[^`]+)` \| `(specs/[^`]+)` \|$", text_all, re.M)
+        # 同时按完整路径和裸文件名建键——矩阵的写入列两种写法都有，
+        # 只按完整路径建键会漏掉裸文件名那几行，而漏掉的表现是「报中文名找不到」，
+        # 看起来像英文版缺了产出，其实是映射没命中。
+        xlate = {}
+        for zh_path, en_path in _pairs:
+            xlate[zh_path] = en_path
+            xlate[zh_path.rsplit("/", 1)[-1]] = en_path.rsplit("/", 1)[-1]
         out = []
-        for line in mp.read_text(encoding="utf-8").splitlines():
+        for line in text_all.splitlines():
             if not line.startswith("| `"):
                 continue
             cells = [c.strip() for c in line.split("|")]
             if len(cells) < 5:
                 continue
-            name = cells[1].strip("` ")
-            skill = root / name
-            sp = skill / "SKILL.md"
-            if not sp.is_file():
-                continue  # Phase 预留行，或英文版未复刻
-            text = sp.read_text(encoding="utf-8")
-            written = cells[3] if len(cells) > 3 else ""
-            for path in self.CELL.findall(written):
-                if path.rsplit("/", 1)[-1] in text:
-                    continue
-                out.append(Finding(self.name, f"{name}/SKILL.md", "c10.path_missing", path=path))
+            zh_name = cells[1].strip("` ")
+            # 英文树里 Skill 叫 <name>-en，产出也是 §3.5 右列的英文名。
+            # 不做这两步映射，每一行都会因「目录不存在」而 continue——
+            # C10 就在英文树里空绿了整个 Phase 3，看起来和真通过一模一样。
+            for name, translate in ((zh_name, False), (zh_name + "-en", True)):
+                sp = root / name / "SKILL.md"
+                if not sp.is_file():
+                    continue  # Phase 预留行，或该语言未复刻
+                text = sp.read_text(encoding="utf-8")
+                written = cells[3] if len(cells) > 3 else ""
+                for path in self.CELL.findall(written):
+                    if translate:
+                        path = xlate.get(path, path)
+                    if path.rsplit("/", 1)[-1] in text:
+                        continue
+                    out.append(Finding(self.name, f"{name}/SKILL.md",
+                                       "c10.path_missing", path=path))
         return out
 
 

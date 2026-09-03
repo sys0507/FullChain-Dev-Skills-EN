@@ -207,6 +207,10 @@ MESSAGES: dict[str, dict[str, str]] = {
     },
 
     # ---- C10 ----
+    "c10.no_matrix": {
+        "zh": "契约矩阵不在 {path}，本项检查未执行——不是通过",
+        "en": "the contract matrix is not at {path}; this check did not run - that is not a pass",
+    },
     "c10.path_missing": {
         "zh": "矩阵钉死 {path}，但 SKILL.md 未出现该文件名",
         "en": "the matrix pins {path}, but SKILL.md never mentions that filename",
@@ -236,6 +240,10 @@ MESSAGES: dict[str, dict[str, str]] = {
     "cli.help.quiet": {
         "zh": "只输出未通过项",
         "en": "print only what did not pass",
+    },
+    "cli.help.matrix": {
+        "zh": "契约矩阵路径，默认 docs/stage-artifact-contract.md。英文库没有这份文件，须显式指向中文库那份",
+        "en": "path to the contract matrix, docs/stage-artifact-contract.md by default; the English repo has no copy, so point this at the Chinese one",
     },
     "cli.help.messages": {
         "zh": "输出文案语言，默认 zh。显式传入，不从环境推断",

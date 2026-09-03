@@ -90,7 +90,7 @@ output says which capability was not used and what is therefore not covered. A r
 ## Verifying this tree
 
 ```bash
-python tools/skill_checks/run_all.py --scope en --phase 3 --messages en
+python tools/skill_checks/run_all.py --scope en --phase 3 --messages en \n  --matrix ../全链路开发汇总/docs/stage-artifact-contract.md
 ```
 
 Ten checks: broken and orphaned references, Chinese residue, English evals identity, scripts
