@@ -54,6 +54,81 @@ def _produces_count(text: str) -> int:
     return len(re.findall(r"^    - ", match.group(1), re.M)) if match else 0
 
 
+def _frontmatter_keys(text: str) -> tuple[set[str], set[str]]:
+    """Return top-level and metadata key sets from the constrained Skill schema."""
+    top: set[str] = set()
+    metadata: set[str] = set()
+    in_metadata = False
+    for line in frontmatter(text).splitlines():
+        top_match = re.match(r"^([a-z][a-z0-9-]*):", line)
+        if top_match:
+            key = top_match.group(1)
+            top.add(key)
+            in_metadata = key == "metadata"
+            continue
+        if in_metadata:
+            metadata_match = re.match(r"^  ([a-z][a-z0-9-]*):", line)
+            if metadata_match:
+                metadata.add(metadata_match.group(1))
+    return top, metadata
+
+
+def _scalar(text: str, key: str) -> str | None:
+    match = re.search(rf"^{re.escape(key)}:\s*(.*?)\s*$", frontmatter(text), re.M)
+    return match.group(1).strip("\"'") if match else None
+
+
+def _metadata_list(text: str, key: str) -> list[str]:
+    fm = frontmatter(text)
+    match = re.search(
+        rf"^  {re.escape(key)}:\s*\n((?:(?:    |      ).*(?:\n|$))*)", fm, re.M)
+    if not match:
+        return []
+    return [
+        item.strip().strip("\"'")
+        for item in re.findall(r"^    -\s+(.*)$", match.group(1), re.M)
+    ]
+
+
+def _requires_shape(text: str) -> list[tuple[str | None, bool]]:
+    """Return ordered (normalised level, has-fallback) entries, ignoring translated names."""
+    levels = {"必需": "required", "可选增强": "optional", "编排级": "orchestration"}
+    fm = frontmatter(text)
+    match = re.search(r"^  requires:\s*\n((?:(?:    |      ).*(?:\n|$))*)", fm, re.M)
+    if not match:
+        return []
+    blocks = re.split(r"(?=^    -\s+name:)", match.group(1), flags=re.M)
+    shape = []
+    for block in blocks:
+        if not re.match(r"^    -\s+name:", block):
+            continue
+        level_match = re.search(r"^      level:\s*(.*?)\s*$", block, re.M)
+        level = level_match.group(1).strip("\"'") if level_match else None
+        shape.append((levels.get(level, level), bool(re.search(r"^      fallback:", block, re.M))))
+    return shape
+
+
+def _path_translation(matrix: Path | None) -> dict[str, str]:
+    """Read the zh->en path map from the contract matrix, its sole definition site."""
+    if matrix is None or not matrix.is_file():
+        return {}
+    text = matrix.read_text(encoding="utf-8")
+    marker = "## 3.5 "
+    if marker not in text:
+        return {}
+    section_text = text.split(marker, 1)[1]
+    next_heading = re.search(r"\n## ", section_text)
+    if next_heading:
+        section_text = section_text[:next_heading.start()]
+    return dict(re.findall(r"^\| `([^`]+)` \| `([^`]+)` \|$", section_text, re.M))
+
+
+def _produces_paths(text: str) -> list[str]:
+    """Keep machine-addressable outputs; translated prose outputs are covered by item count."""
+    return [item for item in _metadata_list(text, "produces")
+            if "/" in item or re.search(r"(?:^|[.])[A-Za-z0-9_-]+$", item)]
+
+
 class C1References(Check):
     """references 链接可解析且无孤儿。抓出过：3 处断链、1 个空 evals 目录。"""
 
@@ -92,7 +167,8 @@ class C2Pairing(Check):
     rule_key = "c2.rule"
     phase = 3  # 中文版已补三节，英文版复刻属 Phase 3；此前必然不等
 
-    def run(self, root: Path, en_root: Path | None = None) -> list[Finding]:
+    def run(self, root: Path, en_root: Path | None = None,
+            matrix: Path | None = None) -> list[Finding]:
         """`en_root` 缺省时在同目录找 `<name>-en`；给定时去那个目录找。
 
         Phase 3 把英文版搬到同级新目录后，同级关系消失。C2 守 Skill 结构，
@@ -101,6 +177,8 @@ class C2Pairing(Check):
         """
         out = []
         base = en_root if en_root is not None else root
+        translations = _path_translation(matrix)
+        reverse_translations = {en: zh for zh, en in translations.items()}
         zh_dirs = logical_skills(root)
         for d in zh_dirs:
             if d.name in PAIRING_EXEMPT_ZH:
@@ -118,6 +196,28 @@ class C2Pairing(Check):
                 continue
             zh_text = zh_skill.read_text(encoding="utf-8")
             en_text = en_skill.read_text(encoding="utf-8")
+            zh_top, zh_meta = _frontmatter_keys(zh_text)
+            en_top, en_meta = _frontmatter_keys(en_text)
+            # Names, descriptions, and language values must differ by design; their keys must exist.
+            if zh_top != en_top:
+                out.append(Finding(self.name, d.name, "c2.top_keys",
+                                   only_zh=sorted(zh_top - en_top),
+                                   only_en=sorted(en_top - zh_top)))
+            if zh_meta != en_meta:
+                out.append(Finding(self.name, d.name, "c2.metadata_keys",
+                                   only_zh=sorted(zh_meta - en_meta),
+                                   only_en=sorted(en_meta - zh_meta)))
+            zh_tools, en_tools = _scalar(zh_text, "allowed-tools"), _scalar(en_text, "allowed-tools")
+            if zh_tools != en_tools:
+                out.append(Finding(self.name, d.name, "c2.allowed_tools",
+                                   zh=zh_tools, en=en_tools))
+            zh_requires, en_requires = _requires_shape(zh_text), _requires_shape(en_text)
+            if len(zh_requires) != len(en_requires):
+                out.append(Finding(self.name, d.name, "c2.requires_count",
+                                   zh=len(zh_requires), en=len(en_requires)))
+            elif zh_requires != en_requires:
+                out.append(Finding(self.name, d.name, "c2.requires_structure",
+                                   zh=zh_requires, en=en_requires))
             hz = headings(zh_text)
             he = headings(en_text)
             if len(hz) != len(he):
@@ -136,6 +236,11 @@ class C2Pairing(Check):
             pz, pe = _produces_count(zh_text), _produces_count(en_text)
             if pz != pe:
                 out.append(Finding(self.name, d.name, "c2.produces_count", zh=pz, en=pe))
+            zh_paths = _produces_paths(zh_text)
+            en_paths = [reverse_translations.get(path, path) for path in _produces_paths(en_text)]
+            if zh_paths != en_paths:
+                out.append(Finding(self.name, d.name, "c2.produces_paths",
+                                   zh=zh_paths, en=_produces_paths(en_text)))
 
         # 反向守门：英文树多出 Skill，或中文半成品目录缺 SKILL.md，也不能静默跳过。
         en_dirs = sorted(p for p in base.iterdir() if p.is_dir() and p.name.endswith("-en"))
@@ -483,8 +588,71 @@ class C10MatrixPathsInSkill(Check):
         return out
 
 
+def _matches(template: str, path: str) -> bool:
+    """`specs/<id>-<feature>/x.md` 认得出 `specs/001-foo/x.md`。"""
+    if template == path:
+        return True
+    if "<" not in template:
+        return False
+    pat = "".join("[^/]+" if part.startswith("<") else re.escape(part)
+                  for part in re.split(r"(<[^>]+>)", template))
+    return re.fullmatch(pat, path) is not None
+
+
+class C11MatrixMappingComplete(Check):
+    """矩阵钉死的中文路径，§3.5 必须都给出英文映射。
+
+    真实缺陷（英文版全链路首跑）：§3.4 裁定「报告型产物 MUST 落盘并在本表登记」，
+    登记了 7 条——**但 §3.5 只映射了其中 3 条**。两节从来没有对接过：
+    §3.4 管「要登记」，§3.5 管「英文叫什么」，中间没有任何东西把它们接起来。
+
+    后果是英文链路跑到那几步时**无名可用**，于是现场编：环境准备报告丢了 `09-` 前缀，
+    测试报告从 `specs/` 挪进了 `specs/research/` 还占了别人的序号。
+    执行者没做错任何事——**没有定义的路径，用到时就会被编出来**。
+
+    这是同一物种的第四次（OQ-M7、`debate/00`、`chain-state.md`、本次）。
+    前三次都是补完了事；这一次它终于是**可枚举**的，所以做成检查。
+
+    C10 守「矩阵钉了 → SKILL.md 要有」，本项守「矩阵钉了 → §3.5 要有映射」。
+    两项合起来才让「矩阵是唯一真相源」这句话在英文链路上真正成立。
+    """
+
+    name = "C11-matrix-mapping"
+    rule_key = "c11.rule"
+    phase = 3  # 跨语言映射，英文版复刻前不适用
+    DEFAULT_MATRIX = Path("docs/stage-artifact-contract.md")
+    #: 表格单元里的反引号路径
+    CELL = re.compile(r"`((?:specs|docs)/[^`]+?)`")
+
+    def run(self, skills_root: Path, matrix: Path | None = None) -> list[Finding]:
+        mp = matrix or self.DEFAULT_MATRIX
+        if not mp.is_file():
+            return [Finding(self.name, str(mp), "c11.no_matrix", path=mp)]
+        text = mp.read_text(encoding="utf-8")
+        mapped = {zh for zh, _ in re.findall(
+            r"^\| `((?:specs|docs)/[^`]+)` \| `((?:specs|docs)/[^`]+)` \|$", text, re.M)}
+        out, seen = [], set()
+        for line in text.splitlines():
+            # 只看表格行——正文与引用块里提到的路径不构成「钉死」
+            if not line.startswith("| "):
+                continue
+            for path in self.CELL.findall(line):
+                # 文件名不含中文的，两版共用，无需映射
+                if not CJK.search(path.rsplit("/", 1)[-1]):
+                    continue
+                # 占位符模板实例化后仍算已映射：§2.3 的验证覆盖明细写的是
+                # `specs/001-csv-to-markdown/测试路由判定.md` 这样的具体实例，
+                # 映射表登记的却是 `specs/<id>-<feature>/测试路由判定.md`。
+                # 不做这一步，每条实测记录都会被误报成未映射。
+                if path in seen or any(_matches(k, path) for k in mapped):
+                    continue
+                seen.add(path)
+                out.append(Finding(self.name, str(mp), "c11.unmapped", path=path))
+        return out
+
+
 ALL_CHECKS: list[Check] = [
     C1References(), C2Pairing(), C3EnPurity(), C4EnEvals(),
     C5ScriptsNeedTests(), C6SelfContained(), C7StandaloneSection(), C8Requires(),
-    C9SizeBudget(), C10MatrixPathsInSkill(),
+    C9SizeBudget(), C10MatrixPathsInSkill(), C11MatrixMappingComplete(),
 ]

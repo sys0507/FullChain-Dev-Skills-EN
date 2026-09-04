@@ -79,7 +79,9 @@ metadata:
 | `specs/research/06-架构基线决策.md` | `specs/research/06-architecture-baseline.md` |
 | `specs/research/07-MVP收敛结果.md` | `specs/research/07-mvp-convergence.md` |
 | `specs/research/链路状态.md` | `specs/research/chain-state.md` |
+| `specs/research/工具链配置报告.md` | `specs/research/toolchain-setup-report.md` |
 | `specs/<id>-<feature>/测试路由判定.md` | `specs/<id>-<feature>/test-routing-decision.md` |
+| `specs/<id>-<slug>/发布方式判定.md` | `specs/<id>-<slug>/release-channel-decision.md` |
 
 > **本表是复制件，不是定义处。** 英文版路径的唯一定义处是中文库的
 > `docs/stage-artifact-contract.md` §3.5（宪法原则 VII）。冲突时以那张表为准。
@@ -129,7 +131,8 @@ Prose, answering the three questions in order. Be concrete about the third —
 Run from the English tree root:
 
 ```
-python tools/skill_checks/run_all.py --scope en --phase 3 --messages en \n  --matrix ../全链路开发汇总/docs/stage-artifact-contract.md
+python tools/skill_checks/run_all.py --scope en --phase 3 --messages en \
+  --matrix ../全链路开发汇总/docs/stage-artifact-contract.md
 ```
 
 C1, C3, C4, C5, C6, C7, C8, C9, C10 all clean for the skills you touched.
@@ -138,5 +141,6 @@ C2, C4, and C5 need the Chinese tree for paired Skill, eval, script, and test ch
 ```
 python tools/skill_checks/run_all.py --check C2 C4 C5 --phase 3 --messages en \
   --skills-root ../全链路开发汇总/Assets/skills \
-  --en-root Assets/skills
+  --en-root Assets/skills \
+  --matrix ../全链路开发汇总/docs/stage-artifact-contract.md
 ```

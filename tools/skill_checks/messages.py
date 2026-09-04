@@ -35,8 +35,8 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "references cited by SKILL.md must exist; files under references must be cited",
     },
     "c2.rule": {
-        "zh": "zh/en Skill 必须配对，且标题数、references、assets 与 produces 数量一致",
-        "en": "zh/en skills must be paired and agree on heading count, references, assets, and produces count",
+        "zh": "zh/en Skill 必须配对，且 frontmatter 契约、标题数、references 与 assets 一致",
+        "en": "zh/en skills must be paired and agree on frontmatter contracts, heading count, references, and assets",
     },
     "c3.rule": {
         "zh": "英文版文本产物不得含中文（标注为参考用途的双语触发词除外）",
@@ -110,6 +110,30 @@ MESSAGES: dict[str, dict[str, str]] = {
     "c2.produces_count": {
         "zh": "frontmatter produces 数量不等：zh={zh} en={en}",
         "en": "frontmatter produces counts differ: zh={zh} en={en}",
+    },
+    "c2.top_keys": {
+        "zh": "frontmatter 顶层字段不等：仅 zh={only_zh} 仅 en={only_en}",
+        "en": "top-level frontmatter fields differ: zh only={only_zh} en only={only_en}",
+    },
+    "c2.metadata_keys": {
+        "zh": "metadata 字段不等：仅 zh={only_zh} 仅 en={only_en}",
+        "en": "metadata fields differ: zh only={only_zh} en only={only_en}",
+    },
+    "c2.allowed_tools": {
+        "zh": "allowed-tools 不等：zh={zh} en={en}",
+        "en": "allowed-tools differ: zh={zh} en={en}",
+    },
+    "c2.requires_count": {
+        "zh": "requires 数量不等：zh={zh} en={en}",
+        "en": "requires counts differ: zh={zh} en={en}",
+    },
+    "c2.requires_structure": {
+        "zh": "requires 的 level/fallback 结构不等：zh={zh} en={en}",
+        "en": "requires level/fallback structures differ: zh={zh} en={en}",
+    },
+    "c2.produces_paths": {
+        "zh": "produces 路径未按矩阵对齐：zh={zh} en={en}",
+        "en": "produces paths do not align through the matrix: zh={zh} en={en}",
     },
 
     # ---- C3 ----
@@ -214,6 +238,20 @@ MESSAGES: dict[str, dict[str, str]] = {
     "c10.path_missing": {
         "zh": "矩阵钉死 {path}，但 SKILL.md 未出现该文件名",
         "en": "the matrix pins {path}, but SKILL.md never mentions that filename",
+    },
+
+    # ---- C11 ----
+    "c11.rule": {
+        "zh": "矩阵钉死的每一条中文路径，§3.5 必须给出英文映射",
+        "en": "every Chinese path the matrix pins must have an English mapping in section 3.5",
+    },
+    "c11.unmapped": {
+        "zh": "{path} 被矩阵钉死，但 §3.5 没有英文映射——英文链路跑到这一步会现场编名",
+        "en": "{path} is pinned by the matrix but has no English mapping in section 3.5; an English run reaching this step will invent a name",
+    },
+    "c11.no_matrix": {
+        "zh": "契约矩阵不在 {path}，本项检查未执行——不是通过",
+        "en": "the contract matrix is not at {path}; this check did not run - that is not a pass",
     },
 
     # ---- CLI：参数说明 ----

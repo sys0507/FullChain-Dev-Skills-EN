@@ -34,6 +34,7 @@ from checks import (  # noqa: E402
     C8Requires,
     C9SizeBudget,
     C10MatrixPathsInSkill,
+    C11MatrixMappingComplete,
 )
 from common import CJK, headings, normalize, section, strip_fences  # noqa: E402
 
@@ -223,6 +224,71 @@ class TestC2Pairing(Base):
         make(self.root, "a-en", fm=en_fm)
         found = C2Pairing().run(self.root)
         self.assertTrue(any(f.key == "c2.produces_count" for f in found))
+
+    def test_positive_top_level_key_drift(self):
+        make(self.root, "a")
+        make(self.root, "a-en", fm=EN_FM.replace("metadata:\n", "license: MIT\nmetadata:\n"))
+        found = C2Pairing().run(self.root)
+        self.assertTrue(any(f.key == "c2.top_keys" for f in found))
+
+    def test_positive_metadata_key_drift(self):
+        make(self.root, "a")
+        make(self.root, "a-en", fm=EN_FM.replace("  lang: en\n", "  lang: en\n  kind: process-executor\n"))
+        found = C2Pairing().run(self.root)
+        self.assertTrue(any(f.key == "c2.metadata_keys" for f in found))
+
+    def test_positive_allowed_tools_drift(self):
+        make(self.root, "a", fm=GOOD_FM.replace("metadata:\n", "allowed-tools: Read Write\nmetadata:\n"))
+        make(self.root, "a-en", fm=EN_FM)
+        found = C2Pairing().run(self.root)
+        self.assertTrue(any(f.key == "c2.allowed_tools" for f in found))
+
+    def test_positive_requires_count_drift(self):
+        extra = ('    - name: "another upstream"\n'
+                 '      level: optional\n'
+                 '      fallback: "continue without it"\n')
+        make(self.root, "a")
+        make(self.root, "a-en", fm=EN_FM.replace("---\n", extra + "---\n", 1))
+        found = C2Pairing().run(self.root)
+        self.assertTrue(any(f.key == "c2.requires_count" for f in found))
+
+    def test_positive_requires_level_drift(self):
+        make(self.root, "a")
+        make(self.root, "a-en", fm=EN_FM.replace("level: orchestration", "level: optional"))
+        found = C2Pairing().run(self.root)
+        self.assertTrue(any(f.key == "c2.requires_structure" for f in found))
+
+    def test_positive_requires_fallback_presence_drift(self):
+        make(self.root, "a")
+        make(self.root, "a-en", fm=EN_FM.replace(
+            '      fallback: "ask the user to supply it directly"\n', ""))
+        found = C2Pairing().run(self.root)
+        self.assertTrue(any(f.key == "c2.requires_structure" for f in found))
+
+    def test_positive_produces_path_drift_with_same_count(self):
+        zh_fm = GOOD_FM.replace(
+            "  requires:\n", '  produces:\n    - "specs/research/source.md"\n  requires:\n')
+        en_fm = EN_FM.replace(
+            "  requires:\n", '  produces:\n    - "specs/research/wrong.md"\n  requires:\n')
+        make(self.root, "a", fm=zh_fm)
+        make(self.root, "a-en", fm=en_fm)
+        found = C2Pairing().run(self.root)
+        self.assertTrue(any(f.key == "c2.produces_paths" for f in found))
+
+    def test_negative_localized_produces_path_from_matrix(self):
+        zh_fm = GOOD_FM.replace(
+            "  requires:\n", '  produces:\n    - "specs/research/报告.md"\n  requires:\n')
+        en_fm = EN_FM.replace(
+            "  requires:\n", '  produces:\n    - "specs/research/report.md"\n  requires:\n')
+        make(self.root, "a", fm=zh_fm)
+        make(self.root, "a-en", fm=en_fm)
+        matrix = self.root / "matrix.md"
+        matrix.write_text(
+            "## 3.5 跨语言路径契约\n\n"
+            "| 中文版 | 英文版 |\n|---|---|\n"
+            "| `specs/research/报告.md` | `specs/research/report.md` |\n",
+            encoding="utf-8")
+        self.assertEqual(C2Pairing().run(self.root, matrix=matrix), [])
 
 
 # ---------------------------------------------------------------- C3
@@ -977,6 +1043,64 @@ class TestFindingCarriesKey(unittest.TestCase):
         found = C1References().run(self.root)
         self.assertIn("broken link", found[0].detail)
         self.assertEqual(found[0].key, "c1.broken_link", "key 不随语言变化")
+
+
+class TestC11MatrixMappingComplete(unittest.TestCase):
+    """矩阵钉死的中文路径，§3.5 必须都给出英文映射。
+
+    真实缺陷（英文版全链路首跑）：§3.4 登记了 7 条报告路径，
+    §3.5 只映射了其中 3 条——**两节从来没有对接过**。
+    英文链路跑到那几步时无名可用，于是现场编：环境准备报告丢了 `09-` 前缀，
+    测试报告从 `specs/` 挪进 `specs/research/` 还占了别人的序号。
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        self.matrix = self.root / "matrix.md"
+
+    def _write(self, pinned, mapping_rows):
+        rows = ["| Skill | 读取 | 写入 | 门禁 | 幂等 | 置信度 |",
+                "|---|---|---|---|---|---|",
+                "| `runner` | x | `" + pinned + "`（新建） | 无 | 幂等 | 实测 |",
+                "", "| 中文版 | 英文版 |", "|---|---|"] + mapping_rows
+        self.matrix.write_text(NL.join(rows) + NL, encoding="utf-8")
+
+    def test_pinned_without_mapping_is_reported(self):
+        """正样本：钉死了中文路径却没有英文映射——必须报。"""
+        self._write("specs/测试报告.md", [])
+        found = C11MatrixMappingComplete().run(self.root, self.matrix)
+        self.assertEqual([f.key for f in found], ["c11.unmapped"])
+        self.assertEqual(found[0].args["path"], "specs/测试报告.md")
+
+    def test_pinned_with_mapping_is_clean(self):
+        """负样本：映射齐了——不得报。"""
+        self._write("specs/测试报告.md",
+                    ["| `specs/测试报告.md` | `specs/test-report.md` |"])
+        self.assertEqual(C11MatrixMappingComplete().run(self.root, self.matrix), [])
+
+    def test_english_only_path_needs_no_mapping(self):
+        """负样本：文件名本就是英文的两版共用，无需映射。"""
+        self._write("specs/00X-slug/state.md", [])
+        self.assertEqual(C11MatrixMappingComplete().run(self.root, self.matrix), [])
+
+    def test_instantiated_placeholder_counts_as_mapped(self):
+        """负样本：§2.3 的实测记录写的是实例，映射表登记的是模板。
+
+        不认这一层，每条实测记录都会被误报成未映射——
+        **一个乱报的检查和一个不报的检查，同样会让人忽略整个报告。**
+        """
+        self._write("specs/001-csv-to-markdown/测试路由判定.md",
+                    ["| `specs/<id>-<feature>/测试路由判定.md` | "
+                     "`specs/<id>-<feature>/test-routing-decision.md` |"])
+        self.assertEqual(C11MatrixMappingComplete().run(self.root, self.matrix), [])
+
+    def test_missing_matrix_is_reported_not_silently_passed(self):
+        found = C11MatrixMappingComplete().run(self.root, self.root / "nope.md")
+        self.assertEqual([f.key for f in found], ["c11.no_matrix"])
+
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

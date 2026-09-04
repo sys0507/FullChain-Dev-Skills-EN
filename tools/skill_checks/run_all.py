@@ -72,10 +72,10 @@ def main(argv: list[str] | None = None) -> int:
 
     #: 「这项检查没跑成」不是某个语言的内容问题，语言作用域不适用于它。
     #: 不豁免的话，--scope en 会把它过滤掉，于是「未执行」又变回一片绿。
-    NOT_RUN = {"c10.no_matrix"}
+    NOT_RUN = {"c10.no_matrix", "c11.no_matrix"}
 
     def in_scope(f) -> bool:
-        if f.key in NOT_RUN:
+        if f.key in NOT_RUN or f.key == "c11.unmapped":
             return True
         is_en = "-en/" in f.path or f.path.endswith("-en")
         return {"zh": not is_en, "en": is_en, "all": True}[args.scope]
@@ -88,9 +88,11 @@ def main(argv: list[str] | None = None) -> int:
     for chk in selected:
         # C2/C4/C5 分别守 Skill、evals、scripts/tests 的跨语言配对。
         head = chk.name.split("-")[0]
-        if head in {"C2", "C4", "C5"}:
+        if head == "C2":
+            raw = chk.run(root, en_root, Path(args.matrix) if args.matrix else None)
+        elif head in {"C4", "C5"}:
             raw = chk.run(root, en_root)
-        elif head == "C10":
+        elif head in {"C10", "C11"}:
             # 英文库没有矩阵副本，须显式指向中文库那份；不给就报「未执行」。
             raw = chk.run(root, Path(args.matrix) if args.matrix else None)
         else:

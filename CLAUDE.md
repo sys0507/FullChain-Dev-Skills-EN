@@ -43,9 +43,11 @@ exactly the kind of pollution hard language isolation forbids.
 **Before finishing**
 
 ```
-python tools/skill_checks/run_all.py --scope en --phase 3 --messages en \n  --matrix ../全链路开发汇总/docs/stage-artifact-contract.md
+python tools/skill_checks/run_all.py --scope en --phase 3 --messages en \
+  --matrix ../全链路开发汇总/docs/stage-artifact-contract.md
 python tools/skill_checks/run_all.py --check C2 C4 C5 --phase 3 --messages en \
-  --skills-root ../全链路开发汇总/Assets/skills --en-root Assets/skills
+  --skills-root ../全链路开发汇总/Assets/skills --en-root Assets/skills \
+  --matrix ../全链路开发汇总/docs/stage-artifact-contract.md
 ```
 
 Both must be clean. C2 guards paired Skills, C4 guards paired eval files, and C5 guards paired
@@ -67,11 +69,13 @@ should be invented.
 
 ```bash
 # Every check, English scope
-python tools/skill_checks/run_all.py --scope en --phase 3 --messages en \n  --matrix ../全链路开发汇总/docs/stage-artifact-contract.md
+python tools/skill_checks/run_all.py --scope en --phase 3 --messages en \
+  --matrix ../全链路开发汇总/docs/stage-artifact-contract.md
 
 # Cross-tree pairing checks
 python tools/skill_checks/run_all.py --check C2 C4 C5 --phase 3 --messages en \
-  --skills-root ../全链路开发汇总/Assets/skills --en-root Assets/skills
+  --skills-root ../全链路开发汇总/Assets/skills --en-root Assets/skills \
+  --matrix ../全链路开发汇总/docs/stage-artifact-contract.md
 
 # The checker's own tests
 python tools/skill_checks/tests/test_checks.py
