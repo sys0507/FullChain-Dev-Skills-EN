@@ -127,8 +127,8 @@ Add two files to every feature directory:
 
 | File | Purpose |
 |---|---|
-| Progress file | Which task is in flight, which are done, whether anything is blocked |
-| Session handoff file | Cross-session resumption instructions; **its core job is preventing re-planning** |
+| `state.md` (progress file) | Which task is in flight, which are done, whether anything is blocked |
+| `session.md` (session handoff file) | Cross-session resumption instructions; **its core job is preventing re-planning** |
 
 **Existing files are skipped, never overwritten.** The user may already have written them by hand.
 

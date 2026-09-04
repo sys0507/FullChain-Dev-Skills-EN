@@ -76,10 +76,10 @@ only then can the PRD be written without diverging.
 All new product launch research uses:
 
 ```
-Theme 1: Product Form      → competing products / IA / interaction patterns / AI features / delivery form
-Theme 2: Key Resources     → channel inventory / per-channel facts / mainstream choices / recommendation + backup
-Theme 3: Open-Source Ecosystem → project inventory / project facts / puzzle pieces / reuse combinations
-Theme 4: Implementation Plan   → module breakdown / per-module option comparison / recommended tech stack
+Theme 1: Product Form      → competing products / IA / interaction patterns / AI features / delivery form → save to 01-product-shape.md
+Theme 2: Key Resources     → channel inventory / per-channel facts / mainstream choices / recommendation + backup → save to 02-key-resources-and-dependencies.md
+Theme 3: Open-Source Ecosystem → project inventory / project facts / puzzle pieces / reuse combinations → save to 03-open-source-candidates.md
+Theme 4: Implementation Plan   → module breakdown / per-module option comparison / recommended tech stack → save to 04-implementation-options.md
 ──────────────────────────────────────────────────────────────────────────────────────────
 Summary: 05-decision-summary.md (depends on all 4 prior docs, runs serially at the end)
 ```
@@ -180,7 +180,7 @@ Fixed structure of the final prompt:
 <One-liner definition given by the user in Step 2>
 
 ## 📁 Output Paths
-<project directory>/specs/research/01-...md ~ 05-decision-summary.md
+<project directory>/specs/research/{01-product-shape,02-key-resources-and-dependencies,03-open-source-candidates,04-implementation-options,05-decision-summary}.md
 
 ## Research Theme 1: ... (filled from template)
 ## Research Theme 2: ...
