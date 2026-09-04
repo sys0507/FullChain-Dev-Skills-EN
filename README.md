@@ -12,16 +12,6 @@ to work because a convention directory is missing.
 
 ## Diagrams
 
-<a href="https://claude.ai/code/artifact/79305b30-ab34-49d9-b888-1dcad28cab38">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/three-layer-system.dark.png">
-    <img src="docs/diagrams/three-layer-system.light.png" alt="The three-layer system: entry, orchestration, skill capabilities">
-  </picture>
-</a>
-
-*Entry, orchestration, and skill capabilities.
-[Open the interactive diagram →](https://claude.ai/code/artifact/79305b30-ab34-49d9-b888-1dcad28cab38)*
-
 <a href="https://claude.ai/code/artifact/aa3ae920-67a8-497e-b15b-816397ca192d">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/full-chain-delivery-loop.dark.png">
@@ -31,6 +21,16 @@ to work because a convention directory is missing.
 
 *Idea to shipped artifact, traced through every stage.
 [Open the interactive diagram →](https://claude.ai/code/artifact/aa3ae920-67a8-497e-b15b-816397ca192d)*
+
+<a href="https://claude.ai/code/artifact/79305b30-ab34-49d9-b888-1dcad28cab38">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/three-layer-system.dark.png">
+    <img src="docs/diagrams/three-layer-system.light.png" alt="The three-layer system: entry, orchestration, skill capabilities">
+  </picture>
+</a>
+
+*Entry, orchestration, and skill capabilities.
+[Open the interactive diagram →](https://claude.ai/code/artifact/79305b30-ab34-49d9-b888-1dcad28cab38)*
 
 ---
 
