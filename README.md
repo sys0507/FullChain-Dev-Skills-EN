@@ -87,25 +87,6 @@ expensive.
 output says which capability was not used and what is therefore not covered. A report full of
 "unverified" is worth more than one that looks entirely green and is not.
 
-## Verifying this tree
-
-```bash
-python tools/skill_checks/run_all.py --scope en --phase 3 --messages en \
-  --matrix ../全链路开发汇总/docs/stage-artifact-contract.md
-```
-
-Ten checks: broken and orphaned references, Chinese residue, English evals identity, scripts
-having tests, directory self-containment, the three contract sections, dependency grading,
-size budgets, and matrix path propagation.
-
-Cross-tree drift against the Chinese edition:
-
-```bash
-python tools/skill_checks/run_all.py --check C2 C4 C5 --phase 3 --messages en \
-  --skills-root ../全链路开发汇总/Assets/skills --en-root Assets/skills \
-  --matrix ../全链路开发汇总/docs/stage-artifact-contract.md
-```
-
 ## Orchestrating the Complete Chain
 
 Use `fullchain-dev-workflow-en` to calculate the next stage, stop at gates, evaluate conditional
