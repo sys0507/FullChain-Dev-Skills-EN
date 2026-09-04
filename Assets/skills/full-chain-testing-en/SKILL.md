@@ -1,30 +1,27 @@
 ---
 name: full-chain-testing-en
 description: Excavate and protect a newly reachable P0 cross-feature journey using static structure, runtime traces, and spec contracts. Bring up the real system, stub only external boundaries, validate multi-feature and asynchronous paths without fixed sleeps, archive journey-level evidence, and backfill lower layers when a defect first appears here. Deliver isolated changes for human review. Use directly or when routed by test-routing-advisor-en; do not use for a single-feature seam.
-license: MIT
 metadata:
   version: "1.0"
   lang: en
-  kind: process-executor
   stage: "9.2"
   standalone: true
   produces:
     - "end-to-end test code"
     - "path-inventory.json"
     - "evidence archive"
+    - "specs/test-report.md"
   requires:
     - name: "several closed-out features"
       level: required
-      fallback: "Stop - a cross-feature journey needs several features to exist first"
     - name: "project manifest files"
       level: required
-      fallback: "Stop - the stack cannot be identified and the system cannot be orchestrated"
-    - name: "routing decision report"
-      level: orchestration
-      fallback: "Ask the user which journey to take"
-    - name: "runtime tracing capability"
+    - name: "static code graph and runtime trace"
       level: optional
-      fallback: "Excavate from the static graph and spec contracts only, and label which paths went un-excavated"
+      fallback: "Excavate paths from spec contracts alone; coverage decreases and is explicitly labelled"
+    - name: "browser testing tool"
+      level: optional
+      fallback: "Collapse UI-traversable segments; validate through the API and data layers instead, and label the limitation"
 ---
 
 # full-chain-testing-en · Complete Functional Chain Test Executor
@@ -173,7 +170,7 @@ For each newly added chain safety net test:
 - Attach **journey-level traceable IDs** — associated with the **multiple features / multiple ACs this journey traverses + which jump types it contains** (coarser traceability granularity than single-feature, but must mechanically answer "was this cross-feature journey tested").
 - Aligned with **three-layer cadence**: chain E2E belongs to blueprint **L3** (slowest, most fragile) — put only the one thing L1/L2/first-three-quadrants can't cover ("confirm the entire chain actually connects") here; **don't stuff unit-level / single-feature-level assertions into chain E2E**.
 - **Teardown**: Both CI and local cadences are **bring up full-system stack → run journey → teardown stack**; clean up the real stack and data together after testing.
-- Keep supplemental tests in an **isolated branch or change set for human review**; the upper-level wrap-up stage decides merge versus PR. The delivery note lists the path inventory summary, selected P0 journeys and rationale, jump types, excavation sources, stubbed external boundaries, and any lower-layer backfill.
+- Keep supplemental tests in an **isolated branch or change set for human review**; the upper-level wrap-up stage decides merge versus PR. The delivery note lists the path inventory summary, selected P0 journeys and rationale, jump types, excavation sources, stubbed external boundaries, and any lower-layer backfill. It also appends that delivery note into `specs/test-report.md` (create or append; never rewrite an existing entry) — the four test executors share this one file, and branch close-out reads it, not notes scattered across branches.
 
 ---
 
@@ -231,19 +228,6 @@ This skill comes with a **clean-room in-house** reference implementation (MIT, o
 Central artifact `path-inventory.json` (`scripts/pathinv.py` defines schema + validation gate):
 features / nodes / edges (each with source+status+provenance) / journeys.
 
-| File | Knife | Language | Purpose |
-|------|----|------|------|
-| `scripts/pathinv.py` | Shared | Python | path-inventory schema + status upgrade + `validate()` anti-hallucination gate |
-| `scripts/knife1_spec.py` | Knife 1 Source C | Python | Parse spec-kit `tasks.md` `[dependency] Fn` / `[BE/FE/INT]` / `[FR source]` → cross-feature candidate edges (candidate, evidence=file:line_number) |
-| `scripts/knife2_static.py` | Knife 2 Source A | Python | AST (Python FastAPI decorators/import/redis key/scheduler) + regex (Next route/import/fetch/redis) → code-confirmed; **framework-wrapped FE→BE (useObject/useChat) honestly marked candidate** |
-| `scripts/knife3_trace.py` | Knife 3 Source B | Python | Read correlation-id structured event log → trace-confirmed edges (evidence=span/event) |
-| `scripts/knife4_merge.py` | Knife 4 | Python | Three-source merge deduplication, status upgrade, mark spec-only gaps, derive journeys, heuristically mark P0 (noted "needs human confirmation") |
-| `scripts/knife5_e2e.py` | Knife 5 | Python | Select one journey → generate pytest/Playwright RED E2E skeleton (condition-based wait, no sleep) |
-| `scripts/knife6_viewer.html` | Knife 6 | HTML/JS | Single-file self-contained (pure DOM+CSS, no heavy dependencies); **"user journey list" for humans** — each journey has a one-sentence summary + step flow chips, color-coded by status (candidate=dashed gray / code=blue / trace=green), click step to see provenance details; technical scatter plot demoted to "view technical details" collapsible |
-| `scripts/view.sh` | One-click open | bash | `bash view.sh demo` / `bash view.sh alpha` / `bash view.sh out/xxx.json` → automatically starts local server + opens browser + data already loaded, **no drag-and-drop needed** |
-| `scripts/run_pipeline.sh` | Orchestration | bash | Start demo → inject cid, run journey → knife2+knife3 → knife4 merge → knife5 skeleton, output to `scripts/out/` |
-| `demo-app/` | Validation target | Python(stdlib)+HTML | Small but complete multi-feature demo (A frontend button → B API writes kv+async → C cron reads kv+push), contains all edge types, actually runnable |
-
 ### Usage Flow (Trigger Timing + Automatic Output + Viewing)
 
 1. **Trigger timing** — **Not triggered "when all features are done."** Triggered when **a cross-feature end-to-end journey becomes traversable for the first time** (per journey, not at project end). `test-routing-advisor-en`'s "killer feature" is proactively discovering this "first traversal" from the dependency graph and prompting — this is what people most easily forget.
@@ -257,19 +241,14 @@ The knife number, language and purpose of each of the twelve files are in
 
 ## Upstream Artifacts
 
-| Artifact | Level | When missing |
-|---|:---:|---|
-| Several closed-out features | **required** | Stop - a cross-feature journey needs several features first |
-| Project manifest files | **required** | Stop - the stack cannot be identified |
-| Routing decision report | orchestration | Ask the user which journey to take |
-| Runtime tracing capability | optional | Excavate from the static graph and spec contracts only; label which paths went un-excavated |
+Several closed-out features (**required**) and project manifest files (**required**); static code
+graphs, runtime traces, and browser testing tools are optional enhancements. When they are
+missing, coverage decreases and the limitation is explicitly labelled.
 
 ## Downstream Consumers
 
-| Consumer | What it reads |
-|---|---|
-| Branch close-out | The end-to-end safety net's result |
-| The retrospective skill | Which defects surfaced first at this layer, and therefore which lower layer under-tested |
+Branch close-out consumes the P0 safety-net result; the retrospective consumes the signal
+“a defect found at this layer means a lower layer under-tested it.”
 
 ## Standalone Use
 

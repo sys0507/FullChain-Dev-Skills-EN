@@ -1,20 +1,17 @@
 ---
 name: release-packaging-router-en
 description: >-
-  Decide whether a project needs packaging and release at all, and route it by artifact shape
-  to the right release channel - container, package registry, app store, installer, firmware,
-  hosting platform or private registry, one or several. Produce a release channel decision
-  report (including the reasons for the rejected options), then turn the packaging work into
-  a proper feature handed to the existing four-step pipeline. A container is one of seven,
-  not the default.
-  Trigger keywords: package / deploy / release / ship / distribute / artifact / image /
-  publish a version / stage 11.
-  Do not use for: writing the actual contents of a Dockerfile or a CI workflow (that is the
-  implementation stage), running the four-step documents (that is
-  speckit-feature-pipeline-en), performing the release or registering accounts on the user's
-  behalf, or manufacturing a packaging process for a project that needs no distribution.
-  Invoke it whenever the task involves how this thing gets out into the world, even if the
-  user never says the word "skill".
+  Decide whether a project needs packaging and release, then route each artifact to the right
+  channel: container, package registry, app store, installer, firmware, hosting platform or
+  private artifact repository, singly or in combination. Produce a release-channel decision
+  report with reasons for rejected options, then turn the packaging work into a proper feature
+  for the existing four-step pipeline. A container is only one of seven choices, never the
+  default. Triggers: package / deploy / release / launch / distribute / artifact / image /
+  publish a version / release / stage 11. Do not use to write Dockerfile or CI workflow contents
+  (implementation stage), run the four-step documents (speckit-feature-pipeline-en), release on
+  the user's behalf, register publishing-platform accounts, or invent packaging for a project
+  that needs no distribution. Invoke whenever the task concerns how the product will be released,
+  even if the user does not mention a Skill.
 license: MIT
 metadata:
   version: "1.0"

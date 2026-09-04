@@ -17,7 +17,6 @@ allowed-tools: Read Write Edit
 metadata:
   version: "1.0"
   lang: en
-  kind: behavioural
   stage: "2"
   standalone: true
   produces:
@@ -145,7 +144,9 @@ How to write it:
 5. Run the eleven-question convergence - guarded throughout by the frozen list
 6. Adjudicate each candidate: promote to confirmed (with the basis) or keep open
 7. Merge the open questions: N inherited plus any new ones
-8. Write back to the ledger; emit the convergence result
+8. Write back to the ledger; save the convergence result to `specs/research/07-mvp-convergence.md`
+
+**Step 8's save path is authoritative here, not just a one-time mention in frontmatter.**
 ```
 
 ## The eleven questions

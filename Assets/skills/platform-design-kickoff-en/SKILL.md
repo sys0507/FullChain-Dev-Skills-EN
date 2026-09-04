@@ -1,21 +1,18 @@
 ---
 name: platform-design-kickoff-en
 description: >-
-  Produce the design source of truth before implementation — decide whether this project
-  needs interface design at all, choose a design tool that fits the target platform, and
-  produce DESIGN.md (design system + tokens + component specs) plus a design reference
-  export directory. Stays strictly inside the PRD's Must-have scope; breakpoints, theming,
-  accessibility and internationalisation left undefined by the PRD go into Open Questions
-  rather than being decided on the user's behalf.
-  Trigger keywords: interface design / experience design / UI design / design system /
-  DESIGN.md / design tokens / component spec / visual spec / prototype / interaction
-  contract / stage 5 / 5.1.
-  Do not use for: injecting a design system into the constitution or rewriting specs
-  (that is speckit-design-injection-universal-en), writing frontend code, operating a
-  design tool on the user's behalf, choosing a component library, or manufacturing an
-  interface for a backend-only or non-interactive project.
-  Invoke it whenever the task concerns what this project's interface should look like,
-  even if the user never says the word "skill".
+  Before implementation, create the project's design source of truth: decide if it needs UI
+  design, choose a platform-suited tool, and produce DESIGN.md (design
+  system, tokens and component specifications) plus a design-reference export directory. Stay
+  within PRD Must-haves. Put undefined breakpoints, themes, accessibility and internationalisation
+  in Open Questions; never decide them for the user. Triggers: interface
+  design / experience design / UI design / design system / DESIGN.md / design tokens / component
+  specifications / visual specifications / prototype / interaction contract / stage 5 / 5.1.
+  Do not use to inject the design system into the constitution or rerun specs (use
+  speckit-design-injection-universal-en), write frontend code, operate a design tool for the user,
+  choose a component library, or invent an interface for a backend-only or non-interactive project.
+  Invoke whenever the task concerns what this project's interface or interaction should look like,
+  even without an explicit Skill request.
 license: MIT
 metadata:
   version: "1.0"

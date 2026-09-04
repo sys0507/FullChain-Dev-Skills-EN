@@ -1,7 +1,7 @@
 ---
 name: test-routing-advisor-en
-description: Classify the structural testing gaps of a completed feature and route each gap to backend-testing-en, frontend-testing-en, fullstack-slice-testing-en, or full-chain-testing-en. Use during feature wrap-up after task-level TDD is green. Reads labels, dependency graphs, contracts, and acceptance criteria; reports categorization, uncovered risks, and routing only. It does not execute tests or choose stack-specific tools. Not for: executing the tests themselves (it only categorizes and routes), writing test code, or deciding whether a release ships.
-license: MIT
+description: >-
+  Classify the structural testing gaps of a completed feature and route each gap to backend-testing-en, frontend-testing-en, fullstack-slice-testing-en, or full-chain-testing-en. Use during feature wrap-up after task-level TDD is green. Reads labels, dependency graphs, contracts, and acceptance criteria; reports categorization, uncovered risks, and routing only. It does not execute tests or choose stack-specific tools. Not for: executing the tests themselves (it only categorizes and routes), writing test code, or deciding whether a release ships.
 metadata:
   version: "1.0"
   lang: en

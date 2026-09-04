@@ -1,7 +1,7 @@
 ---
 name: backend-testing-en
-description: Close backend-only structural testing gaps after feature-level TDD, including real-database behavior, migrations and transactions, authorization boundaries, concurrency and atomicity, and resilience or fault injection. Detect the project stack, test only applicable gaps, archive traceable evidence, and deliver isolated changes for human review. Use directly or when routed by test-routing-advisor-en. Not for: frontend testing, cross-feature end-to-end chains, or modifying product code (product defects that are discovered MUST be handed back to the implementation process).
-license: MIT
+description: >-
+  Close backend-only structural testing gaps after feature-level TDD, including real-database behavior, migrations and transactions, authorization boundaries, concurrency and atomicity, and resilience or fault injection. Detect the project stack, test only applicable gaps, archive traceable evidence, and deliver isolated changes for human review. Use directly or when routed by test-routing-advisor-en. Not for: frontend testing, cross-feature end-to-end chains, or modifying product code (product defects that are discovered MUST be handed back to the implementation process).
 metadata:
   version: "1.0"
   lang: en
@@ -10,6 +10,7 @@ metadata:
   produces:
     - "Backend test code"
     - "Evidence archive"
+    - "specs/test-report.md"
   requires:
     - name: "Routing decision report, or gaps named directly by the user"
       level: orchestration
@@ -108,7 +109,7 @@ For each newly added regression test:
 
 ### Step 5 · Deliver (Isolated Changes · Human Review)
 
-Keep backfill in an isolated branch or change set for **human review**. The upper-level wrap-up stage decides whether to merge directly or open a PR. The delivery note lists hit dimensions, skipped dimensions with reasons, and the gap ID and risk tier for each newly added regression.
+Keep backfill in an isolated branch or change set for **human review**. The upper-level wrap-up stage decides whether to merge directly or open a PR. The delivery note lists hit dimensions, skipped dimensions with reasons, and the gap ID and risk tier for each newly added regression. It also appends that delivery note into `specs/test-report.md` (create or append; never rewrite an existing entry) — the four test executors share this one file, and branch close-out reads it, not notes scattered across branches.
 
 ---
 

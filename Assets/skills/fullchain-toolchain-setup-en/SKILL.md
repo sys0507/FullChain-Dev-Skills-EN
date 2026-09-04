@@ -14,10 +14,10 @@ description: >-
   Invoke it whenever the task involves getting this project's skills in place, even if the
   user never says the word "skill".
 license: MIT
+allowed-tools: Read Write Edit Bash
 metadata:
   version: "1.0"
   lang: en
-  kind: process-executor
   stage: "0"
   standalone: true
   produces:
@@ -26,10 +26,8 @@ metadata:
   requires:
     - name: "language parameter"
       level: required
-      fallback: "Stop and ask; MUST NOT be inferred from the environment or the locale"
     - name: "skill asset source directory"
       level: required
-      fallback: "Stop - with no source there is nothing to install"
     - name: "documentation for the optional capabilities"
       level: optional
       fallback: "Mark that capability pending; do not install from impression"
@@ -134,6 +132,10 @@ fails, say where it stopped.
 A failure partway through **does not roll back** — what is already installed stays, and the
 report states the break point and what remains.
 A rollback could delete a same-named skill the user already had.
+
+The overall report is both emitted in the session and created at
+`specs/research/toolchain-setup-report.md`; if the file already exists, skip it rather than
+overwriting the previous execution record.
 
 See `references/verification-protocol.md` for the layered verification signals and the
 failure record format.

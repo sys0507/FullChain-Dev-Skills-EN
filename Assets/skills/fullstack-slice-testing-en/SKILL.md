@@ -1,24 +1,21 @@
 ---
 name: fullstack-slice-testing-en
 description: Validate one real consumer-provider seam within a single feature after frontend and backend work are ready. Bring up both sides and required dependencies, reconcile mocked consumer assumptions with provider behavior, test contract authenticity, identity and serialization glue, error mapping, and applicable async timing, then tear down cleanly. Deliver isolated test changes for human review. Use directly or when routed by test-routing-advisor-en. Do not use for cross-feature journeys (those belong to full-chain-testing-en), for single-side work with no frontend-backend seam, or when only one side is finished - mocking the other side destroys the point of the reconciliation.
-license: MIT
 metadata:
   version: "1.0"
   lang: en
-  kind: process-executor
   stage: "9.2"
   standalone: true
   produces:
     - "test code (project test directory)"
     - "environment orchestration configuration"
     - "evidence archive"
+    - "specs/test-report.md"
   requires:
     - name: "both frontend and backend closed out within the same feature"
       level: required
-      fallback: "Stop - with one side missing there is nothing to reconcile"
     - name: "project manifest files for both sides"
       level: required
-      fallback: "Stop - the real environment cannot be orchestrated without them"
     - name: "routing decision report"
       level: orchestration
       fallback: "Ask the user which slice to take"
@@ -130,7 +127,7 @@ For each newly added seam regression test:
 - Attached with **traceable IDs** (associated with feature / AC / scoped slice / hit gaps).
 - Aligned with **three-layer cadence**: seam tests require bringing up the real stack; they naturally belong to the slower layer (blueprint L2 integration layer) — don't stuff them into the L1 unit test layer for fast execution.
 - **Teardown**: The cadence in CI is **bring up stack → test → teardown stack**; after testing, make sure to clean up the real stack and data together to avoid environment leakage polluting the next run. Same applies locally (stack bring-up and teardown come in pairs).
-- Keep supplemental tests in an **isolated branch or change set for human review**; the upper-level wrap-up stage decides merge versus PR. The delivery note lists the scoped slice, hit gaps, skipped gaps and reasons, each regression's gap and risk level, and the stack bring-up and teardown approach.
+- Keep supplemental tests in an **isolated branch or change set for human review**; the upper-level wrap-up stage decides merge versus PR. The delivery note lists the scoped slice, hit gaps, skipped gaps and reasons, each regression's gap and risk level, and the stack bring-up and teardown approach. It also appends that delivery note into `specs/test-report.md` (create or append; never rewrite an existing entry) — the four test executors share this one file, and branch close-out reads it, not notes scattered across branches.
 
 ---
 

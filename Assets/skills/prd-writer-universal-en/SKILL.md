@@ -1,7 +1,6 @@
 ---
 name: prd-writer-universal-en
 description: Generate an industry-standard, domain-neutral Product Requirements Document from confirmed research and brainstorming outcomes. Supports project-level PRDs at specs/prd.md and feature-level PRDs at specs/feature-slug/prd.md, with verifiable acceptance criteria, scope boundaries, risks, and open questions. Use for PRD or product-spec writing; do not use for technical design, market research, or unconverged ideation.
-license: MIT
 metadata:
   version: "1.0"
   lang: en

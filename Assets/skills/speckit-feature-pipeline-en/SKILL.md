@@ -1,25 +1,21 @@
 ---
 name: speckit-feature-pipeline-en
 description: >-
-  Split a project-level PRD into individual features, and take each one through the complete
-  four steps producing spec.md, a clarify write-back, plan.md and tasks.md. Documents only -
-  no code, no worktree changes, no TDD. Includes the split-and-order table, the output
-  contract for each of the four steps, the four boundary classes clarify must scan, the
-  five-element check on plan, and the 12-18 granularity control on tasks.
-  Trigger keywords: split features / turn the PRD into specs / generate spec plan tasks /
-  four-step documents / feature split table / specify clarify plan tasks / break requirements
-  into tasks / write feature documents.
-  Do not use for: implementing a feature (that is the implementation executor), writing the
-  PRD (that is the PRD writing skill), converging MVP scope, or rerunning plan and tasks
-  because the design system changed (that is the design injection skill).
-  Invoke it whenever the task involves turning requirements into executable feature
-  documents, even if the user never says the word "skill".
+  Split a project-level PRD into features and take each through all four steps: spec.md, clarify
+  write-back, plan.md and tasks.md. Produce documents only—no code, worktree changes or TDD.
+  Includes the split-order table, four-step output contracts, clarify's four boundary classes,
+  plan's five-element check, and 12–18-task granularity control. Triggers: split features / turn
+  the PRD into specs / generate spec plan tasks / four-step documents / feature split table /
+  specify clarify plan tasks / break requirements into tasks / write feature documents. Do not
+  use to implement a feature (implementation executor), write the PRD (PRD writing Skill), converge
+  MVP scope, or rerun plan/tasks after a design-system change (design injection Skill). Invoke
+  whenever the task involves turning requirements into executable feature documents, even if the
+  user does not mention a Skill.
 license: MIT
 allowed-tools: Read Write Edit Bash
 metadata:
   version: "1.0"
   lang: en
-  kind: behavioural
   stage: "4"
   standalone: true
   produces:
@@ -57,7 +53,7 @@ These four are the dividing line against the implementation executor, not a foot
 ```
 1. Read the PRD; select the Must-haves
 2. Estimate each one's task count; split any estimated above 18 first
-3. Emit the five-column split table with a dependency ordering
+3. Emit the five-column split table with a dependency ordering, saved to `specs/feature-split-table.md`
 4. Take each feature through the four steps in order
    specify -> clarify (mandatory) -> plan (five-element check) -> tasks (granularity check)
 5. Pause or continue according to the rhythm

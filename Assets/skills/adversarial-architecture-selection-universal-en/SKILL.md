@@ -1,7 +1,6 @@
 ---
 name: adversarial-architecture-selection-universal-en
 description: Evaluate multiple architecture, framework, library, open-source, SaaS, or vendor candidates through a five-role courtroom-style adversarial process and produce an evidence-backed architecture baseline decision. Use when a technical choice has multiple credible candidates and bias-resistant comparison is valuable. Do not use for single-candidate checks or purely product-level decisions.
-license: MIT
 metadata:
   version: "1.0"
   lang: en

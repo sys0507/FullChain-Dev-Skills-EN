@@ -1,6 +1,7 @@
 ---
 name: implementation-runway-setup-en
-description: Finish the four deterministic preparation items before entering the implementation phase — the include list of files for isolated runs, the external services and credentials inventory, appending an implementation-discipline block to the project constitution, and adding progress and session handoff files to every feature directory. Every operation is idempotent: two runs produce byte-identical output. Trigger keywords: pre-implementation setup / environment preparation / worktree include list / credentials inventory / external service survey / add state session / task management system / discipline block append / configuration before multi-task runs. Do not use for: creating or switching a worktree (that belongs to the implementation executor), writing code, running TDD, producing a feature's spec/plan/tasks, or registering external accounts on the user's behalf. Even when the user does not say "use a Skill", invoke it whenever the task involves "what has to be prepared before implementation starts".
+description: >-
+  Finish the four deterministic preparation items before entering the implementation phase — the include list of files for isolated runs, the external services and credentials inventory, appending an implementation-discipline block to the project constitution, and adding progress and session handoff files to every feature directory. Every operation is idempotent: two runs produce byte-identical output. Trigger keywords: pre-implementation setup / environment preparation / worktree include list / credentials inventory / external service survey / add state session / task management system / discipline block append / configuration before multi-task runs. Do not use for: creating or switching a worktree (that belongs to the implementation executor), writing code, running TDD, producing a feature's spec/plan/tasks, or registering external accounts on the user's behalf. Even when the user does not say "use a Skill", invoke it whenever the task involves "what has to be prepared before implementation starts".
 license: MIT
 allowed-tools: Read Write Edit Bash
 metadata:
@@ -14,6 +15,7 @@ metadata:
     - ".specify/memory/constitution.md"
     - "specs/00X-*/state.md"
     - "specs/00X-*/session.md"
+    - "specs/research/09-runway-setup-report.md"
   requires:
     - name: "specs/00X-*/ feature directories"
       level: orchestration
@@ -65,7 +67,7 @@ four items, and the discipline block appears in the constitution **exactly once*
       |- present -> skip, report "already in place"
       |- absent  -> locate the version metadata line -> insert before it
 5. D: walk feature directories -> add the missing files -> skip the existing ones
-6. Report: each item's action, every skip reason, every external service that is not ready
+6. Report: each item's action, every skip reason, every external service that is not ready — also write to `specs/research/09-runway-setup-report.md` (create; skip if it already exists)
 ```
 
 ## Item A · Include List

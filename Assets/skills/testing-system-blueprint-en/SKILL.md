@@ -1,7 +1,7 @@
 ---
 name: testing-system-blueprint-en
-description: Define a stack- and project-agnostic testing methodology covering P0-P3 risk tiers, requirements-to-test traceability, three-layer test timing, closed-loop gap backfill, release gates, and capability-to-tool mapping. Use when designing or governing a testing strategy, or as the shared blueprint for routing and executor skills. It defines methods and standards; it does not execute tests or enforce CI gates. Not for: executing tests, producing any file, enforcing gates (gates are enforced by CI / hooks), or hard-coding the tools of a specific language or framework.
-license: MIT
+description: >-
+  Define a stack- and project-agnostic testing methodology covering P0-P3 risk tiers, requirements-to-test traceability, three-layer test timing, closed-loop gap backfill, release gates, and capability-to-tool mapping. Use when designing or governing a testing strategy, or as the shared blueprint for routing and executor skills. It defines methods and standards; it does not execute tests or enforce CI gates. Not for: executing tests, producing any file, enforcing gates (gates are enforced by CI / hooks), or hard-coding the tools of a specific language or framework.
 metadata:
   version: "1.0"
   lang: en
@@ -162,18 +162,13 @@ Library names are intentionally omitted from the table — specific libraries ar
 
 ## Upstream Artifacts
 
-| Artifact | Level | When missing |
-|---|:---:|---|
-| Risk profile and requirement items of the project under test | orchestration | Ask the user to describe the key flows; with none available, deliver the generic blueprint |
+The tested project's risk profile and requirement items (orchestration-level) — when missing,
+ask the user to describe key flows; with none available, provide the generic blueprint.
 
 ## Downstream Consumers
 
-| Consumer | What it takes from this skill |
-|---|---|
-| The test routing skill | The categorization criteria |
-| The 4 test executors | The three-layer rhythm and the self-healing guardrails |
-
-This skill produces no file. Consumers follow it **by name** — there is no artifact on disk for them to read.
+The test routing Skill takes the decision criteria; the four test executors take the
+three-layer rhythm and self-healing guardrails.
 
 ## Standalone Use
 

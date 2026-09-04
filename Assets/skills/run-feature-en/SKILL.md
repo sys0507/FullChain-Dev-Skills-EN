@@ -1,11 +1,9 @@
 ---
 name: run-feature-en
 description: Implement one ready Spec-Kit feature directory containing spec.md, plan.md, and tasks.md through worktree isolation, project-rule loading, task-by-task TDD, label-aware execution, structured review, and merge/tag handoff. Use when starting or continuing a single prepared feature. Project-specific stack, design, naming, and constitution rules are read at runtime. Do not use for project bootstrap, writing specs, or concurrent multi-feature execution.
-license: MIT
 metadata:
   version: "1.0"
   lang: en
-  kind: process-executor
   stage: "8"
   standalone: true
   produces:
@@ -16,7 +14,6 @@ metadata:
   requires:
     - name: "specs/<id>-<feature>/ containing spec.md, plan.md and tasks.md"
       level: required
-      fallback: "Stop. No documents means no implementation - ask the user for them rather than inventing a spec"
     - name: "project constitution file"
       level: optional
       fallback: "Execute against the output verification in tasks.md and label the result 'constitution not loaded'"

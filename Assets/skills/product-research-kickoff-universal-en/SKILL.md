@@ -1,7 +1,6 @@
 ---
 name: product-research-kickoff-universal-en
 description: Guide pre-launch research for a 0-to-1 product through Socratic intake, four parallel research tracks, dual-source verification, and one convergence report. Use for new-product fact finding, competitor scans, resource discovery, open-source landscape review, and implementation-option research. Do not use for post-selection implementation work, pure academic research, or routine iteration of an existing product.
-license: MIT
 metadata:
   version: "1.0"
   lang: en

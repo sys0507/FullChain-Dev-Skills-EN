@@ -1,7 +1,7 @@
 ---
 name: frontend-testing-en
-description: Close frontend-only structural testing gaps after feature-level TDD by detecting the stack, establishing any missing test foundation, and configuring mature tools for lint rules, unit behavior, accessibility, responsive and cross-browser behavior, contract mocks, and visual regression. Translate project design contracts into executable checks, test only applicable gaps, and deliver isolated changes for human review. Use directly or when routed by test-routing-advisor-en. Not for: backend testing, cross-feature end-to-end chains, or reinventing test tooling (this skill only assembles tools and translates rules).
-license: MIT
+description: >-
+  Close frontend-only structural testing gaps after feature-level TDD by detecting the stack, establishing any missing test foundation, and configuring mature tools for lint rules, unit behavior, accessibility, responsive and cross-browser behavior, contract mocks, and visual regression. Translate project design contracts into executable checks, test only applicable gaps, and deliver isolated changes for human review. Use directly or when routed by test-routing-advisor-en. Not for: backend testing, cross-feature end-to-end chains, or reinventing test tooling (this skill only assembles tools and translates rules).
 metadata:
   version: "1.0"
   lang: en
@@ -10,6 +10,7 @@ metadata:
   produces:
     - "Frontend test code"
     - "Evidence archive"
+    - "specs/test-report.md"
   requires:
     - name: "Routing decision report, or gaps named directly by the user"
       level: orchestration
@@ -116,7 +117,7 @@ For each new lint rule / regression test added:
 - Attached with **traceable IDs** (associated with feature / AC / hit layer).
 - Included in **release gate**: clearly define which ones block release (e.g., wrong price-color, severe a11y violations, contract drift) and which are warning-level.
 - Aligned with **three-layer cadence** (lint/unit tests land in fast layer; cross-browser/visual regression land in slower layers).
-- Keep supplemental tests in an **isolated branch or change set for human review**; the upper-level wrap-up stage decides merge versus PR. The delivery note lists hit layers, skipped layers and reasons, and each new regression's corresponding layer and risk level.
+- Keep supplemental tests in an **isolated branch or change set for human review**; the upper-level wrap-up stage decides merge versus PR. The delivery note lists hit layers, skipped layers and reasons, and each new regression's corresponding layer and risk level. It also appends that delivery note into `specs/test-report.md` (create or append; never rewrite an existing entry) — the four test executors share this one file, and branch close-out reads it, not notes scattered across branches.
 
 ---
 

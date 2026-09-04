@@ -36,6 +36,7 @@ overrun only after finishing tasks.
 
 | Item | Priority | Reason for exclusion | Depended on downstream? |
 |---|:---:|---|:---:|
+|  |  |  |  |
 
 **When the last column is yes, it MUST be reported** — that means acceptance will have a gap,
 and the user must decide whether to include it.
@@ -47,3 +48,4 @@ wrong, come back to this table, correct it, and record:
 
 | Date | Original split | Changed to | Reason |
 |---|---|---|---|
+|  |  |  |  |

@@ -1,11 +1,9 @@
 ---
 name: speckit-design-injection-universal-en
-description: Inject DESIGN.md and visual reference artifacts into an existing Spec-Kit project without redoing specify or clarify. Use when plan.md and tasks.md already exist and a Stitch, Figma, Claude Design, HTML, or hand-written design system must be added through constitution rules, impact scanning, and selective plan/tasks re-runs. Do not use for fresh projects, projects without design artifacts, backend-only projects, or tiny token-only design edits.
-license: MIT
+description: Inject DESIGN.md and visual reference artefacts into a Spec-Kit project that has already completed specify, clarify, plan, and tasks, then update the affected plan/tasks through constitution rules, impact scanning, and targeted reruns. Use for the later integration of Stitch, Figma, Claude Design, HTML prototypes, or a hand-written design system. Do not use for a new project, a project with no design artefacts, a backend-only project, or a minor change to a few tokens.
 metadata:
   version: "1.0"
   lang: en
-  kind: process-executor
   stage: "5.2"
   standalone: true
   produces:
@@ -15,285 +13,226 @@ metadata:
   requires:
     - name: "DESIGN.md or an equivalent design source of truth"
       level: required
-      fallback: "Stop - without design material this skill has no input; ask the user for it rather than inventing a design system"
     - name: "visual and interaction reference sample directory"
       level: orchestration
-      fallback: "Inject from DESIGN.md alone, and label the sample-dependent constraints as not covered"
+      fallback: "Inject from DESIGN.md alone and mark sample-related constraints as not covered"
     - name: "feature directories that have completed specify and clarify"
       level: orchestration
-      fallback: "Ask the user which ones; with none, do the constitution injection only"
-    - name: "spec toolchain"
+      fallback: "Ask the user which features to rerun; with none, perform only the constitution injection"
+    - name: "specification toolchain"
       level: optional
-      fallback: "Use the equivalent rewrite flow"
+      fallback: "Use the equivalent plan/tasks rewrite flow"
 ---
 
-# Spec-Kit Design Injection
+# Spec-Kit Design System Injection (Universal English Version)
 
-A reusable workflow for merging a design system into a project that has **already** completed Spec-Kit's specify/clarify/plan/tasks pipeline — without throwing away the existing work.
+## Language Convention
 
-## Why this skill exists
+- This Skill is the English execution version: interaction with the user, check reports,
+  Open Questions, and newly generated explanatory documents use English by default.
+- Code, commands, file paths, APIs, component names, design tokens, and existing project
+  identifiers remain in their original form.
+- `references/prompts.md` contains the English examples used by this version.
+- Chinese source material is used only as methodological input and must not switch output to
+  Chinese. A Chinese-only workflow must call `speckit-design-injection-universal`; the two
+  versions must not be mixed in the same workflow.
 
-The natural Spec-Kit flow puts DESIGN.md in the project from day one, before `/speckit.plan` runs. But real projects often go the other way around:
+## Goal and Boundaries
 
-1. You run Spec-Kit first (specify → clarify → plan → tasks) for several Must-have features
-2. **Then** you produce a design system (via Google Stitch, Figma, Claude Design, or hand-writing DESIGN.md)
-3. Now the existing plan/tasks don't reflect the new visual standard
+This Skill integrates a design system created later into a project that has already completed
+the Spec-Kit documentation flow, without discarding existing business specifications or
+architecture decisions. The correct method is: **constitution injection + impact
+identification + selective rerun**.
 
-Naive solutions are wrong:
-- ❌ Throw away spec/clarify/plan/tasks and re-run everything → wastes hours of work, loses architecture decisions
-- ❌ Manually edit every plan.md to mention DESIGN.md → error-prone, inconsistent across features
-- ❌ Just tell the implement agent "also look at DESIGN.md" → no enforcement, AI drifts
+Do not use it in these situations:
 
-The right answer is **Constitution Injection + Selective Re-run**, which this skill walks through.
+- A new project that has not run Spec-Kit: put `DESIGN.md` in the project root first, then run
+  Spec-Kit normally.
+- No design artefact exists yet: this Skill injects a design; it does not create one.
+- A backend-only project: there is no interface design system to inject.
+- Only one or two colours or tokens change: update `DESIGN.md` directly.
 
-## When NOT to use this skill
+## Pre-flight Check
 
-- **Fresh project, no Spec-Kit run yet** → put DESIGN.md in the repo root from the start, use Spec-Kit normally
-- **No design artifact in hand** → this skill is about injection, not creation
-- **Backend-only project** (no UI) → no design system to inject; not applicable
-- **Design changes are tiny** (1-2 color tweaks) → just edit DESIGN.md, no constitution update needed
+Confirm before starting:
 
-## Prerequisites (verify before starting)
+| Requirement | What to check |
+|---|---|
+| Spec-Kit is initialised | `.specify/` exists in the project root |
+| At least one feature has a plan and tasks | `specs/00X-*/plan.md` and `tasks.md` exist |
+| A design artefact exists | One of DESIGN.md, a Stitch/Figma export, Claude Design, HTML, or an image prototype |
+| The project root is clear | It resolves to a concrete absolute path |
 
-Stop and ask the user if any of these are missing:
+If any requirement is missing, pause and ask the user. Do not guess or fabricate it.
 
-| Required | What to check |
-|---------|--------------|
-| Spec-Kit already initialized | `.specify/` directory exists at project root |
-| At least one feature has plan + tasks | `specs/00X-*/plan.md` and `tasks.md` exist for ≥ 1 feature |
-| Design artifact in hand | One of: DESIGN.md file / Stitch download zip / Figma export / Claude Design output / HTML prototypes |
-| User can identify the project root | A concrete absolute path |
+## Four-step Workflow
 
-If anything is missing, ask the user to provide it before continuing. Do not guess.
-
-## The 4-step workflow
-
+```text
+Step 1: Place materials       → put design artefacts in stable, referenceable locations
+Step 2: Inject constitution   → write abstract design principles into constitution.md
+Step 3: Identify impact       → find the features that genuinely touch UI
+Step 4: Selectively rerun     → rerun plan + tasks only for affected features
 ```
-Step 1 · Material placement       (put artifacts where Spec-Kit can find them)
-Step 2 · Constitution injection   (abstract design rules → .specify/memory/constitution.md)
-Step 3 · Impact identification    (scan specs/ → mark which features touch UI)
-Step 4 · Selective re-run         (only re-run plan + tasks for UI-touching features)
-```
 
-**Critical**: spec.md and clarify-updated spec.md are **never** touched. Business requirements don't change just because we added a design system.
+Hard boundary: do not modify `spec.md` or the specification after clarify. Adding a design
+system does not change business requirements.
 
----
+### Step 1: Place Materials
 
-### Step 1 · Material placement
+Target structure:
 
-Goal: get the design artifacts into a predictable place in the project so subsequent steps can reliably reference them.
-
-**Target structure** (regardless of where the design came from):
-
-```
+```text
 <project-root>/
-├── DESIGN.md                              ← the design system "constitution"
+├── DESIGN.md
 ├── design-reference/
-│   └── <source>-export/                   ← e.g. stitch-export/, figma-export/, claude-design-export/
+│   └── <source>-export/
 │       ├── <page-1>/
-│       │   ├── code.html  (or .png, .jsx, etc.)
+│       │   ├── code.html
 │       │   └── screen.png
 │       └── ...
-└── .specify/
-    └── memory/
-        └── constitution.md                ← will be updated in Step 2
+└── .specify/memory/constitution.md
 ```
 
-**Source adapter logic** — the actual move differs by source. Read `references/design-source-adapters.md` for the exact mapping rules for each source type (Stitch / Figma / Claude Design / hand-written / other).
+Execution requirements:
 
-**Naming rule for pages in `design-reference/`**: rename to semantic names that match the feature naming in specs/. Example: Stitch's `_7` → `cart-zh` (matches `specs/003-cart/`). This makes Step 4's "which page goes with which feature" mapping mechanical.
+1. Read `references/design-source-adapters.md` for the design source and select its mapping
+   rules.
+2. Rename page directories with semantic names corresponding to features under `specs/`, for
+   example `_7` → `cart-en`.
+3. If `DESIGN.md` already exists in the project root, compare it and wait for user confirmation;
+   do not overwrite it.
+4. If `design-reference/` already exists, present a merge proposal and wait for confirmation.
+5. If the design artefact includes a duplicate `prd.md`, do not copy it; report differences
+   when the contents do not agree.
+6. Use the current platform's native non-destructive copy operation. Before recursively
+   copying, resolve and verify the absolute source and destination paths. Retain the source as
+   a backup; do not move the source directory.
 
-**Pre-flight check before placement**:
-- If `DESIGN.md` already exists in project root → ask user before overwriting
-- If `design-reference/` already exists → ask user before merging
-- If `prd.md` is duplicated in the design artifact → don't copy it (project already has its own); flag any content mismatches
+### Step 2: Inject the Constitution
 
-Use the current platform's native **non-destructive copy** operation, never move the source. Before any recursive copy, resolve and verify the exact source and destination paths; keep the original artifact intact as backup.
+Goal: write stable design direction into `.specify/memory/constitution.md` so later
+`/speckit.plan` and `/speckit.tasks` runs inherit it automatically.
 
----
+Core rule: **the constitution stores direction; DESIGN.md stores concrete values.**
 
-### Step 2 · Constitution injection
+- Allowed: the sole source of visual specifications is root `DESIGN.md`; colours, type sizes,
+  and spacing must use what it defines.
+- Not allowed: concrete hex values, token names, font names, or component names.
 
-Goal: encode the design system as **abstract, unchanging rules** in `.specify/memory/constitution.md`, so every future `/speckit.plan` and `/speckit.tasks` run automatically inherits them.
+Read before execution:
 
-**The cardinal rule**: constitution holds **direction**, DESIGN.md holds **values**.
+- Root `DESIGN.md`
+- `specs/prd.md`
+- Two or three representative pages under `design-reference/<source>-export/`
 
-```
-✅ Constitution writes:  "Visual specs come exclusively from root DESIGN.md.
-                         All colors/fonts/spacing must use its tokens."
-❌ Constitution does NOT write:  "Primary color is #adc6ff" or "Use success-green token for positive values"
-```
+Append a “Frontend Design System” section. Write each principle as: principle name → why it
+cannot be violated → source-of-truth file. Cover at least: source of visual specifications,
+how samples are referenced, target user/market conventions, component-library baseline,
+information density, multilingual strategy (if applicable), and light/dark theme (if
+applicable). Put anything the material does not clearly specify into Open Questions; do not
+decide for the user.
 
-Why? Because constitution is supposed to be persistent across design iterations. Hex values and token names will change when designs evolve. If you bake them into constitution, the constitution becomes a snapshot rather than a contract.
+Show the diff before writing. After writing, report the changed files and the source paragraph
+for each principle.
 
-**Trigger prompt template** (give this to the user to run, OR run it yourself if you have `/speckit.constitution` access):
+### Step 3: Identify Impact
 
-```
-/speckit.constitution
+Scan every feature's `plan.md` and `tasks.md` under `specs/`, and output:
 
-Materials in this project that you must read first:
-- DESIGN.md at project root
-- specs/prd.md (business context)
-- design-reference/<source>-export/ — pick 2-3 representative pages to understand visual style
+| Feature directory | Touches UI? | Rerun plan/tasks? | Matching reference page | Basis |
+|---|---|---|---|---|
 
-Your job: append a "Frontend Design System" section to .specify/memory/constitution.md.
+- Interface work such as React/Vue components, pages, forms, tables, charts, and dashboards:
+  rerun.
+- Pure backend, algorithm, scheduling, or database work: do not modify.
+- No matching design page: mark it as a gap; do not design it unilaterally.
 
-Each principle in this section must be ABSTRACT direction, never concrete values.
+After outputting the list, pause and wait for the user to confirm the rerun scope.
 
-Write each principle as:
-  Principle name → Why it's non-negotiable → Which file is the source of truth
+### Step 4: Selectively Rerun
 
-Required principle directions (extract specific content from the materials above):
-1. Single source of truth for visual specs (which file says what is final)
-2. How to reference visual prototype samples (when to read design-reference/)
-3. Target market / user conventions that cannot be compromised
-   (extract from prd.md; do NOT assume — if prd.md doesn't say, leave a Open Question)
-4. Component library baseline (infer from DESIGN.md; if unclear, Open Question)
-5. Information density / design philosophy (from DESIGN.md design principles)
-6. Multi-language strategy (only if design-reference shows multiple languages)
-7. Theme mode (dark/light) — write what DESIGN.md says, no more
+Handle one confirmed feature at a time:
 
-Hard constraints:
-- Do NOT copy hex values, token names, component names, or font names into constitution
-- Do NOT make decisions for me — if a direction is unclear from the materials,
-  list it under an "Open Questions" subsection at the end and wait for my answer
-- After writing, tell me: (a) which file(s) you changed, (b) which paragraphs of
-  the materials each principle traces back to
-```
+1. Run only `/speckit.plan` and `/speckit.tasks`; do not run `/specify` or `/clarify`.
+2. Before plan, read root `DESIGN.md` and the matching reference page.
+3. In plan's frontend section, list the components, matching DESIGN.md sections, and reference
+   sample paths.
+4. Preserve all existing backend, data-flow, integration, dependency, and risk content.
+5. Retain the project's existing task-label system; use `[FE]`, `[BE]`, and `[INT]` only when
+   no labels exist.
+6. Each `[FE]` task must cite the DESIGN.md section, HTML/image sample path, and component used.
+7. Re-evaluate parallel groups from actual dependencies; do not presume frontend and backend
+   can always run in parallel.
+8. Pause after each feature and let the user review it before continuing.
 
-**Common failure mode**: the AI dumps DESIGN.md's tokens into constitution. If you see hex values or token names in the proposed constitution text, reject it and ask the AI to rewrite at the abstract level.
+## Anti-patterns
 
----
+| Anti-pattern | Correct approach |
+|---|---|
+| Copy hex values and tokens into the constitution | The constitution only references DESIGN.md as the source of truth |
+| Rerun specify after adding design | Business requirements did not change; rerun only plan + tasks |
+| Rerun every feature without separating frontend and backend | Identify impact first; update only UI features |
+| Decide unclear design direction independently | List an Open Question and wait for user confirmation |
+| Copy all of DESIGN.md into every plan | Enforce it through the constitution and reference it from plan |
+| Skip the constitution and rerun directly | Establish consistent constraints first so features do not interpret them differently |
 
-### Step 3 · Impact identification
+## Completion Criteria
 
-Goal: figure out which existing features need their plan/tasks updated (those that touch UI), versus which are pure backend (don't touch).
+- `DESIGN.md` is in the project root.
+- `design-reference/<source>-export/` uses semantic page directories.
+- The constitution contains only abstract design principles, not concrete token values.
+- Only UI-related features have updated plan/tasks.
+- Backend-only features remain unchanged.
+- All newly added explanatory content and reports use English.
 
-**Don't re-run everything blindly**. Re-running pure backend features wastes time and risks regressing already-good plans.
+## References
 
-**Trigger prompt template**:
+- `references/design-source-adapters.md`: placement mappings for different design sources.
+- `references/prompts.md`: copyable prompts for the four-step flow; this English version uses
+  only the English blocks.
+- `references/examples.md`: complete cases across project types.
 
-```
-Scan all feature directories under specs/. For each feature, classify whether its
-plan.md or tasks.md involves frontend UI (React/Vue components, pages, forms,
-tables, charts, etc.) versus pure backend/algorithm work.
+Read a reference only when its source-specific details, prompt, or complete case is needed. Do
+not load all references at once.
 
-Output table:
-| Feature dir | Has FE? | Needs re-run? | Best matching page in design-reference/ |
+## First Response
 
-Re-run criteria:
-- Has FE = true → needs re-run of /plan + /tasks
-- Has FE = false → no action
+Explain in English first: there is no need to redo spec/clarify; only plan/tasks for
+frontend-related features are updated, and the Spec-Kit constitution enforces the design system
+across the project. Then follow the four-step workflow, with confirmation gates before
+overwriting materials, writing the constitution, accepting the impact list, and after rerunning
+each feature.
 
-Then WAIT for me to confirm the re-run list. Do not start re-running yet.
-```
-
-**Page-to-feature matching**: if `design-reference/` was named semantically in Step 1, the matching is usually 1:1. If a feature has no matching page in `design-reference/`, surface that as a gap — the user may need to generate that page or accept that the AI will design it from scratch.
-
----
-
-### Step 4 · Selective re-run
-
-Goal: re-run `/speckit.plan` and `/speckit.tasks` for UI-touching features only. Skip `/specify` and `/clarify` — business requirements are unchanged.
-
-**Trigger prompt template** (one feature at a time; loop for each):
-
-```
-For specs/<NNN>-<feature-name>/, re-run plan + tasks ONLY.
-Do NOT touch spec.md or any clarify outputs — business requirements are unchanged.
-
-/speckit.plan
-- Read root DESIGN.md and design-reference/<source>-export/<matched-page>/ first
-- In plan.md, add a "Frontend section" listing:
-  (a) Which components are used (refer to DESIGN.md §Components)
-  (b) Which DESIGN.md section each component maps to
-  (c) The visual reference sample path
-- Preserve ALL existing backend / data flow / integration / dependency content unchanged
-
-/speckit.tasks
-- Follow the project's existing task-label vocabulary; if none exists, default to [FE] / [BE] / [INT]
-- [FE] tasks must cite:
-  (a) The DESIGN.md section being implemented
-  (b) The reference HTML/sample path
-  (c) The shadcn (or equivalent) component being used
-- Backend/core tasks: preserve original and label them [BE] only when using the default vocabulary
-- Interface tasks use [FE] and backend/core tasks use [BE] only under the default vocabulary
-- Re-evaluate parallel groups from the actual dependency graph; do not assume frontend and backend are always parallelizable
-
-After completing this feature, STOP and let me review before moving to the next.
-```
-
-**Iteration pacing rule**: one feature at a time. Re-running 5 features in a single shot makes review impossible and bugs cascade.
-
----
-
-## Anti-patterns to avoid
-
-| Anti-pattern | Why it's wrong | Right approach |
-|--------------|---------------|----------------|
-| Copy hex values into constitution | Constitution becomes a snapshot, not a contract | Constitution references DESIGN.md as source of truth |
-| Re-run /specify after adding design | Wastes work, business hasn't changed | Only re-run /plan + /tasks |
-| Re-run all features including backend-only | Wastes time, risks regression | Identify UI-touching features first |
-| Let AI guess at unclear directions | Replaces user judgment, creates drift | Surface as Open Questions, wait for user |
-| Inject DESIGN.md content directly into each plan.md | Inconsistent across features | Use constitution as single enforcement point |
-| Skip Step 2, jump straight to re-run | Each plan.md remembers DESIGN.md differently | Constitution ensures uniform reference |
-
-## What success looks like
-
-After running this skill:
-
-1. `DESIGN.md` lives at project root, referenced by all future Spec-Kit runs
-2. `design-reference/<source>-export/` has semantically-named pages
-3. `.specify/memory/constitution.md` has a Frontend Design System section with **abstract** principles (no hex values)
-4. UI-touching features have updated plan.md (with frontend section referencing DESIGN.md) and tasks.md (with [FE]/[BE]/[INT] tags)
-5. Backend-only features are untouched
-6. `/speckit.implement` (the next phase) can produce code that visually matches the design system
-
-## Reference files
-
-- `references/design-source-adapters.md` — how to map Stitch / Figma / Claude Design / hand-written outputs into the standard project structure (Step 1 details)
-- `references/prompts.md` — full ready-to-copy prompts for all 4 steps in English
-- `references/examples.md` — a complete walkthrough demonstrating the 4-step workflow across different project types as case studies
-
-Read these when you need source-specific guidance or want to show the user a worked example.
-
-## A note on user communication
-
-This skill is used by people who have **already invested significant effort** in Spec-Kit. Their fear when bringing in a new design is "do I have to redo everything?" Your first message to them should immediately address that fear:
-
-> "No, you don't need to redo your spec/clarify work. We only update the frontend-touching plan/tasks, and we use Spec-Kit's constitution mechanism to enforce the design system project-wide. Total effort: usually 30-60 minutes regardless of how many features you have."
-
-Then proceed through the 4 steps interactively, pausing at each step for confirmation.
 
 ## Upstream Artifacts
 
 | Artifact | Level | When missing |
 |---|:---:|---|
-| `DESIGN.md` or an equivalent design source of truth | **required** | Stop - without design material this skill has no input |
-| Visual and interaction reference sample directory | orchestration | Inject from `DESIGN.md` alone; label the sample-dependent constraints as not covered |
-| Feature directories that completed specify and clarify | orchestration | Ask the user which ones; with none, do the constitution injection only |
-| Spec toolchain | optional | Use the equivalent rewrite flow |
+| `DESIGN.md` or an equivalent design source of truth | **required** | Stop — without design material, this Skill has no input |
+| Visual and interaction reference sample directory | orchestration | Inject from DESIGN.md alone; mark sample-related constraints as not covered |
+| Feature directories that completed specify and clarify | orchestration | Ask the user to specify them; with none, perform only the constitution injection |
+| Specification toolchain | optional | Use the equivalent rewrite flow |
 
 ## Downstream Consumers
 
 | Consumer | What it reads |
 |---|---|
-| The implementation executor | The design principles in the constitution, and the reran plan and tasks |
+| Implementation executor | Design principles in the constitution and the rerun plan/tasks |
 
 ## Standalone Use
 
-**What you provide**: a `DESIGN.md` (or an equivalent design source of truth). A reference
-sample directory helps.
+**What you provide**: a DESIGN.md or equivalent design source of truth. A reference sample
+directory is helpful.
 
-**What you get**: a new design-principles section in the constitution, plus a targeted rerun
-of the plan and tasks for the affected features.
+**What you get**: a new design-principles section in the constitution and a targeted rerun of
+plan/tasks for the affected features.
 
 **What you don't get**:
 
-- **Design material is mandatory** - it is the one required dependency, and without it this
-  skill has no input.
-- **It does not modify spec or clarify outputs**, only plan and tasks.
-- It does not produce the design itself; `DESIGN.md` comes from the design stage.
+- **Design material is required** — it is the sole required dependency; without it this Skill
+  has no input.
+- **It does not modify spec or clarify artefacts**; it changes only plan and tasks.
+- It does not produce the design itself; DESIGN.md comes from the design stage.
 
-**Gate**: emit the list of affected features and wait for confirmation, then rerun them one
-at a time, stopping after each for review.
+**Gate**: output the affected-feature list and wait for user confirmation, then rerun features
+one at a time; stop after each for review.

@@ -18,7 +18,6 @@ allowed-tools: Read Write Edit
 metadata:
   version: "1.0"
   lang: en
-  kind: behavioural
   stage: "10"
   standalone: true
   produces:

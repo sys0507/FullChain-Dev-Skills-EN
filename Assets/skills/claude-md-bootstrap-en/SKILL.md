@@ -1,7 +1,6 @@
 ---
 name: claude-md-bootstrap-en
 description: Generate or refresh a project-root CLAUDE.md from existing PRD, architecture decisions, constitution, design docs, project manifests, and feature specs. Produces a concise WHAT/WHY/HOW routing map with verified commands and dependencies, @path references, anti-patterns, and Karpathy's four coding principles. Use when Claude Code needs durable project context. Do not use for empty projects without documentation or for non-Claude agent context files.
-license: MIT
 metadata:
   version: "1.0"
   lang: en
