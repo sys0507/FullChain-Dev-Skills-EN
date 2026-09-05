@@ -40,8 +40,8 @@ to work because a convention directory is missing.
 Assets/skills/          21 skills, project-scoped
 Assets/mcp/             Shared research MCP servers referenced by the templates
 Assets/configs/         Shared editor/status configuration referenced by the templates
-tools/skill_checks/     10 structural checks, with their own tests
-docs/                   The port spec and the current state
+tools/skill_checks/     11 structural checks, with their own tests
+docs/                   Diagram source images
 Full-Chain-Development-Skill-Execution-Index.md      What to call, when to stop
 Full-Chain-Development-Prompt-Template.md            The full original prompts, for reference and audit
 Full-Chain-Development-Prompt-Template-Skills-Edition.md   The skill-driven execution edition
