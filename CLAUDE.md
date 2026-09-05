@@ -26,8 +26,8 @@ exactly the kind of pollution hard language isolation forbids.
 
 **Starting work on a skill**
 
-1. Read `docs/EN-PORT-SPEC.md` — the fixed vocabulary, the path map, and the rules that
-   outrank fluency
+1. Read `../全链路开发汇总/docs/stage-artifact-contract.md` §3.5 — the single authority for
+   the path map between the two languages
 2. Read the Chinese counterpart in `../全链路开发汇总/Assets/skills/<name>/`
 3. Check what the checks currently say before changing anything
 
@@ -132,8 +132,6 @@ the orphans your own change created.
 
 | File | When to read it |
 |---|---|
-| `docs/EN-PORT-SPEC.md` | Before touching any skill — the fixed vocabulary and the path map |
-| `docs/PHASE3-STATE.md` | To find out what is done and what remains |
 | `Full-Chain-Development-Skill-Execution-Index.md` | To drive the chain: what to call, when to stop |
 | `Full-Chain-Development-Prompt-Template.md` | To look up why a stage is designed the way it is |
 | `Full-Chain-Development-Prompt-Template-Skills-Edition.md` | The skill-driven execution edition of the same template |
